@@ -1,0 +1,315 @@
+// Dashboard.scss - Add these styles
+
+.doctor-card {
+  margin: 8px 0;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  .doctor-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+
+    .doctor-avatar {
+      width: 48px;
+      height: 48px;
+      margin-right: 12px;
+    }
+
+    .doctor-info {
+      flex: 1;
+
+      h4 {
+        margin: 0 0 4px 0;
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      p {
+        margin: 0;
+        font-size: 12px;
+        color: var(--ion-color-medium);
+      }
+    }
+  }
+
+  .doctor-rating {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+
+    ion-icon {
+      font-size: 14px;
+      margin-right: 4px;
+    }
+
+    span {
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .experience {
+      color: var(--ion-color-medium);
+      margin-left: 4px;
+    }
+  }
+
+  .doctor-availability {
+    margin-bottom: 12px;
+
+    .next-available {
+      margin: 4px 0 0 0;
+      font-size: 11px;
+      color: var(--ion-color-medium);
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .doctor-card {
+    .doctor-header {
+      .doctor-info {
+        h4 {
+          font-size: 13px;
+          margin-right: 3px;
+        }
+
+        p {
+          font-size: 11px;
+        }
+      }
+    }
+  }
+}
+
+/* Welcome Card Styling */
+.welcome-card {
+  --background: linear-gradient(90deg, #1a237e 0%, #1976d2 100%);
+  color: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  .p-avatar {
+    width: 50px;
+    height: 50px;
+  }
+}
+
+.welcome-card h2 {
+  font-weight: 700;
+  margin: 0 0 8px 0;
+}
+
+.welcome-card p {
+  opacity: 0.9;
+  margin: 0;
+}
+
+/* Status Selector */
+.status-selector {
+  --background: transparent;
+  --color: white;
+  --padding-start: 0;
+}
+
+.status-selector::part(label) {
+  color: white !important;
+}
+
+.status-selector::part(icon) {
+  color: white;
+}
+
+/* Status Card */
+.status-card {
+  border-radius: 12px;
+  margin: 10px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.status-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Metric Cards */
+.metric-card {
+  text-align: center;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  height: 100%;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.metric-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.metric-card ion-icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+}
+
+.metric-card h3 {
+  font-size: 1rem;
+  margin: 8px 0;
+}
+
+.metric-card p {
+  font-weight: 600;
+  margin: 8px 0;
+}
+
+/* Appointment Items */
+.appointment-item {
+  --padding-start: 0;
+  --inner-padding-end: 0;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  transition: all 0.3s ease;
+}
+
+.appointment-item:hover {
+  --background: rgba(var(--ion-color-primary-rgb), 0.08);
+}
+
+/* Chatbot FAB */
+.chatbot-fab {
+  --background: linear-gradient(90deg, #1a237e 0%, #1976d2 100%);
+  --box-shadow: 0 4px 16px rgba(var(--ion-color-primary-rgb), 0.4);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+}
+
+.chatbot-fab:hover {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Chatbot Modal */
+.chatbot-modal {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  width: 300px;
+  height: 400px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chatbot-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--ion-color-primary);
+  color: white;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+}
+
+.chatbot-content {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.chatbot-input {
+  display: flex;
+  padding: 12px;
+  border-top: 1px solid var(--ion-color-light);
+}
+
+.chatbot-input input {
+  flex: 1;
+  border: 1px solid var(--ion-color-light);
+  border-radius: 20px;
+  padding: 8px 16px;
+  margin-right: 8px;
+}
+
+/* Animations */
+ion-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+ion-card:active {
+  transform: scale(0.98);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .chatbot-modal {
+    width: 90%;
+    right: 5%;
+    left: 5%;
+  }
+}
+.health-metrics {
+  --background: transparent;
+  border: 1px solid var(--ion-background-color-step-150, #d7d8da);
+  border-radius: 13px;
+  box-shadow: none;
+}
+.available-doctor {
+  --background: transparent;
+  border: 1px solid var(--ion-background-color-step-150, #d7d8da);
+  border-radius: 13px;
+  box-shadow: none;
+}
+.upcoming-app {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  border-radius: 13px;
+}
+.quick-actions {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  border-radius: 13px;
+}
+.book-btn {
+  --background: linear-gradient(90deg, #1a237e 0%, #1976d2 100%);
+  width: 100%;
+  height: 50px;
+  --border-radius: 30px;
+  ion-icon {
+    margin-right: 9px;
+  }
+}
+.book-now-btn {
+  --background: linear-gradient(90deg, #1a237e 0%, #1976d2 100%);
+  --border-radius: 30px;
+}
+.book-now-btn-1 {
+  --background: linear-gradient(90deg, #1a237e 0%, #1976d2 100%);
+  --border-radius: 30px;
+  width: 50%;
+  margin-left: 30%;
+}
+.medical-r-btn {
+  width: 100%;
+  --border-style: dashed;
+  --border-radius: 30px;
+  height: 50px;
+  margin-top: 30px;
+  --color: var(--ion-color-primary);
+  ion-icon {
+    margin-right: 9px;
+  }
+}

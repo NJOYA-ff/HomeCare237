@@ -1,0 +1,134 @@
+.welcome-content {
+  --background: linear-gradient(135deg, #1a237e 0%, #1976d2 50%, #64b5f6 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.background-gradient {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+/* Animated circles in background */
+.circle {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.circle-1 {
+  width: 300px;
+  height: 300px;
+  top: -100px;
+  left: -100px;
+}
+
+.circle-2 {
+  width: 500px;
+  height: 500px;
+  bottom: -200px;
+  right: -150px;
+}
+
+.circle-3 {
+  width: 200px;
+  height: 200px;
+  top: 40%;
+  right: 20%;
+}
+
+.welcome-grid {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+
+.app-logo {
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 20px;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+}
+
+.welcome-title h1 {
+  color: white;
+  font-weight: bold;
+  font-size: 1.4rem;
+  margin-bottom: 10px;
+}
+
+.welcome-title span {
+  color: #bbdefb;
+}
+
+.welcome-subtitle {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1rem;
+  margin-bottom: 30px;
+  display: block;
+}
+
+.button-group {
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.signin-button {
+  --background: linear-gradient(90deg, #1a237e 0%, #1976d2 100%);
+  --background-activated: #0d47a1;
+  --border-radius: 12px;
+  height: 50px;
+  font-weight: bold;
+  margin-top: 20px;
+  box-shadow: 0 4px 10px rgba(25, 118, 210, 0.3);
+  color: white;
+}
+
+.signup-button {
+  color: white;
+  --background-hover: rgba(255, 255, 255, 0.1);
+  --background-activated: rgba(255, 255, 255, 0.2);
+  --border-color: rgba(255, 255, 255, 0.1);
+  --border-radius: 12px;
+  height: 50px;
+  margin-top: 20px;
+  font-weight: 600;
+}
+
+/* Animation for the buttons on hover */
+.signin-button:hover {
+  transform: translateY(-2px);
+  transition: transform 0.2s ease;
+}
+
+.signup-button:hover {
+  transform: translateY(-2px);
+  transition: transform 0.2s ease;
+}
+
+/* Responsive adjustments */
+@media (max-height: 700px) {
+  .doctor-image {
+    max-width: 250px;
+    margin-bottom: 20px;
+  }
+}
+
+@media (max-width: 400px) {
+  .welcome-title {
+    font-size: 0.8rem;
+  }
+
+  .welcome-subtitle {
+    font-size: 1rem;
+  }
+
+  .doctor-image {
+    max-width: 220px;
+  }
+}

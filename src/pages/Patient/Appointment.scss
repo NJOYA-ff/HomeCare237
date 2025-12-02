@@ -1,0 +1,529 @@
+// AppointmentBooking.scss
+ion-toolbar {
+  border-bottom: 1px solid var(--ion-background-color-step-150, #d7d8da);
+}
+// .booking-section,
+// .appointments-section,
+// .booking-detail-section {
+//   padding: 6px;
+// }
+
+// Filter section
+.filters-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+
+  .filter-item {
+    flex: 1;
+    min-width: 200px;
+  }
+}
+.booking-card {
+  border: none;
+  box-shadow: none;
+}
+.doctor-search {
+  padding: 0;
+  margin-bottom: 20px;
+
+  --background: var(--ion-color-light);
+  --border-radius: 30px;
+  --box-shadow: none;
+}
+
+// Section titles
+.section-title {
+  margin: 0 0 16px 0;
+  color: var(--ion-color-dark);
+  font-weight: 600;
+  font-size: 1.2rem;
+}
+
+// Doctors grid
+.doctors-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.doctor-card {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin: 0;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  }
+}
+
+.doctor-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+
+  .doctor-avatar {
+    width: 60px;
+    height: 60px;
+    margin-right: 12px;
+  }
+
+  .doctor-info {
+    flex: 1;
+
+    .doctor-name {
+      margin: 0 0 4px 0;
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .doctor-specialty {
+      margin: 0;
+      font-size: 0.9rem;
+    }
+  }
+}
+
+.doctor-details {
+  margin-bottom: 16px;
+
+  .detail-item-d {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+
+    ion-icon {
+      margin-right: 8px;
+      font-size: 16px;
+    }
+  }
+}
+
+// Appointments list
+.no-appointments,
+.no-results {
+  text-align: center;
+  padding: 40px 0;
+
+  p {
+    margin-bottom: 20px;
+  }
+}
+
+.appointments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.appointment-card {
+  margin: 0;
+
+  .appointment-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+
+    .doctor-avatar {
+      width: 50px;
+      height: 50px;
+      margin-right: 12px;
+    }
+
+    .appointment-info {
+      flex: 1;
+
+      .doctor-name {
+        margin: 0 0 4px 0;
+        font-size: 1rem;
+        font-weight: 600;
+      }
+
+      .doctor-specialty {
+        margin: 0 0 8px 0;
+        font-size: 0.9rem;
+      }
+    }
+  }
+
+  .appointment-details {
+    margin-bottom: 16px;
+
+    .detail-item-d {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 0.9rem;
+
+      ion-icon {
+        margin-right: 8px;
+        font-size: 16px;
+        min-width: 16px;
+      }
+    }
+  }
+}
+
+// Booking detail section
+.booking-detail-section {
+  .detail-header {
+    display: flex;
+    flex-direction: column;
+
+    ion-button {
+      align-self: flex-start;
+      margin-bottom: 16px;
+    }
+  }
+
+  .doctor-profile {
+    margin-bottom: 24px;
+
+    .profile-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+
+      .profile-avatar {
+        width: 80px;
+        height: 80px;
+        margin-right: 16px;
+      }
+
+      .profile-info {
+        flex: 1;
+
+        h2 {
+          margin: 0 0 4px 0;
+          font-size: 1.4rem;
+          font-weight: 600;
+        }
+
+        p {
+          margin: 0 0 8px 0;
+          color: var(--ion-color-medium);
+        }
+
+        .rating {
+          display: flex;
+          align-items: center;
+
+          ion-icon {
+            margin-right: 4px;
+          }
+        }
+      }
+    }
+
+    .profile-details {
+      .detail-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 12px;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--ion-color-light);
+
+        ion-icon {
+          margin-right: 12px;
+          font-size: 18px;
+          color: var(--ion-color-primary);
+          min-width: 24px;
+        }
+      }
+    }
+  }
+
+  .booking-form {
+    h3 {
+      margin: 0 0 20px 0;
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--ion-color-dark);
+    }
+
+    .form-item {
+      margin-bottom: 16px;
+      --padding-start: 0;
+      --inner-padding-end: 0;
+    }
+
+    .book-btn {
+      margin-top: 24px;
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .filters-container {
+    flex-direction: column;
+    gap: 12px;
+
+    .filter-item {
+      min-width: 100%;
+    }
+  }
+
+  .doctors-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .doctor-header,
+  .appointment-header {
+    flex-direction: column;
+    text-align: center;
+
+    .doctor-avatar {
+      margin-right: 0;
+      margin-bottom: 12px;
+    }
+  }
+
+  .booking-detail-section {
+    .profile-header {
+      flex-direction: column;
+      text-align: center;
+
+      .profile-avatar {
+        margin-right: 0;
+        margin-bottom: 16px;
+      }
+    }
+
+    .profile-details {
+      .detail-row {
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+
+        ion-icon {
+          margin-bottom: 4px;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .booking-section,
+  .appointments-section,
+  .booking-detail-section {
+    padding: 8px;
+  }
+
+  .section-title {
+    font-size: 1.1rem;
+  }
+
+  .doctor-card {
+    ion-card-content {
+      padding: 16px;
+    }
+  }
+
+  .appointment-card {
+    ion-card-content {
+      padding: 16px;
+    }
+  }
+}
+
+// Dark mode support
+@media (prefers-color-scheme: dark) {
+  .appointment-content {
+    --background: #121212;
+  }
+
+  .section-title {
+    color: white;
+  }
+
+  .booking-detail-section {
+    .booking-form h3 {
+      color: white;
+    }
+  }
+}
+
+// Utility classes
+.text-center {
+  text-align: center;
+}
+
+.mb-16 {
+  margin-bottom: 16px;
+}
+
+.mt-16 {
+  margin-top: 16px;
+}
+
+// Animation for better UX
+.doctor-card,
+.appointment-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.doctor-card:active,
+.appointment-card:active {
+  transform: scale(0.98);
+}
+// Add these styles to the existing AppointmentBooking.scss
+
+// Specialty filters
+.specialty-filters {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: var(--ion-color-light);
+  border-radius: 12px;
+
+  h4 {
+    margin: 0 0 12px 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--ion-color-dark);
+  }
+
+  .specialty-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    ion-chip {
+      margin: 0;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:active {
+        transform: scale(0.95);
+      }
+    }
+  }
+}
+
+// Form items
+.form-item {
+  margin-bottom: 16px;
+  --padding-start: 0;
+  --inner-padding-end: 0;
+}
+
+// Update button in appointment cards
+.appointment-actions {
+  display: flex;
+  gap: 8px;
+  // flex-wrap: wrap;
+
+  ion-button {
+    flex: 1;
+    // min-width: 100px;
+    // --border-style: dashed;
+    --border-radius: 30px;
+    --width: 30%;
+    @media (max-width: 480px) {
+      min-width: calc(50% - 4px);
+    }
+  }
+}
+.detail-actions {
+  display: flex;
+  gap: 8px;
+  // flex-wrap: wrap;
+
+  ion-button {
+    flex: 1;
+    min-width: 100px;
+    // --border-style: dashed;
+    --border-radius: 30px;
+    --width: 30%;
+    @media (max-width: 480px) {
+      min-width: calc(50% - 4px);
+    }
+  }
+}
+// Doctor specialty with icon
+.doctor-specialty,
+.appointment-info .doctor-specialty {
+  display: flex;
+  align-items: center;
+
+  ion-icon {
+    margin-right: 6px;
+    font-size: 16px;
+  }
+}
+
+// Responsive adjustments for specialty chips
+@media (max-width: 768px) {
+  .specialty-chips {
+    justify-content: center;
+
+    ion-chip {
+      font-size: 0.8rem;
+
+      ion-icon {
+        font-size: 14px;
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .specialty-chips {
+    gap: 6px;
+
+    ion-chip {
+      font-size: 0.7rem;
+      padding: 6px 12px;
+
+      ion-icon {
+        font-size: 12px;
+        margin-right: 4px;
+      }
+    }
+  }
+
+  .filters-container {
+    .filter-item {
+      --padding-start: 0;
+      --inner-padding-end: 0;
+    }
+  }
+}
+
+// Textarea styling
+ion-textarea {
+  --padding-start: 12px;
+  --padding-end: 12px;
+  --background: var(--ion-color-light);
+  --border-radius: 8px;
+  min-height: 100px;
+}
+
+// Clear filters button
+.no-results {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  ion-button {
+    margin-top: 12px;
+  }
+}
+
+// Doctor count in title
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &::after {
+    content: "(" attr(data-count) ")";
+    font-size: 0.9em;
+    color: var(--ion-color-medium);
+    font-weight: normal;
+  }
+}

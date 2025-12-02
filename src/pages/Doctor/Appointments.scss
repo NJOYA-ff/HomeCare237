@@ -1,0 +1,201 @@
+// Appointments.scss
+
+// Animation for card entrance
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Compact card styling
+.appointment-card {
+  margin: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  animation: fadeInUp 0.3s ease forwards;
+  opacity: 0;
+
+  // Different border colors based on status
+  &.pending-card {
+    border-left: 3px solid var(--ion-color-warning);
+  }
+
+  &.accepted-card {
+    border-left: 3px solid var(--ion-color-success);
+  }
+
+  &.rejected-card {
+    border-left: 3px solid var(--ion-color-danger);
+  }
+
+  &.completed-card {
+    border-left: 3px solid var(--ion-color-primary);
+  }
+}
+
+.appointment-header {
+  padding: 10px 10px 5px;
+
+  .small-avatar {
+    width: 36px;
+    height: 36px;
+  }
+
+  .compact-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+
+  .compact-subtitle {
+    font-size: 14px;
+    color: var(--ion-color-medium);
+  }
+}
+
+.compact-content {
+  padding: 5px 10px 10px;
+
+  .compact-item {
+    --min-height: 32px;
+    --padding-start: 0;
+
+    ion-icon {
+      font-size: 16px;
+      margin-right: 8px;
+      color: var(--ion-color-medium);
+    }
+  }
+
+  .compact-label {
+    margin: 0;
+
+    h3 {
+      font-size: 14px;
+      font-weight: 500;
+      margin: 2px 0 0;
+    }
+
+    p {
+      font-size: 12px;
+      color: var(--ion-color-medium);
+      margin: 0;
+    }
+  }
+}
+
+.compact-grid {
+  padding: 0;
+
+  ion-row {
+    margin-bottom: 5px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  ion-button {
+    margin: 0;
+    --padding-top: 8px;
+    --padding-bottom: 8px;
+    font-size: 13px;
+
+    ion-icon {
+      font-size: 14px;
+    }
+  }
+}
+
+// No appointments state
+.no-appointments {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+  text-align: center;
+  padding: 20px;
+
+  ion-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+  }
+
+  h3 {
+    font-size: 18px;
+    color: var(--ion-color-medium);
+  }
+}
+
+// Segment button customization
+ion-segment {
+  ion-segment-button {
+    --indicator-color: var(--ion-color-primary);
+    --color: var(--ion-color-medium);
+    --color-checked: var(--ion-color-primary);
+    --padding-top: 6px;
+    --padding-bottom: 6px;
+
+    ion-label {
+      font-size: 13px;
+    }
+
+    &::part(indicator) {
+      height: 2px;
+    }
+  }
+}
+
+// Searchbar customization
+ion-searchbar {
+  padding: 8px;
+
+  .searchbar-input-container {
+    input {
+      font-size: 14px;
+    }
+  }
+}
+
+// Badge styling
+ion-badge {
+  font-size: 11px;
+  padding: 4px 6px;
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .appointment-card {
+    margin: 8px 5px;
+  }
+}
+
+// Dark mode compatibility
+@media (prefers-color-scheme: dark) {
+  .appointment-card {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+}
+.patient-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  span {
+    font-size: 0.8rem;
+    color: var(--ion-color-medium);
+  }
+}
+
+.compact-subtitle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}

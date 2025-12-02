@@ -1,0 +1,758 @@
+.auth-required {
+  text-align: center;
+  padding: 2rem;
+
+  h2 {
+    margin-bottom: 1rem;
+  }
+}
+
+// Selection Sections
+.selection-section {
+  margin-bottom: 2rem;
+
+  h3 {
+    margin-bottom: 1rem;
+    color: var(--ion-color-dark);
+    font-weight: 600;
+  }
+}
+
+.patient-search,
+.doctor-search {
+  margin-bottom: 1rem;
+}
+
+// Cards
+.patient-card-r,
+.doctor-card-r {
+  margin-bottom: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &.selected {
+    border: 2px solid var(--ion-color-primary);
+    background-color: rgba(var(--ion-color-primary-rgb), 0.05);
+  }
+}
+
+.patient-header,
+.doctor-header-r {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+
+  .patient-avatar,
+  .doctor-avatar-r {
+    width: 50px;
+    height: 50px;
+  }
+
+  .patient-info-r,
+  .doctor-info-r {
+    flex: 1;
+
+    .patient-name,
+    .doctor-name-r {
+      margin: 0 0 0.25rem 0;
+      font-weight: 600;
+    }
+
+    .patient-email,
+    .patient-phone,
+    .doctor-specialty-r {
+      margin: 0.25rem 0;
+      font-size: 0.9rem;
+    }
+  }
+}
+
+// Doctor Details
+.doctor-details-r {
+  margin: 1rem 0;
+
+  .detail-item-r {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--ion-color-medium);
+
+    ion-icon {
+      font-size: 1.1rem;
+    }
+  }
+}
+
+// Filters
+.filters-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.filter-item {
+  --padding-start: 0;
+}
+
+// Lists
+.patients-list-r,
+.doctors-grid-r {
+  margin-top: 1rem;
+}
+
+.doctors-grid-r {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+// Referral Cards
+.referral-card {
+  margin-bottom: 1rem;
+}
+
+.referral-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+
+  .doctor-avatar {
+    width: 50px;
+    height: 50px;
+  }
+
+  .referral-info {
+    flex: 1;
+
+    .doctor-name-r {
+      margin: 0 0 0.25rem 0;
+      font-weight: 600;
+    }
+
+    .doctor-specialty-r {
+      margin: 0.25rem 0;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .referral-meta {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+  }
+}
+
+.referral-details {
+  margin: 1rem 0;
+
+  .detail-item-r {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+
+    ion-icon {
+      font-size: 1.1rem;
+      color: var(--ion-color-medium);
+    }
+  }
+}
+
+.referral-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+// Detail Views
+.referral-detail-section,
+.referral-form-section {
+  .detail-header {
+    text-align: center;
+
+    ion-button {
+      margin-bottom: 1rem;
+    }
+  }
+}
+
+.referral-summary {
+  background: var(--ion-color-light);
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+
+  .summary-item {
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+  }
+}
+
+.doctor-info-detail-r {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+
+  .detail-avatar {
+    width: 80px;
+    height: 80px;
+  }
+
+  .doctor-details-r {
+    flex: 1;
+
+    h4 {
+      margin: 0 0 0.5rem 0;
+      font-weight: 600;
+    }
+
+    p {
+      margin: 0.5rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+  }
+}
+
+.detail-section {
+  margin-bottom: 2rem;
+
+  h3 {
+    color: var(--ion-color-dark);
+    margin-bottom: 1rem;
+    font-weight: 600;
+    border-bottom: 1px solid var(--ion-color-light);
+    padding-bottom: 0.5rem;
+  }
+}
+
+// Forms
+.referral-form {
+  .form-item {
+    margin-bottom: 1rem;
+  }
+}
+
+.refer-btn {
+  margin-top: 2rem;
+}
+
+// Empty States
+.no-results,
+.no-referrals,
+.no-appointments {
+  text-align: center;
+  padding: 2rem;
+
+  p {
+    margin-bottom: 1rem;
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .filters-container {
+    grid-template-columns: 1fr;
+  }
+
+  .doctors-grid-r {
+    grid-template-columns: 1fr;
+  }
+  .patients-list-r {
+    grid-template-columns: 1fr;
+  }
+  .doctor-info-detail-r {
+    flex-direction: column;
+    text-align: center;
+
+    .detail-avatar {
+      align-self: center;
+    }
+  }
+
+  .referral-actions {
+    flex-direction: column;
+
+    ion-button {
+      width: 100%;
+    }
+  }
+}
+// Refer_patients.scss
+
+.referral-content {
+  --background: var(--ion-color-light);
+}
+
+// Segment styling for three tabs
+ion-segment {
+  margin: 16px;
+
+  ion-segment-button {
+    --color: var(--ion-color-medium);
+    --color-checked: var(--ion-color-primary);
+    --indicator-color: var(--ion-color-primary);
+    min-width: 120px;
+
+    ion-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      ion-icon {
+        margin-left: 4px;
+        font-size: 14px;
+      }
+    }
+  }
+}
+
+// Sent/Received direction indicators
+.referral-direction {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  margin-top: 4px;
+  color: var(--ion-color-medium);
+
+  ion-icon {
+    margin-right: 4px;
+    font-size: 10px;
+  }
+
+  // Specific colors for directions
+  .sent & {
+    color: var(--ion-color-success);
+
+    ion-icon {
+      color: var(--ion-color-success);
+    }
+  }
+
+  .received & {
+    color: var(--ion-color-primary);
+
+    ion-icon {
+      color: var(--ion-color-primary);
+    }
+  }
+}
+
+// Status chips with specific colors
+ion-chip {
+  font-size: 11px;
+  height: 24px;
+
+  // Urgency level chips
+  &[color="primary"] {
+    // background: var(--ion-color-primary-tint);
+    color: var(--ion-color-primary-shade);
+  }
+
+  &[color="warning"] {
+    // background: var(--ion-color-warning-tint);
+    color: var(--ion-color-warning-shade);
+  }
+
+  &[color="danger"] {
+    // background: var(--ion-color-danger-tint);
+    color: var(--ion-color-danger-shade);
+  }
+
+  // Status chips
+  &.status-pending {
+    // background: var(--ion-color-warning-tint);
+    color: var(--ion-color-warning-shade);
+  }
+
+  &.status-accepted {
+    // background: var(--ion-color-success-tint);
+    color: var(--ion-color-success-shade);
+  }
+
+  &.status-rejected {
+    // background: var(--ion-color-danger-tint);
+    color: var(--ion-color-danger-shade);
+  }
+
+  &.status-completed {
+    // background: var(--ion-color-primary-tint);
+    color: var(--ion-color-primary-shade);
+  }
+}
+
+// Referral cards styling with direction indicators
+.referral-card {
+  margin: 12px 16px;
+  border-left: 4px solid var(--ion-color-light);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+  // Different border colors based on type
+  &.sent-referral {
+    border-left-color: var(--ion-color-success);
+  }
+
+  &.received-referral {
+    border-left-color: var(--ion-color-primary);
+  }
+
+  .referral-header {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 12px;
+
+    .doctor-avatar {
+      width: 48px;
+      height: 48px;
+      margin-right: 12px;
+    }
+
+    .referral-info {
+      flex: 1;
+
+      .doctor-name-r {
+        margin: 0 0 4px 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--ion-color-dark);
+
+        &:hover {
+          color: var(--ion-color-primary);
+        }
+      }
+
+      .doctor-specialty-r {
+        display: flex;
+        align-items: center;
+        margin: 0;
+        font-size: 14px;
+        color: var(--ion-color-medium);
+
+        ion-icon {
+          margin-right: 6px;
+          color: var(--ion-color-primary);
+        }
+      }
+    }
+  }
+
+  .referral-meta {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .referral-details {
+    margin: 12px 0;
+    padding: 12px;
+    background: var(--ion-color-light);
+    border-radius: 8px;
+
+    .detail-item-r {
+      display: flex;
+      align-items: center;
+      margin-bottom: 6px;
+      font-size: 13px;
+      color: var(--ion-color-medium);
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      ion-icon {
+        margin-right: 8px;
+        min-width: 16px;
+        color: var(--ion-color-primary);
+      }
+    }
+  }
+
+  .referral-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+
+    ion-button {
+      flex: 1;
+      --border-width: 1px;
+      font-size: 12px;
+      height: 32px;
+
+      // Specific button colors
+      &[color="primary"] {
+        --border-color: var(--ion-color-primary);
+        --color: var(--ion-color-primary);
+      }
+
+      &[color="success"] {
+        --border-color: var(--ion-color-success);
+        --color: var(--ion-color-success);
+      }
+
+      &[color="danger"] {
+        --border-color: var(--ion-color-danger);
+        --color: var(--ion-color-danger);
+      }
+
+      ion-icon {
+        font-size: 14px;
+        margin-right: 4px;
+      }
+    }
+  }
+}
+
+// Empty state styling
+.no-referrals {
+  text-align: center;
+  padding: 40px 20px;
+
+  p {
+    margin-bottom: 20px;
+    color: var(--ion-color-medium);
+  }
+
+  ion-button {
+    --background: var(--ion-color-primary);
+    --color: var(--ion-color-primary-contrast);
+  }
+}
+
+// Detail view improvements
+.referral-detail-section {
+  .detail-section-r {
+    margin-bottom: 24px;
+
+    h3 {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--ion-color-dark);
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--ion-color-light);
+    }
+
+    .doctor-info-detail-r {
+      display: flex;
+      align-items: flex-start;
+      padding: 16px;
+      background: var(--ion-color-light);
+      border-radius: 12px;
+
+      .detail-avatar-r {
+        width: 64px;
+        height: 64px;
+        margin-right: 16px;
+      }
+
+      .doctor-details-r {
+        flex: 1;
+
+        h4 {
+          margin: 0 0 8px 0;
+          font-size: 16px;
+          color: var(--ion-color-dark);
+        }
+
+        p {
+          display: flex;
+          align-items: center;
+          margin: 4px 0;
+          font-size: 14px;
+          color: var(--ion-color-medium);
+
+          ion-icon {
+            margin-right: 8px;
+            min-width: 16px;
+            color: var(--ion-color-primary);
+          }
+        }
+      }
+    }
+  }
+
+  .detail-actions {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 2px solid var(--ion-color-light);
+
+    .received-actions {
+      display: flex;
+      gap: 12px;
+
+      ion-button {
+        flex: 1;
+
+        &[color="success"] {
+          --background: var(--ion-color-success);
+          --color: var(--ion-color-success-contrast);
+        }
+
+        &[color="danger"] {
+          // --background: var(--ion-color-danger);
+          --color: var(--ion-color-danger-contrast);
+        }
+      }
+    }
+  }
+}
+
+// Alert styling customization
+ion-alert {
+  .alert-wrapper {
+    border-radius: 16px;
+  }
+
+  .alert-title {
+    color: var(--ion-color-dark);
+    font-weight: 600;
+  }
+
+  .alert-message {
+    color: var(--ion-color-medium);
+  }
+
+  .alert-button-group {
+    button {
+      &:first-child {
+        color: var(--ion-color-medium);
+      }
+
+      &:last-child {
+        color: var(--ion-color-danger);
+
+        &.accept-button {
+          color: var(--ion-color-success);
+        }
+      }
+    }
+  }
+}
+
+// Loading spinner customization
+ion-loading {
+  .loading-wrapper {
+    background: var(--ion-color-light);
+    color: var(--ion-color-dark);
+
+    .spinner-lines {
+      color: var(--ion-color-primary);
+    }
+  }
+}
+
+// Badge styling
+ion-badge {
+  // Status badges
+  &[color="warning"] {
+    background: var(--ion-color-warning-tint);
+    color: var(--ion-color-warning-shade);
+  }
+
+  &[color="success"] {
+    background: var(--ion-color-success-tint);
+    color: var(--ion-color-success-shade);
+  }
+
+  &[color="danger"] {
+    background: var(--ion-color-danger-tint);
+    color: var(--ion-color-danger-shade);
+  }
+
+  &[color="primary"] {
+    background: var(--ion-color-primary-tint);
+    color: var(--ion-color-primary-shade);
+  }
+}
+
+// Utility classes
+.text-success {
+  color: var(--ion-color-success) !important;
+}
+
+.text-primary {
+  color: var(--ion-color-primary) !important;
+}
+
+.text-warning {
+  color: var(--ion-color-warning) !important;
+}
+
+.text-danger {
+  color: var(--ion-color-danger) !important;
+}
+
+.text-medium {
+  color: var(--ion-color-medium) !important;
+}
+
+// Responsive adjustments
+@media (max-width: 576px) {
+  ion-segment {
+    margin: 12px;
+
+    ion-segment-button {
+      min-width: 100px;
+
+      ion-label {
+        font-size: 12px;
+      }
+    }
+  }
+
+  .referral-card {
+    margin: 8px 12px;
+
+    .referral-actions {
+      flex-direction: column;
+
+      ion-button {
+        width: 100%;
+      }
+    }
+  }
+
+  .referral-detail-section .detail-actions .received-actions {
+    flex-direction: column;
+  }
+}
+
+// Animation for new referrals
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.referral-card {
+  animation: fadeIn 0.3s ease-out;
+}
+// Status and Urgency Badges
+// ion-badge {
+//   font-weight: 600;
+// }
+
+// // Icons
+// ion-icon {
+//   font-size: 1.2rem;
+// }

@@ -1,0 +1,256 @@
+/* Diagnoses.css */
+.diagnoses-container {
+  padding: 16px;
+}
+ion-button {
+  --border-radius: 6px;
+}
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+}
+
+.loading-container p {
+  margin-top: 16px;
+  color: var(--ion-color-medium);
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+  text-align: center;
+  color: var(--ion-color-medium);
+}
+
+.empty-state ion-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+  color: var(--ion-color-medium-shade);
+}
+
+.diagnosis-card-p {
+  margin-bottom: 20px;
+  transition: all 0.3s ease;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  animation: fadeIn 0.5s ease-out;
+}
+.card-header-p {
+  --background: linear-gradient(90deg, #1a237e 0%, #1976d2 100%);
+}
+.card-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+}
+.card-title-p {
+  color: #ffff;
+}
+.diagnosis-date {
+  display: flex;
+  align-items: center;
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
+
+.diagnosis-date ion-icon {
+  margin-right: 4px;
+}
+
+.doctor-info {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.doctor-info ion-icon {
+  margin-right: 12px;
+  margin-top: 4px;
+  color: var(--ion-color-primary);
+}
+
+.doctor-name {
+  font-weight: 600;
+  margin: 0 0 4px 0;
+}
+
+.doctor-specialty {
+  margin: 0 0 2px 0;
+  color: var(--ion-color-medium);
+  font-size: 0.9rem;
+}
+
+.hospital {
+  margin: 0;
+  color: var(--ion-color-medium);
+  font-size: 0.85rem;
+}
+
+.diagnosis-description {
+  color: var(--ion-color-dark);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.lab-result-card,
+.prescription-card {
+  margin: 12px 0;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.result-date {
+  display: flex;
+  align-items: center;
+  color: var(--ion-color-medium);
+  font-size: 0.85rem;
+  margin: 8px 0 0 0;
+}
+
+.result-date ion-icon {
+  margin-right: 4px;
+}
+
+.results-container {
+  margin-bottom: 16px;
+}
+
+.result-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--ion-color-light-shade);
+}
+
+.result-item:last-child {
+  border-bottom: none;
+}
+
+.result-key {
+  font-weight: 500;
+}
+
+.result-value {
+  color: var(--ion-color-dark);
+}
+
+.result-notes,
+.instructions {
+  margin: 16px 0;
+  padding: 12px;
+  background-color: var(--ion-color-light);
+  border-radius: 8px;
+}
+
+.result-notes h4,
+.instructions h4 {
+  margin: 0 0 8px 0;
+  font-size: 1rem;
+}
+
+.result-notes p,
+.instructions p {
+  margin: 0;
+  color: var(--ion-color-dark);
+  line-height: 1.5;
+}
+
+.prescription-details {
+  margin-bottom: 16px;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--ion-color-light-shade);
+}
+
+.detail-item:last-child {
+  border-bottom: none;
+}
+
+.detail-label {
+  font-weight: 500;
+}
+
+.detail-value {
+  color: var(--ion-color-dark);
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.pdf-download-link {
+  text-decoration: none;
+  width: 100%;
+}
+
+.modal-content {
+  padding: 16px;
+}
+
+/* Animation for modals */
+
+ion-modal::part(content) {
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Fade in animation for cards */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Hover effects */
+.diagnosis-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .diagnoses-container {
+    padding: 8px;
+  }
+
+  .card-header-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .card-header-content ion-badge {
+    margin-top: 8px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+}
+
+@media (min-width: 768px) {
+  ion-modal {
+    --width: 600px;
+    --height: 80%;
+    --border-radius: 20px;
+  }
+}

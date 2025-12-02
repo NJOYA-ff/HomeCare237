@@ -1,0 +1,925 @@
+// Consult.scss
+
+.consult-header {
+  ion-toolbar {
+    --background: #ffffff;
+    --border-width: 0;
+
+    .patient-header-info {
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+
+      .header-avatar-c {
+        width: 40px;
+        height: 40px;
+        margin-right: 12px;
+
+        img {
+          border: 2px solid var(--ion-color-primary);
+        }
+      }
+
+      .header-details {
+        flex: 1;
+
+        ion-title {
+          font-size: 16px;
+          font-weight: 600;
+          padding: 0;
+        }
+
+        ion-text {
+          font-size: 12px;
+
+          .online-status {
+            color: var(--ion-color-success);
+            font-weight: 500;
+          }
+
+          .last-seen {
+            color: var(--ion-color-medium);
+          }
+        }
+      }
+    }
+
+    .call-button {
+      --padding-start: 8px;
+      --padding-end: 8px;
+      margin: 0 4px;
+
+      ion-icon {
+        font-size: 20px;
+      }
+    }
+  }
+}
+
+.consult-content {
+  --padding-bottom: 80px;
+}
+
+// Patients List Styles
+.patients-list-c {
+  padding: 16px;
+  background: transparent;
+}
+
+.patient-card-c {
+  --background: #ffffff;
+  --border-radius: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+  ion-grid {
+    padding: 16px;
+  }
+}
+
+.patient-grid-c {
+  width: 100%;
+
+  .avatar-container-c {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 12px;
+
+    .patient-avatar {
+      width: 60px;
+      height: 60px;
+    }
+
+    .online-indicator {
+      position: absolute;
+      bottom: 2px;
+      right: 2px;
+      width: 14px;
+      height: 14px;
+
+      border-radius: 50%;
+
+      &.online {
+        background: var(--ion-color-success);
+      }
+
+      &.offline {
+        background: var(--ion-color-medium);
+      }
+    }
+  }
+
+  .patient-name-c {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--ion-color-dark);
+    margin-bottom: 4px;
+  }
+
+  .patient-condition-c {
+    font-size: 14px;
+    color: var(--ion-color-medium);
+    margin-bottom: 12px;
+  }
+
+  .patient-details-c {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+
+    ion-chip {
+      margin: 0;
+      height: 24px;
+      font-size: 12px;
+
+      &.age-chip {
+        --background: var(--ion-color-primary);
+      }
+    }
+  }
+
+  .patient-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .blood-type-text,
+    .last-consult-text {
+      display: flex;
+      align-items: center;
+      font-size: 12px;
+      color: var(--ion-color-medium);
+
+      ion-icon {
+        font-size: 14px;
+        margin-right: 4px;
+      }
+    }
+  }
+}
+
+// Medical Info Bar
+.medical-info-bar {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 16px;
+  color: white;
+
+  .medical-info-grid {
+    .medical-info-item {
+      font-size: 13px;
+      line-height: 1.4;
+
+      strong {
+        font-weight: 600;
+        margin-right: 4px;
+      }
+    }
+  }
+}
+
+// Doctor Actions
+.doctor-actions {
+  display: flex;
+  gap: 8px;
+  padding: 16px;
+  background: white;
+  border-bottom: 1px solid #e0e0e0;
+
+  .action-btn {
+    flex: 1;
+    --border-radius: 12px;
+    --padding-start: 8px;
+    --padding-end: 8px;
+    font-size: 12px;
+
+    ion-icon {
+      font-size: 16px;
+    }
+  }
+}
+
+// Chat Styles
+.chat-container {
+  padding: 16px;
+  min-height: calc(100vh - 400px);
+
+  .messages {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+}
+
+// Message Wrapper - FIXED ALIGNMENT
+.message-wrapper {
+  display: flex;
+  width: 100%;
+
+  &.doctor-wrapper {
+    justify-content: flex-end;
+  }
+
+  &.patient-wrapper {
+    justify-content: flex-start;
+  }
+}
+.messages {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .message {
+    max-width: 30%;
+    margin-bottom: 8px;
+    display: flex;
+    flex-direction: column;
+
+    .message-content {
+      padding: 8px 12px;
+      border-radius: 8px;
+      position: relative;
+
+      p {
+        margin: 0;
+        font-size: 14px;
+        line-height: 1.4;
+      }
+    }
+
+    .message-meta {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 4px;
+      margin-top: 4px;
+
+      .message-time {
+        font-size: 11px;
+        color: #667781;
+      }
+
+      .status-icon {
+        font-size: 16px;
+
+        &.read {
+          color: #28c2f6;
+        }
+
+        &.delivered,
+        &.sent {
+          color: #8696a0;
+        }
+      }
+    }
+
+    &.patient-message-d {
+      align-items: flex-start;
+
+      .message-content {
+        background: var(--ion-color-light);
+        border-top-left-radius: 0;
+      }
+    }
+
+    &.doctor-message-d {
+      align-items: flex-end;
+      margin-left: auto;
+
+      .message-content {
+        background: rgba(var(--ion-color-secondary-rgb), 0.3);
+        border-top-right-radius: 0;
+      }
+    }
+  }
+
+  .typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    background: transparent;
+    .typing-avatar {
+      width: 32px;
+      height: 32px;
+    }
+
+    .typing-bubble {
+      background: var(--ion-color-light);
+      padding: 12px;
+      border-radius: 18px;
+      border-top-left-radius: 4px;
+
+      .typing-dots {
+        display: flex;
+        gap: 3px;
+
+        span {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #8696a0;
+          animation: typingAnimation 1.4s infinite ease-in-out;
+
+          &:nth-child(1) {
+            animation-delay: 0s;
+          }
+
+          &:nth-child(2) {
+            animation-delay: 0.2s;
+          }
+
+          &:nth-child(3) {
+            animation-delay: 0.4s;
+          }
+        }
+      }
+    }
+  }
+
+  @keyframes typingAnimation {
+    0%,
+    60%,
+    100% {
+      transform: translateY(0);
+    }
+    30% {
+      transform: translateY(-5px);
+    }
+  }
+}
+
+// Attachment Styles
+.image-attachment,
+.document-attachment {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  ion-thumbnail {
+    width: 40px;
+    height: 40px;
+
+    img {
+      border-radius: 6px;
+    }
+  }
+
+  .attachment-details {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    ion-label {
+      font-size: 12px;
+      margin: 0;
+      color: inherit;
+    }
+  }
+}
+
+.audio-attachment {
+  .audio-player {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+
+    .play-pause-btn {
+      --padding-start: 4px;
+      --padding-end: 4px;
+      margin: 0;
+    }
+
+    .audio-progress {
+      flex: 1;
+
+      .audio-progress-bar {
+        --progress-background: rgba(255, 255, 255, 0.3);
+        --buffer-background: rgba(255, 255, 255, 0.1);
+        margin-bottom: 4px;
+      }
+
+      .audio-time {
+        display: flex;
+        justify-content: space-between;
+
+        span {
+          font-size: 11px;
+          color: rgba(255, 255, 255, 0.8);
+        }
+      }
+    }
+
+    .download-btn {
+      --padding-start: 4px;
+      --padding-end: 4px;
+      margin: 0;
+    }
+  }
+}
+
+// For patient message attachments (different background)
+.patient-message {
+  .image-attachment,
+  .document-attachment,
+  .audio-attachment .audio-player {
+    background: rgba(0, 0, 0, 0.05);
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.1);
+    }
+  }
+
+  .audio-attachment .audio-progress .audio-time span {
+    color: rgba(0, 0, 0, 0.6);
+  }
+}
+
+// Typing Indicator
+// .typing-indicator {
+//   display: flex;
+//   align-items: flex-end;
+//   gap: 8px;
+//   align-self: flex-start;
+
+//   .typing-avatar {
+//     width: 32px;
+//     height: 32px;
+//   }
+
+//   .typing-bubble {
+//     background: #f1f3f4;
+//     border-radius: 18px 18px 18px 4px;
+//     padding: 12px 16px;
+
+//     .typing-dots {
+//       display: flex;
+//       gap: 4px;
+
+//       span {
+//         width: 6px;
+//         height: 6px;
+//         background: var(--ion-color-medium);
+//         border-radius: 50%;
+//         animation: typing 1.4s infinite ease-in-out;
+
+//         &:nth-child(1) {
+//           animation-delay: -0.32s;
+//         }
+//         &:nth-child(2) {
+//           animation-delay: -0.16s;
+//         }
+//         &:nth-child(3) {
+//           animation-delay: 0s;
+//         }
+//       }
+//     }
+//   }
+// }
+
+@keyframes typing {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+// Message Input Container
+
+.attachments-preview {
+  margin-bottom: 12px;
+
+  .attachment-preview {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 8px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    ion-thumbnail {
+      width: 40px;
+      height: 40px;
+
+      img {
+        border-radius: 6px;
+      }
+    }
+
+    .document-icon,
+    .audio-icon {
+      font-size: 24px;
+      color: var(--ion-color-medium);
+    }
+
+    .attachment-info {
+      flex: 1;
+
+      ion-text {
+        font-size: 12px;
+        color: var(--ion-color-dark);
+      }
+
+      .upload-progress {
+        margin-top: 4px;
+        --progress-background: var(--ion-color-primary);
+      }
+    }
+
+    .remove-attachment-btn {
+      --padding-start: 4px;
+      --padding-end: 4px;
+      margin: 0;
+
+      ion-icon {
+        font-size: 16px;
+      }
+    }
+  }
+}
+
+.input-grid {
+  .input-row {
+    .attachment-col,
+    .send-col {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      .attachment-btn,
+      .record-btn,
+      .send-btn {
+        --padding-start: 8px;
+        --padding-end: 8px;
+        margin: 0;
+
+        ion-icon {
+          font-size: 20px;
+        }
+      }
+    }
+
+    .text-input-col {
+      ion-item {
+        --background: #f8f9fa;
+        --border-radius: 20px;
+        --inner-padding-end: 0;
+
+        .message-textarea {
+          font-size: 14px;
+          --padding-start: 12px;
+          --padding-end: 12px;
+          --padding-top: 8px;
+          --padding-bottom: 8px;
+        }
+      }
+    }
+  }
+}
+
+// Recording UI
+
+.recording-container {
+  background: var(--ion-color-light);
+  border-radius: 20px;
+  padding: 24px;
+  text-align: center;
+  min-width: 280px;
+
+  &.cancel-mode {
+    background: var(--ion-color-dark);
+    border: 2px solid var(--ion-color-danger);
+  }
+}
+
+.cancel-recording {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+
+  ion-icon {
+    font-size: 32px;
+  }
+
+  ion-text {
+    font-weight: 600;
+  }
+}
+
+.recording-visualization {
+  margin-bottom: 16px;
+
+  .dots-animation-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+
+    .moving-dots {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        animation: pulse 1.5s infinite ease-in-out;
+
+        @for $i from 1 through 5 {
+          &:nth-child(#{$i}) {
+            animation-delay: #{$i * 0.1}s;
+          }
+        }
+      }
+    }
+
+    .recording-time {
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--ion-color-primary);
+    }
+
+    .lock-btn {
+      --padding-start: 8px;
+      --padding-end: 8px;
+
+      ion-icon {
+        font-size: 20px;
+      }
+    }
+  }
+}
+
+.recording-instruction {
+  ion-text {
+    font-size: 14px;
+    color: var(--ion-color-medium);
+    font-weight: 500;
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+// Popover Styles
+.attachment-popover {
+  --width: 200px;
+
+  .attachment-content {
+    padding: 16px;
+
+    .attachment-item {
+      text-align: center;
+      margin-bottom: 8px;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      ion-card-content {
+        padding: 16px;
+
+        ion-icon {
+          margin-bottom: 8px;
+        }
+      }
+    }
+
+    ion-label {
+      display: block;
+      text-align: center;
+      font-size: 12px;
+      color: var(--ion-color-medium);
+      margin-top: 4px;
+    }
+  }
+}
+
+// Modal Styles
+.image-preview-modal,
+.document-preview-modal,
+.prescription-modal,
+.notes-modal {
+  --width: 100%;
+  --height: 100%;
+  --border-radius: 0;
+
+  .modal-close-btn {
+    --padding-start: 8px;
+    --padding-end: 8px;
+
+    ion-icon {
+      font-size: 20px;
+    }
+  }
+}
+
+.image-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  padding: 20px;
+
+  .preview-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 8px;
+  }
+}
+
+.document-container {
+  height: 100%;
+  padding: 20px;
+
+  .document-iframe {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  }
+}
+
+// Prescription and Notes Forms
+.prescription-form,
+.notes-form {
+  padding: 16px;
+
+  ion-item {
+    --background: #f8f9fa;
+    --border-radius: 8px;
+    --padding-start: 12px;
+    --padding-end: 12px;
+    margin-bottom: 16px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    ion-label[position="stacked"] {
+      font-weight: 500;
+      color: var(--ion-color-dark);
+      margin-bottom: 8px;
+    }
+
+    ion-textarea {
+      font-size: 14px;
+      --padding-start: 0;
+      --padding-end: 0;
+    }
+  }
+
+  .save-btn {
+    --border-radius: 12px;
+    margin-top: 24px;
+    font-weight: 600;
+  }
+}
+
+// Responsive Design
+@media (min-width: 768px) {
+  .patient-card-c {
+    margin-bottom: 16px;
+  }
+
+  .message {
+    max-width: 60%;
+  }
+
+  .image-preview-modal,
+  .document-preview-modal,
+  .prescription-modal,
+  .notes-modal {
+    --width: 600px;
+    --height: 80%;
+    --border-radius: 16px;
+  }
+}
+
+// Dark Mode Support
+@media (prefers-color-scheme: dark) {
+  .consult-page {
+    --background: #121212;
+  }
+
+  .consult-header ion-toolbar {
+    --background: #1e1e1e;
+  }
+
+  .patient-card-c {
+    --background: #1e1e1e;
+  }
+
+  .patient-searchbar {
+    --background: #2d2d2d;
+  }
+
+  .medical-info-bar {
+    background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+  }
+
+  .doctor-actions {
+    background: #1e1e1e;
+    border-bottom-color: #333;
+  }
+
+  .message-input-container1 {
+    background: #1e1e1e;
+    border-top-color: #333;
+  }
+
+  .patient-message .message-content {
+    background: #2d2d2d;
+    color: white;
+  }
+
+  .attachments-preview .attachment-preview {
+    background: #2d2d2d;
+  }
+
+  .input-grid .input-row .text-input-col ion-item {
+    --background: #2d2d2d;
+  }
+
+  .prescription-form,
+  .notes-form {
+    ion-item {
+      --background: #2d2d2d;
+    }
+  }
+}
+
+// Utility Classes
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-column {
+  flex-direction: column;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.gap-4 {
+  gap: 16px;
+}
+
+.mb-4 {
+  margin-bottom: 16px;
+}
+
+.mt-4 {
+  margin-top: 16px;
+}
+
+.p-4 {
+  padding: 16px;
+}

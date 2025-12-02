@@ -1,0 +1,366 @@
+/* Doc_diagnoses.scss */
+
+/* Patient Selection Section */
+.selected-patient {
+  text-align: center;
+
+  ion-avatar {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--ion-color-light);
+
+    ion-icon {
+      color: var(--ion-color-medium);
+      font-size: 2rem;
+    }
+  }
+
+  ion-label {
+    h2 {
+      font-weight: 600;
+      color: var(--ion-color-dark);
+      margin-bottom: 4px;
+    }
+
+    p {
+      color: var(--ion-color-medium);
+      margin: 2px 0;
+      font-size: 0.9rem;
+    }
+  }
+}
+
+.no-patient-selected {
+  text-align: center;
+  padding: 20px;
+
+  ion-icon {
+    color: var(--ion-color-medium);
+    margin-bottom: 15px;
+  }
+
+  p {
+    color: var(--ion-color-medium);
+    margin-bottom: 20px;
+  }
+}
+
+/* Form Sections */
+.form-section {
+  margin: 20px 0;
+  padding: 15px;
+  background-color: var(--ion-color-light);
+  border-radius: 8px;
+
+  h4 {
+    margin-top: 0;
+    color: var(--ion-color-dark);
+    font-weight: 600;
+  }
+}
+
+.results-list {
+  margin-top: 15px;
+
+  h5 {
+    color: var(--ion-color-dark);
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+
+  ion-item {
+    --background: var(--ion-color-light);
+    --border-radius: 6px;
+    margin-bottom: 8px;
+
+    ion-label {
+      font-size: 0.9rem;
+    }
+  }
+}
+
+/* Action Buttons */
+.action-buttons {
+  margin: 25px 0;
+
+  ion-button {
+    margin-bottom: 15px;
+  }
+}
+
+/* Preview Section */
+.preview-section {
+  margin-bottom: 25px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--ion-color-light-shade);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  h3 {
+    color: var(--ion-color-primary);
+    margin-bottom: 15px;
+    font-weight: 600;
+  }
+
+  p {
+    margin-bottom: 10px;
+    line-height: 1.5;
+
+    strong {
+      color: var(--ion-color-dark);
+    }
+  }
+}
+
+.preview-item {
+  background-color: var(--ion-color-light);
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+
+  p {
+    margin: 8px 0;
+  }
+}
+
+.empty-preview {
+  text-align: center;
+  padding: 40px 20px;
+
+  ion-icon {
+    color: var(--ion-color-medium);
+    margin-bottom: 15px;
+  }
+
+  p {
+    color: var(--ion-color-medium);
+    line-height: 1.5;
+  }
+}
+
+/* PDF Download Links */
+.pdf-download-link {
+  text-decoration: none;
+  display: block;
+  margin: 10px 0;
+
+  ion-button {
+    margin: 5px 0;
+  }
+}
+
+/* Current Items Section */
+.current-items {
+  margin-bottom: 20px;
+
+  h4 {
+    color: var(--ion-color-dark);
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+
+  ion-list.diagnoses-list {
+    background: transparent;
+
+    ion-item {
+      --background: var(--ion-color-light);
+      --border-radius: 6px;
+      margin-bottom: 8px;
+
+      ion-label {
+        h3 {
+          font-weight: 600;
+          font-size: 1rem;
+          margin-bottom: 4px;
+        }
+
+        p {
+          color: var(--ion-color-medium);
+          font-size: 0.9rem;
+          margin: 0;
+        }
+      }
+    }
+  }
+}
+
+/* Patient Modal */
+ion-modal.diagnoses-modal {
+  --width: 90%;
+  --max-width: 500px;
+  --height: 70%;
+  --border-radius: 12px;
+
+  ion-searchbar {
+    padding: 10px 16px;
+  }
+
+  .no-results {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--ion-color-medium);
+  }
+}
+
+ion-list.diagnoses-list {
+  ion-item {
+    --padding-start: 16px;
+    --padding-end: 16px;
+    --min-height: 80px;
+
+    ion-avatar {
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--ion-color-light);
+
+      ion-icon {
+        color: var(--ion-color-medium);
+        font-size: 1.8rem;
+      }
+    }
+
+    ion-label {
+      h2 {
+        font-weight: 600;
+        color: var(--ion-color-dark);
+        margin-bottom: 5px;
+      }
+
+      p {
+        color: var(--ion-color-medium);
+        margin: 2px 0;
+        font-size: 0.85rem;
+      }
+    }
+  }
+}
+
+/* Form Validation Styles */
+ion-item {
+  --highlight-color-valid: var(--ion-color-success);
+  --highlight-color-invalid: var(--ion-color-danger);
+  --highlight-color-focused: var(--ion-color-primary);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .selected-patient {
+    ion-item {
+      --padding-start: 0;
+      --padding-end: 0;
+    }
+  }
+
+  .form-section {
+    padding: 10px;
+  }
+
+  .preview-section {
+    h3 {
+      font-size: 1.2rem;
+    }
+  }
+}
+
+/* Custom Badge Styles */
+.status-badge {
+  font-size: 0.8rem;
+  padding: 4px 8px;
+  border-radius: 12px;
+
+  &.status-active {
+    background: var(--ion-color-success-tint);
+    color: var(--ion-color-success-contrast);
+  }
+
+  &.status-pending {
+    background: var(--ion-color-warning-tint);
+    color: var(--ion-color-warning-contrast);
+  }
+
+  &.status-completed {
+    background: var(--ion-color-success-tint);
+    color: var(--ion-color-success-contrast);
+  }
+
+  &.status-cancelled {
+    background: var(--ion-color-danger-tint);
+    color: var(--ion-color-danger-contrast);
+  }
+}
+
+// /* Card Header Styles */
+ion-card-header.diagnoses {
+  background: var(--ion-color-light);
+  padding: 16px;
+
+  ion-card-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--ion-color-dark);
+  }
+}
+
+ion-card-content.diagnoses {
+  padding: 16px;
+}
+
+// /* Button Styles */
+ion-button.diagnoses {
+  --border-radius: 8px;
+  font-weight: 500;
+
+  &[expand="block"] {
+    margin: 10px 0;
+  }
+
+  ion-icon {
+    margin-right: 8px;
+  }
+}
+
+/* Section Headers */
+.section-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+
+  ion-icon {
+    margin-right: 10px;
+    color: var(--ion-color-primary);
+  }
+
+  h2 {
+    margin: 0;
+    color: var(--ion-color-dark);
+    font-weight: 600;
+  }
+}
+
+/* Loading States */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+
+  ion-spinner {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+/* Print Styles for PDF Preview */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}

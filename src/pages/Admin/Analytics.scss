@@ -1,0 +1,104 @@
+/* Analytics.css */
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 50vh;
+}
+
+.loading-container p {
+  margin-top: 16px;
+  color: var(--ion-color-medium);
+}
+
+.summary-card {
+  text-align: center;
+  transition: transform 0.3s ease;
+}
+
+.summary-card:hover {
+  transform: translateY(-5px);
+}
+
+.summary-card ion-icon {
+  font-size: 24px;
+  margin-right: 8px;
+  color: var(--ion-color-primary);
+}
+
+.summary-card h2 {
+  font-size: 2rem;
+  margin: 8px 0;
+  color: var(--ion-color-dark);
+}
+
+.summary-card p {
+  margin: 0;
+  color: var(--ion-color-medium);
+  font-size: 0.9rem;
+}
+
+.chart-container {
+  margin: 0 auto;
+  width: 100%;
+}
+
+.region-distribution {
+  padding: 16px 0;
+}
+
+.region-item {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.region-item ion-chip {
+  min-width: 180px;
+}
+
+.distribution-bar {
+  flex-grow: 1;
+  height: 24px;
+  background-color: #f0f0f0;
+  border-radius: 12px;
+  margin-left: 16px;
+  overflow: hidden;
+}
+
+.distribution-fill {
+  height: 100%;
+  background-color: var(--ion-color-primary);
+  border-radius: 12px;
+  transition: width 1s ease-in-out;
+}
+
+/* Animation for charts */
+.recharts-surface {
+  animation: fadeIn 1s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .region-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .distribution-bar {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 8px;
+  }
+}

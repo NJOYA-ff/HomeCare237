@@ -1,0 +1,210 @@
+/* Patients.css */
+
+.patient-card {
+  margin: 16px;
+  border-radius: 12px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+}
+
+.patient-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.patient-header {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  position: relative;
+}
+
+.patient-avatar {
+  width: 60px;
+  height: 60px;
+  margin-right: 16px;
+}
+
+.patient-info-p h2 {
+  margin: 0;
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--ion-color-dark);
+}
+
+.patient-info-p p {
+  margin: 4px 0 0;
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.patient-details {
+  margin-bottom: 12px;
+}
+
+.detail-item-p {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  color: var(--ion-color-dark);
+}
+
+.detail-item-p ion-icon {
+  margin-right: 8px;
+  color: #3498db;
+}
+
+.conditions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.no-results {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  color: #7f8c8d;
+}
+
+.no-results ion-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+/* Patient Detail Modal */
+.patient-detail .patient-profile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  text-align: center;
+  color: var(--ion-color-dark);
+}
+
+.patient-detail .profile-avatar {
+  width: 100px;
+  height: 100px;
+  margin-bottom: 16px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+}
+
+.patient-detail .patient-profile h1 {
+  margin: 8px 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.patient-detail .patient-profile p {
+  margin: 4px 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.patient-detail .info-card {
+  margin: 16px;
+  border-radius: 12px;
+}
+
+.patient-detail .info-item {
+  --padding-start: 0;
+  --inner-padding-end: 0;
+  margin-bottom: 12px;
+}
+
+.patient-detail .info-item:last-child {
+  margin-bottom: 0;
+}
+
+.patient-detail .info-item ion-icon {
+  color: #3498db;
+  margin-right: 12px;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.patient-card {
+  animation: fadeIn 0.5s ease;
+}
+
+.patient-card:nth-child(1) {
+  animation-delay: 0.1s;
+}
+.patient-card:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.patient-card:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.patient-card:nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+/* Skeleton loading animation */
+ion-skeleton-text {
+  --background: rgba(0, 0, 0, 0.07);
+  --background-rgb: 0, 0, 0;
+  border-radius: 4px;
+}
+
+/* Responsive adjustments */
+@media (min-width: 768px) {
+  .patient-card {
+    margin: 16px auto;
+    max-width: 600px;
+  }
+
+  .patient-detail .patient-profile {
+    padding: 40px 20px;
+  }
+
+  .patient-detail .profile-avatar {
+    width: 120px;
+    height: 120px;
+  }
+
+  .patient-detail .patient-profile h1 {
+    font-size: 1.8rem;
+  }
+}
+
+ion-accordion ion-item[slot="header"] {
+  --border-radius: 8px;
+}
+
+/* Fix for segment value TypeScript error */
+ion-segment-button {
+  --indicator-color: #3498db;
+  --color: #7f8c8d;
+  // --color-checked: white;
+}
+
+/* Modal specific styles */
+ion-modal {
+  --width: 100%;
+  --height: 100%;
+  --border-radius: 0;
+}
+
+@media (min-width: 768px) {
+  ion-modal {
+    --width: 600px;
+    --height: 80%;
+    --border-radius: 12px;
+  }
+}
