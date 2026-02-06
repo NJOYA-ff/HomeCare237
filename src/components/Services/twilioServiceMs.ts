@@ -36,11 +36,11 @@ const readEnv = (key: string): string => {
 // Environment variables for server mode (Twilio credentials)
 // Prefer Twilio API Key + Secret (safer for server-side usage). Fall back to
 // AUTH token if API Key is not provided to maintain compatibility.
-const accountSid = readEnv("SKe17a5afd5750b6dcba6f89f399720959");
-const apiKey = readEnv("WQjINHk0xljknnNm2IPkWsEKyCr7Tadi");
+const accountSid = readEnv("TWILIO_ACCOUNT_SID");
+const apiKey = readEnv("TWILIO_API_KEY");
 const apiSecret = readEnv("TWILIO_API_SECRET");
 const authToken = readEnv("TWILIO_AUTH_TOKEN");
-const twilioPhoneNumber = readEnv("+17652663590");
+const twilioPhoneNumber = readEnv("TWILIO_PHONE_NUMBER");
 
 let nodeClient: any = null;
 let twilioInitialized = false;
