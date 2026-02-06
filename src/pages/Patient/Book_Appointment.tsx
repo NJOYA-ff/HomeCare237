@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
-import { db, auth, storage } from "../../firebaseconfig";
+import React, { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
+import { db, auth } from "../../firebaseconfig";
 import {
   collection,
   addDoc,
   updateDoc,
-  deleteDoc,
   doc,
   getDocs,
   query,
@@ -14,6 +14,8 @@ import {
   Timestamp,
   getDoc,
 } from "firebase/firestore";
+import twilioMs from "../../components/Services/twilioServiceMs";
+import { useNotifications } from "../../context/NotificationContext";
 import {
   IonPage,
   IonHeader,
@@ -39,19 +41,13 @@ import {
   IonRow,
   IonCol,
   IonAvatar,
-  IonBadge,
   IonSearchbar,
   IonChip,
   IonAlert,
   IonLoading,
   IonSegment,
   IonSegmentButton,
-  IonList,
-  IonNote,
-  IonAccordion,
-  IonAccordionGroup,
   IonInput,
-  IonFooter,
   IonTextarea,
   IonButtons,
   IonBackButton,
@@ -62,20 +58,11 @@ import {
   time,
   people,
   star,
-  call,
-  chatbubble,
   closeCircle,
-  checkmarkCircle,
   medical,
-  wallet,
   informationCircle,
-  map,
-  filter,
-  search,
-  navigate,
   timeOutline,
   cashOutline,
-  personCircle,
   arrowBack,
   checkmark,
   createOutline,
@@ -84,9 +71,23 @@ import {
   bodyOutline,
   fitnessOutline,
   bandageOutline,
-  person,
 } from "ionicons/icons";
 import brainOutline from "@material-design-icons/svg/two-tone/healing.svg";
+import {
+  FaStethoscope,
+  FaHeartbeat,
+  FaChild,
+  FaUserMd,
+  FaVenus,
+  FaBrain,
+  FaTooth,
+  FaEye,
+  FaAmbulance,
+  FaHospital,
+  FaPills,
+  FaSyringe,
+  FaBone,
+} from "react-icons/fa";
 import "./Appointment.scss";
 
 // Types
@@ -106,6 +107,7 @@ interface Doctor {
   isAvailable: boolean;
   experience: number;
   email?: string;
+  contact?: string; // Firestore stores doctor's phone under `contact`
   phone?: string;
 }
 
@@ -119,7 +121,7 @@ interface Appointment {
   patientEmail: string;
   date: string;
   time: string;
-  status: "scheduled" | "completed" | "cancelled" | "pending";
+  status: "pending" | "accepted" | "rejected" | "completed" | "cancelled";
   type: "home-visit" | "telemedicine" | "clinic";
   reason: string;
   notes: string;
@@ -168,48 +170,40 @@ const medicalSpecialties = [
 ];
 
 // Specialty icons mapping
-const specialtyIcons: { [key: string]: string } = {
-  "General Practitioner": medical,
-  Cardiologist: heartOutline,
-  Pediatrician: people,
-  Dermatologist: bodyOutline,
-  Gynecologist: medical,
-  "Orthopedic Surgeon": fitnessOutline,
-  Neurologist: brainOutline,
-  Psychiatrist: brainOutline,
-  Dentist: medical,
-  Ophthalmologist: eyeOutline,
-  "ENT Specialist": medical,
-  Urologist: medical,
-  Endocrinologist: medical,
-  Gastroenterologist: medical,
-  Oncologist: medical,
-  Rheumatologist: medical,
-  Pulmonologist: medical,
-  Nephrologist: medical,
-  Allergist: bandageOutline,
-  Physiotherapist: fitnessOutline,
+const specialtyIcons: { [key: string]: React.ReactNode } = {
+  "General Practitioner": <FaStethoscope />,
+  Cardiologist: <FaHeartbeat />,
+  Pediatrician: <FaChild />,
+  Dermatologist: <FaUserMd />,
+  Gynecologist: <FaVenus />,
+  "Orthopedic Surgeon": <FaBone />,
+  Neurologist: <FaBrain />,
+  Psychiatrist: <FaBrain />,
+  Dentist: <FaTooth />,
+  Ophthalmologist: <FaEye />,
+  "ENT Specialist": <FaHospital />,
+  Urologist: <FaHospital />,
+  Endocrinologist: <FaPills />,
+  Gastroenterologist: <FaPills />,
+  Oncologist: <FaHospital />,
+  Rheumatologist: <FaBone />,
+  Pulmonologist: <FaAmbulance />,
+  Nephrologist: <FaHospital />,
+  Allergist: <FaSyringe />,
+  Physiotherapist: <FaStethoscope />,
 };
 
-// Default available slots in case they're not defined
-const defaultAvailableSlots = [
-  "09:00",
-  "10:00",
-  "11:00",
-  "14:00",
-  "15:00",
-  "16:00",
-];
+// No global default slots: use per-doctor availableSlots only
 
 const Book_Appointment: React.FC = () => {
   const [activeSegment, setActiveSegment] = useState<"book" | "myAppointments">(
-    "book"
+    "book",
   );
   const [selectedRegion, setSelectedRegion] = useState<string>("");
   const [selectedSpecialty, setSelectedSpecialty] = useState<string>("");
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString()
+    new Date().toISOString(),
   );
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [appointmentType, setAppointmentType] = useState<
@@ -221,6 +215,7 @@ const Book_Appointment: React.FC = () => {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [filteredDoctors, setFilteredDoctors] = useState<Doctor[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [takenSlots, setTakenSlots] = useState<string[]>([]);
   const [showConfirmation, setShowConfirmation] = useState<boolean>(false);
   const [showCancelAlert, setShowCancelAlert] = useState<boolean>(false);
   const [showUpdateModal, setShowUpdateModal] = useState<boolean>(false);
@@ -238,6 +233,8 @@ const Book_Appointment: React.FC = () => {
     (() => void) | null
   >(null);
   const [doctorsLoaded, setDoctorsLoaded] = useState<boolean>(false);
+  const { sendLocalNotification } = useNotifications();
+  const prevStatusesRef = useRef<Record<string, string>>({});
 
   // Get current user
   useEffect(() => {
@@ -301,14 +298,15 @@ const Book_Appointment: React.FC = () => {
             address: doctorData.address || "Unknown Address",
             consultationFee: doctorData.consultationFee || 5000,
             languages: doctorData.languages || ["English", "French"],
-            availableSlots: doctorData.availableSlots || defaultAvailableSlots,
+            availableSlots: doctorData.availableSlots || [],
             isAvailable:
               doctorData.isAvailable !== undefined
                 ? doctorData.isAvailable
                 : true,
             experience: doctorData.experience || 5,
             email: doctorData.email,
-            phone: doctorData.phone,
+            contact: doctorData.contact,
+            phone: doctorData.phone || doctorData.contact,
           } as Doctor);
         }
       });
@@ -325,6 +323,65 @@ const Book_Appointment: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  // Watch appointments for status changes (doctor actions like accept/reject/complete)
+  useEffect(() => {
+    // Populate prev map if empty on first real load
+    if (!appointments) return;
+
+    const prev = { ...prevStatusesRef.current };
+
+    // If prev is empty, initialize it without firing notifications
+    if (Object.keys(prev).length === 0) {
+      const initMap: Record<string, string> = {};
+      appointments.forEach((a) => (initMap[a.id] = a.status));
+      prevStatusesRef.current = initMap;
+      return;
+    }
+
+    appointments.forEach((appointment) => {
+      const prevStatus = prev[appointment.id];
+      const newStatus = appointment.status;
+
+      if (prevStatus && prevStatus !== newStatus) {
+        // Status changed — notify patient depending on new status
+        let title = "Appointment Update";
+        let body = `Your appointment with Dr. ${appointment.doctorName} is now ${newStatus}.`;
+
+        if (newStatus === "accepted") {
+          title = "Appointment Accepted";
+          body = `Dr. ${
+            appointment.doctorName
+          } has accepted your appointment for ${formatDate(
+            appointment.date,
+          )} at ${formatTime(appointment.time)}.`;
+        } else if (newStatus === "rejected") {
+          title = "Appointment Rejected";
+          body = `Dr. ${appointment.doctorName} has rejected your appointment request.`;
+        } else if (newStatus === "completed") {
+          title = "Appointment Completed";
+          body = `Your appointment with Dr. ${appointment.doctorName} has been completed.`;
+        } else if (newStatus === "cancelled") {
+          title = "Appointment Cancelled";
+          body = `Your appointment with Dr. ${appointment.doctorName} has been cancelled.`;
+        }
+
+        sendLocalNotification(title, body, {
+          appointmentId: appointment.id,
+          timestamp: Date.now(),
+          previousStatus: prevStatus,
+          newStatus,
+        }).catch((e) =>
+          console.warn("Failed to send status-change notification:", e),
+        );
+      }
+    });
+
+    // Update prevStatusesRef
+    const newMap: Record<string, string> = {};
+    appointments.forEach((a) => (newMap[a.id] = a.status));
+    prevStatusesRef.current = newMap;
+  }, [appointments, sendLocalNotification]);
 
   // Get doctor by ID - Enhanced to fetch from Firebase if not in local state
   const getDoctorById = async (id: string): Promise<Doctor | undefined> => {
@@ -353,14 +410,15 @@ const Book_Appointment: React.FC = () => {
           address: doctorData.address || "Unknown Address",
           consultationFee: doctorData.consultationFee || 5000,
           languages: doctorData.languages || ["English", "French"],
-          availableSlots: doctorData.availableSlots || defaultAvailableSlots,
+          availableSlots: doctorData.availableSlots || [],
           isAvailable:
             doctorData.isAvailable !== undefined
               ? doctorData.isAvailable
               : true,
           experience: doctorData.experience || 5,
           email: doctorData.email,
-          phone: doctorData.phone,
+          contact: doctorData.contact,
+          phone: doctorData.phone || doctorData.contact,
         };
 
         // Add to local doctors state for future use - FIXED: Prevent duplicates
@@ -381,6 +439,43 @@ const Book_Appointment: React.FC = () => {
     return undefined;
   };
 
+  // Load taken slots for selected doctor on a selected date
+  useEffect(() => {
+    const loadTakenSlots = async () => {
+      if (!selectedDoctor || !selectedDate) {
+        setTakenSlots([]);
+        return;
+      }
+
+      try {
+        const q = query(
+          collection(db, "appointments"),
+          where("doctorId", "==", selectedDoctor.id),
+        );
+        const snap = await getDocs(q);
+        const taken: string[] = [];
+        snap.forEach((doc) => {
+          const data = doc.data() as any;
+          if (!data) return;
+          if (data.status === "cancelled") return;
+          const appDate = data.date?.toDate ? data.date.toDate() : null;
+          if (!appDate) return;
+          if (
+            appDate.toDateString() === new Date(selectedDate).toDateString()
+          ) {
+            if (data.time) taken.push(data.time);
+          }
+        });
+        setTakenSlots(taken);
+      } catch (e) {
+        console.warn("Failed to load taken slots:", e);
+        setTakenSlots([]);
+      }
+    };
+
+    loadTakenSlots();
+  }, [selectedDoctor, selectedDate]);
+
   // Load user appointments from Firebase with doctor data - REAL TIME
   const loadUserAppointments = async (userId: string) => {
     try {
@@ -392,7 +487,7 @@ const Book_Appointment: React.FC = () => {
       const appointmentsQuery = query(
         collection(db, "appointments"),
         where("patientId", "==", userId),
-        orderBy("createdAt", "desc")
+        orderBy("createdAt", "desc"),
       );
 
       const unsubscribe = onSnapshot(
@@ -436,13 +531,13 @@ const Book_Appointment: React.FC = () => {
 
           console.log(
             "Real-time update: Appointments loaded with doctor data",
-            appointmentsList.length
+            appointmentsList.length,
           );
           setAppointments(appointmentsList);
         },
         (error) => {
           console.error("Error in real-time appointments listener:", error);
-        }
+        },
       );
 
       setUnsubscribeAppointments(() => unsubscribe);
@@ -482,7 +577,102 @@ const Book_Appointment: React.FC = () => {
 
       console.log("Booking appointment:", newAppointment);
 
-      await addDoc(collection(db, "appointments"), newAppointment);
+      // Double-check slot availability (prevent race conditions)
+      try {
+        const checkQ = query(
+          collection(db, "appointments"),
+          where("doctorId", "==", selectedDoctor.id),
+          where("time", "==", selectedTime),
+        );
+        const checkSnap = await getDocs(checkQ);
+        let conflict = false;
+        checkSnap.forEach((d) => {
+          const data = d.data() as any;
+          if (!data) return;
+          if (data.status === "cancelled") return;
+          const appDate = data.date?.toDate ? data.date.toDate() : null;
+          if (!appDate) return;
+          if (
+            appDate.toDateString() === new Date(selectedDate).toDateString()
+          ) {
+            conflict = true;
+          }
+        });
+        if (conflict) {
+          alert(
+            "Selected slot is no longer available. Please choose another slot.",
+          );
+          setIsLoading(false);
+          return;
+        }
+      } catch (e) {
+        console.warn("Error checking slot availability:", e);
+      }
+
+      // Create appointment and capture the document reference to get ID
+      const docRef = await addDoc(
+        collection(db, "appointments"),
+        newAppointment,
+      );
+
+      // Send SMS notification to the doctor (and optionally to patient)
+      try {
+        // doctor's phone is stored under `contact` in Firestore; fall back to `phone` if present
+        const doctorPhone = selectedDoctor.contact;
+        console.log(doctorPhone);
+        // Helper to format patient display name
+        const patientDisplay =
+          currentUser.displayName || currentUser.email || "A patient";
+
+        const appointmentDataForSMS = {
+          id: docRef.id,
+          doctorName: selectedDoctor.name,
+          date: selectedDate,
+          time: selectedTime,
+        };
+
+        if (doctorPhone) {
+          await twilioMs.sendSMS({
+            to: doctorPhone,
+            body: `New appointment request from ${patientDisplay} for ${formatDate(
+              appointmentDataForSMS.date,
+            )} at ${formatTime(appointmentDataForSMS.time)}. Appointment ID: ${
+              appointmentDataForSMS.id
+            }`,
+            appointmentId: appointmentDataForSMS.id,
+            doctorName: appointmentDataForSMS.doctorName,
+            appointmentDate: appointmentDataForSMS.date,
+            appointmentTime: appointmentDataForSMS.time,
+          });
+        } else {
+          console.warn("Doctor contact/phone not available, skipping SMS");
+        }
+
+        // Send confirmation SMS to patient if phone exists in patients collection
+        try {
+          const patientDoc = await getDoc(doc(db, "patients", currentUser.uid));
+          const patientPhone = patientDoc.exists()
+            ? (patientDoc.data() as any).phone
+            : null;
+          if (patientPhone) {
+            await twilioMs.sendSMS({
+              to: patientPhone,
+              body: `Your appointment request with Dr. ${
+                selectedDoctor.name
+              } on ${formatDate(appointmentDataForSMS.date)} at ${formatTime(
+                appointmentDataForSMS.time,
+              )} has been received and is pending confirmation. Appointment ID: ${
+                appointmentDataForSMS.id
+              }`,
+              appointmentId: appointmentDataForSMS.id,
+            });
+          }
+        } catch (err) {
+          console.warn("Failed to send patient SMS:", err);
+        }
+      } catch (err) {
+        console.error("Error sending appointment SMS:", err);
+      }
 
       // The real-time listener will automatically update the appointments list
       setShowConfirmation(true);
@@ -491,6 +681,23 @@ const Book_Appointment: React.FC = () => {
 
       // Force switch to appointments tab to show the new appointment
       setActiveSegment("myAppointments");
+      // Notify patient locally that the appointment was sent
+      try {
+        await sendLocalNotification(
+          "Appointment Sent",
+          `Your appointment request with Dr. ${
+            selectedDoctor.name
+          } on ${formatDate(selectedDate)} at ${formatTime(
+            selectedTime,
+          )} has been sent and is pending.`,
+          { appointmentId: docRef.id, timestamp: Date.now(), read: false },
+        );
+      } catch (e) {
+        console.warn(
+          "Failed to send local notification for appointment sent:",
+          e,
+        );
+      }
     } catch (error) {
       console.error("Error booking appointment:", error);
     } finally {
@@ -522,6 +729,21 @@ const Book_Appointment: React.FC = () => {
       setAppointmentToUpdate(null);
       setViewMode("list");
       resetSelection();
+      // Notify patient locally that the appointment was updated
+      try {
+        await sendLocalNotification(
+          "Appointment Updated",
+          `Your appointment has been updated to ${formatDate(
+            selectedDate,
+          )} at ${formatTime(selectedTime)}.`,
+          { timestamp: Date.now(), read: false },
+        );
+      } catch (e) {
+        console.warn(
+          "Failed to send local notification for appointment update:",
+          e,
+        );
+      }
     } catch (error) {
       console.error("Error updating appointment:", error);
     } finally {
@@ -548,6 +770,23 @@ const Book_Appointment: React.FC = () => {
       });
 
       setShowCancelAlert(false);
+      // Notify patient locally that the appointment was cancelled
+      try {
+        await sendLocalNotification(
+          "Appointment Cancelled",
+          `Your appointment (ID: ${appointmentToCancel}) has been cancelled.`,
+          {
+            appointmentId: appointmentToCancel,
+            timestamp: Date.now(),
+            read: false,
+          },
+        );
+      } catch (e) {
+        console.warn(
+          "Failed to send local notification for appointment cancellation:",
+          e,
+        );
+      }
     } catch (error) {
       console.error("Error cancelling appointment:", error);
     } finally {
@@ -555,18 +794,11 @@ const Book_Appointment: React.FC = () => {
     }
   };
 
-  const handleCompleteAppointment = async (appointmentId: string) => {
-    try {
-      const appointmentRef = doc(db, "appointments", appointmentId);
-
-      await updateDoc(appointmentRef, {
-        status: "completed",
-        updatedAt: Timestamp.now(),
-      });
-    } catch (error) {
-      console.error("Error completing appointment:", error);
-    }
-  };
+  // Removed the imperative handleCompleteAppointment function in favor of
+  // a reactive useEffect below that observes appointment status changes and
+  // sends notifications when an appointment becomes accepted, rejected, or
+  // completed. This keeps notification logic centralized and reactive to
+  // real-time Firestore updates.
 
   const handleEditAppointment = async (appointment: Appointment) => {
     const doctor = await getDoctorById(appointment.doctorId);
@@ -592,20 +824,22 @@ const Book_Appointment: React.FC = () => {
 
   // Safe function to get available slots
   const getAvailableSlots = (doctor: Doctor | null): string[] => {
-    if (!doctor) return defaultAvailableSlots;
-    return doctor.availableSlots || defaultAvailableSlots;
+    if (!doctor) return [];
+    return doctor.availableSlots || [];
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "scheduled":
-        return "primary";
+      case "accepted":
+        return "success";
       case "completed":
         return "success";
       case "cancelled":
         return "danger";
       case "pending":
         return "warning";
+      case "rejected":
+        return "danger";
       default:
         return "medium";
     }
@@ -613,14 +847,16 @@ const Book_Appointment: React.FC = () => {
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case "scheduled":
-        return "Scheduled";
+      case "accepted":
+        return "Accepted";
       case "completed":
         return "Completed";
       case "cancelled":
         return "Cancelled";
       case "pending":
         return "Pending";
+      case "rejected":
+        return "Rejected";
       default:
         return status;
     }
@@ -680,8 +916,8 @@ const Book_Appointment: React.FC = () => {
     setSelectedAppointment(null);
   };
 
-  const getSpecialtyIcon = (specialty: string) => {
-    return specialtyIcons[specialty] || medical;
+  const getSpecialtyIcon = (specialty: string): React.ReactNode => {
+    return specialtyIcons[specialty] || <IonIcon icon={medical} />;
   };
 
   // Initialize with some sample doctors if collection is empty - FIXED: Prevent duplicate initialization
@@ -691,7 +927,7 @@ const Book_Appointment: React.FC = () => {
       const snapshot = await getDocs(doctorsCollection);
 
       console.log(
-        "Doctors collection already has data, skipping initialization"
+        "Doctors collection already has data, skipping initialization",
       );
       loadDoctors();
     } catch (error) {
@@ -704,9 +940,94 @@ const Book_Appointment: React.FC = () => {
     initializeSampleDoctors();
   }, []); // Empty dependency array ensures this runs only once
 
+  // If a doctorId is provided in the URL query string, preselect that doctor
+  const routerLocation = useLocation();
+  useEffect(() => {
+    const params = new URLSearchParams(routerLocation.search);
+    const appointmentId = params.get("appointmentId");
+    const doctorId = params.get("doctorId");
+
+    // If appointmentId provided, load that appointment and show its details
+    if (appointmentId) {
+      (async () => {
+        try {
+          // Ensure doctors loaded so getDoctorById can use local cache
+          if (!doctorsLoaded) await loadDoctors();
+
+          const appointmentRef = doc(db, "appointments", appointmentId);
+          const appointmentSnap = await getDoc(appointmentRef);
+          if (appointmentSnap.exists()) {
+            const data = appointmentSnap.data() as any;
+            const appointment: Appointment = {
+              id: appointmentSnap.id,
+              doctorId: data.doctorId,
+              doctorName: data.doctorName || "Unknown Doctor",
+              doctorSpecialization: data.doctorSpecialization || "",
+              patientId: data.patientId,
+              patientName: data.patientName || "Patient",
+              patientEmail: data.patientEmail || "",
+              date: data.date?.toDate
+                ? data.date.toDate().toISOString()
+                : data.date,
+              time: data.time || "",
+              status: data.status || "pending",
+              type: data.type || "clinic",
+              reason: data.reason || "",
+              notes: data.notes || "",
+              createdAt: data.createdAt?.toDate?.() || data.createdAt,
+              updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
+              consultationFee: data.consultationFee || 0,
+            } as Appointment;
+
+            // Try to load doctor info
+            const doctorObj = await getDoctorById(appointment.doctorId);
+            if (doctorObj) {
+              appointment.doctor = doctorObj;
+              setSelectedDoctor(doctorObj);
+            }
+
+            setSelectedAppointment(appointment);
+            setViewMode("viewAppointment");
+            setActiveSegment("myAppointments");
+          } else {
+            console.warn("Appointment not found for id:", appointmentId);
+          }
+        } catch (e) {
+          console.error("Failed to load appointment from URL:", e);
+        }
+      })();
+      return; // appointmentId takes precedence over doctorId
+    }
+
+    if (doctorId) {
+      // load doctors list if not loaded yet, then fetch specific doctor
+      (async () => {
+        try {
+          if (!doctorsLoaded) {
+            await loadDoctors();
+          }
+          const docObj = await getDoctorById(doctorId);
+          if (docObj) {
+            setSelectedDoctor(docObj);
+            // Switch to booking UI for that doctor
+            setActiveSegment("book");
+            setViewMode("detail");
+            // Optionally prefill date to today
+            setSelectedDate(new Date().toISOString());
+          } else {
+            console.warn("Doctor not found for doctorId:", doctorId);
+          }
+        } catch (e) {
+          console.error("Failed to preselect doctor from URL:", e);
+        }
+      })();
+    }
+    // we only want to react when the routerLocation.search changes
+  }, [routerLocation.search]);
+
   // Filter doctors based on region, specialty and search query - FIXED: Use proper dependencies
   useEffect(() => {
-    let result = doctors;
+    let result = doctors.slice();
 
     if (selectedRegion) {
       result = result.filter((doctor) => doctor.region === selectedRegion);
@@ -714,27 +1035,27 @@ const Book_Appointment: React.FC = () => {
 
     if (selectedSpecialty) {
       result = result.filter(
-        (doctor) => doctor.specialization === selectedSpecialty
+        (doctor) => doctor.specialization === selectedSpecialty,
       );
     }
 
     if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(
-        (doctor) =>
-          doctor.name.toLowerCase().includes(query) ||
-          doctor.specialization.toLowerCase().includes(query) ||
-          doctor.city.toLowerCase().includes(query)
-      );
+      const q = (searchQuery || "").toLowerCase();
+      result = result.filter((doctor) => {
+        const name = (doctor.name || "").toLowerCase();
+        const spec = (doctor.specialization || "").toLowerCase();
+        const city = (doctor.city || "").toLowerCase();
+        return name.includes(q) || spec.includes(q) || city.includes(q);
+      });
     }
 
-    // Remove duplicates by ID
-    const uniqueDoctors = result.filter(
-      (doctor, index, self) =>
-        index === self.findIndex((d) => d.id === doctor.id)
-    );
+    // Remove duplicates by ID (stable)
+    const uniqueMap = new Map<string, Doctor>();
+    result.forEach((d) => {
+      if (!uniqueMap.has(d.id)) uniqueMap.set(d.id, d);
+    });
 
-    setFilteredDoctors(uniqueDoctors);
+    setFilteredDoctors(Array.from(uniqueMap.values()));
   }, [selectedRegion, selectedSpecialty, searchQuery, doctors]);
 
   return (
@@ -875,11 +1196,13 @@ const Book_Appointment: React.FC = () => {
                             }
                             onClick={() =>
                               setSelectedSpecialty(
-                                selectedSpecialty === specialty ? "" : specialty
+                                selectedSpecialty === specialty
+                                  ? ""
+                                  : specialty,
                               )
                             }
                           >
-                            <IonIcon icon={getSpecialtyIcon(specialty)} />
+                            {getSpecialtyIcon(specialty)}
                             <IonLabel>{specialty}</IonLabel>
                           </IonChip>
                         ))}
@@ -939,11 +1262,9 @@ const Book_Appointment: React.FC = () => {
                                     </IonText>
                                     <IonText color="medium">
                                       <p className="doctor-specialty">
-                                        <IonIcon
-                                          icon={getSpecialtyIcon(
-                                            doctor.specialization
-                                          )}
-                                        />
+                                        {getSpecialtyIcon(
+                                          doctor.specialization,
+                                        )}
                                         {doctor.specialization}
                                       </p>
                                     </IonText>
@@ -1052,11 +1373,9 @@ const Book_Appointment: React.FC = () => {
                                   </IonText>
                                   <IonText color="medium">
                                     <p className="doctor-specialty">
-                                      <IonIcon
-                                        icon={getSpecialtyIcon(
-                                          appointment.doctorSpecialization
-                                        )}
-                                      />
+                                      {getSpecialtyIcon(
+                                        appointment.doctorSpecialization,
+                                      )}
                                       {appointment.doctorSpecialization}
                                     </p>
                                   </IonText>
@@ -1129,7 +1448,7 @@ const Book_Appointment: React.FC = () => {
                                   View Details
                                 </IonButton>
 
-                                {appointment.status === "scheduled" && (
+                                {appointment.status === "accepted" && (
                                   <>
                                     {/* <IonButton
                                       fill="outline"
@@ -1213,11 +1532,9 @@ const Book_Appointment: React.FC = () => {
                         <div className="doctor-details">
                           <h4>{selectedAppointment.doctor.name}</h4>
                           <p>
-                            <IonIcon
-                              icon={getSpecialtyIcon(
-                                selectedAppointment.doctor.specialization
-                              )}
-                            />
+                            {getSpecialtyIcon(
+                              selectedAppointment.doctor.specialization,
+                            )}
                             {selectedAppointment.doctor.specialization}
                           </p>
                           <p>
@@ -1346,7 +1663,7 @@ const Book_Appointment: React.FC = () => {
                     </IonItem>
                   </div>
 
-                  {selectedAppointment.status === "scheduled" && (
+                  {selectedAppointment.status === "accepted" && (
                     <div className="detail-actions">
                       <IonButton
                         expand="block"
@@ -1515,11 +1832,18 @@ const Book_Appointment: React.FC = () => {
                               interface="popover"
                             >
                               {/* FIXED: Using safe function to get available slots */}
-                              {getAvailableSlots(selectedDoctor).map((slot) => (
-                                <IonSelectOption key={slot} value={slot}>
-                                  {slot}
-                                </IonSelectOption>
-                              ))}
+                              {getAvailableSlots(selectedDoctor).map((slot) => {
+                                const isTaken = takenSlots.includes(slot);
+                                return (
+                                  <IonSelectOption
+                                    key={slot}
+                                    value={slot}
+                                    disabled={isTaken}
+                                  >
+                                    {slot} {isTaken ? "(Booked)" : ""}
+                                  </IonSelectOption>
+                                );
+                              })}
                             </IonSelect>
                           </IonItem>
                         </IonCol>

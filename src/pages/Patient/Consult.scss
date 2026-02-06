@@ -478,7 +478,7 @@
   left: 0;
   right: 0;
   z-index: 100;
-  background: var(--ion-color-light);
+  --background: var(--ion-color-light);
 
   .attachments-preview {
     margin-bottom: 8px;

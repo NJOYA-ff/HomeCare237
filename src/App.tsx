@@ -32,11 +32,6 @@ import "./theme/variables.css";
 
 // Import pages
 import AdminDashboard from "./pages/Admin/AdminDashboard";
-import Profile from "./pages/Patient/Profile";
-import Book_Appointment from "./pages/Patient/Book_Appointment";
-import Consult from "./pages/Patient/Consult";
-import Lab_Result from "./pages/Patient/Lab_Result";
-import Diagnoses from "./pages/Patient/Diagnoses";
 import Doc_Profile from "./pages/Doctor/Doc_Profile";
 import Appointments from "./pages/Doctor/Appointments";
 import Patients from "./pages/Doctor/Patients";
@@ -51,7 +46,6 @@ import WelcomePage from "./pages/WelcomePage";
 import AdminMenu from "./components/MenuAdmin";
 import DoctorMenu from "./components/MenuDoctor";
 import PatientMenu from "./components/Menu";
-import PatientDashboard from "./pages/Patient/PatientDashboard";
 import PatientSignin from "./pages/PatientSignin";
 import PatientSignup from "./pages/PatientSignup";
 import PatientPasswordRecovery from "./pages/PatientPasswordRecovery";
@@ -65,31 +59,51 @@ import DoctorDashboard from "./pages/Doctor/DoctorDashboard";
 import SMS_doctor from "./pages/Admin/SMS_doctor";
 import Admin_doctor from "./pages/Admin/Admin_doctor";
 import Health_units from "./pages/Admin/Health_units";
-import Health_units_p from "./pages/Patient/Health_units_p";
 import Health_units_d from "./pages/Doctor/Health_units_d";
 import DoctorDiagnoses from "./pages/Doctor/Doc_diagnoses";
 import LandingPage from "./pages/Landingpage";
 import Roleselect from "./pages/Roleselect";
 import Roleselect2 from "./pages/Roleselect2";
-import { db, auth, storage } from "./firebaseconfig";
+import { db, auth } from "./firebaseconfig";
+import { useCloseApp } from "./components/hooks/useCloseApp";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
   sendPasswordResetEmail,
 } from "firebase/auth";
-import {
-  doc,
-  getDoc,
-  setDoc,
-  collection,
-  query,
-  where,
-  getDocs,
-} from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import Refer_patient from "./pages/Doctor/Refer_Patients";
 import Tabs from "./components/Tabs";
+import { NotificationProvider } from "./context/NotificationContext";
+import DoctorNotifications from "./pages/Doctor/DoctorNotifications";
+// IMPORTANT: Import addIcons from ionicons
+import { addIcons } from "ionicons";
 
+// Import your medical icons
+import { medicalIcons, ioniconsMedical } from "./utils/MedicalIcons";
+
+// Optionally import regular Ionicons if needed
+import { heart, pulse, medical, fitness, nutrition } from "ionicons/icons";
+
+// Setup Ionic
+setupIonicReact();
+
+// Add ALL your custom icons to Ionic's icon registry
+addIcons({
+  // Your custom medical icons
+  ...medicalIcons,
+  ...ioniconsMedical,
+
+  // Regular Ionicons (optional)
+  heart,
+  pulse,
+  medical,
+  fitness,
+  nutrition,
+
+  // You can add more Ionicons here as needed
+});
 setupIonicReact();
 
 // Auth Service and Types
@@ -329,6 +343,8 @@ const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // useCloseApp();
+
   useEffect(() => {
     console.log("App component mounted, checking auth state");
 
@@ -381,166 +397,172 @@ const App: React.FC = () => {
   console.log("Rendering App, currentUser:", currentUser);
 
   return (
-    <IonApp>
-      <IonReactRouter>
-        {!currentUser ? (
-          // Public routes - no user logged in
-          <>
-            <Redirect exact from="/" to="/landingpage" />
-            <Route path="/landingpage" exact={true}>
-              <LandingPage />
-            </Route>
-            <Route path="/roleselect" exact={true}>
-              <Roleselect />
-            </Route>
-            <Route path="/roleselect2" exact={true}>
-              <Roleselect2 />
-            </Route>
-            <Route path="/Welcomepage" exact={true}>
-              <WelcomePage />
-            </Route>
+    <NotificationProvider>
+      {" "}
+      <IonApp>
+        <IonReactRouter>
+          {!currentUser ? (
+            // Public routes - no user logged in
+            <>
+              <Redirect exact from="/" to="/landingpage" />
+              <Route path="/landingpage" exact={true}>
+                <LandingPage />
+              </Route>
+              <Route path="/roleselect" exact={true}>
+                <Roleselect />
+              </Route>
+              <Route path="/roleselect2" exact={true}>
+                <Roleselect2 />
+              </Route>
+              <Route path="/Welcomepage" exact={true}>
+                <WelcomePage />
+              </Route>
 
-            <Route path="/Patient_signin" exact={true}>
-              <PatientSignin />
-            </Route>
-            <Route path="/Patient_signup" exact={true}>
-              <PatientSignup />
-            </Route>
-            <Route path="/Patient_password_recovery" exact={true}>
-              <PatientPasswordRecovery />
-            </Route>
-            <Route path="/Doctor_signup" exact={true}>
-              <DoctorSignup />
-            </Route>
-            <Route path="/Doctor_signin" exact={true}>
-              <DoctorSignin />
-            </Route>
-            <Route path="/Doctor_password_recovery" exact={true}>
-              <DoctorPasswordRecovery />
-            </Route>
-            <Route path="/Admin_signup" exact={true}>
-              <AdminSignup />
-            </Route>
-            <Route path="/Admin_signin" exact={true}>
-              <AdminSignin />
-            </Route>
-            <Route path="/Admin_password_recovery" exact={true}>
-              <AdminPasswordRecovery />
-            </Route>
-          </>
-        ) : (
-          // Protected routes - user is logged in
-          <>
-            {currentUser.role === UserRole.Patient && (
-              <>
-                {/* Patient Menu (Sidebar) */}
-                <IonSplitPane contentId="main">
-                  <PatientMenu />
-                  <Tabs />
+              <Route path="/Patient_signin" exact={true}>
+                <PatientSignin />
+              </Route>
+              <Route path="/Patient_signup" exact={true}>
+                <PatientSignup />
+              </Route>
+              <Route path="/Patient_password_recovery" exact={true}>
+                <PatientPasswordRecovery />
+              </Route>
+              <Route path="/Doctor_signup" exact={true}>
+                <DoctorSignup />
+              </Route>
+              <Route path="/Doctor_signin" exact={true}>
+                <DoctorSignin />
+              </Route>
+              <Route path="/Doctor_password_recovery" exact={true}>
+                <DoctorPasswordRecovery />
+              </Route>
+              <Route path="/Admin_signup" exact={true}>
+                <AdminSignup />
+              </Route>
+              <Route path="/Admin_signin" exact={true}>
+                <AdminSignin />
+              </Route>
+              <Route path="/Admin_password_recovery" exact={true}>
+                <AdminPasswordRecovery />
+              </Route>
+            </>
+          ) : (
+            // Protected routes - user is logged in
+            <>
+              {currentUser.role === UserRole.Patient && (
+                <>
+                  {/* Patient Menu (Sidebar) */}
+                  <IonSplitPane contentId="main">
+                    <PatientMenu />
+                    <Tabs />
+                  </IonSplitPane>
+                </>
+              )}
+
+              {currentUser.role === UserRole.Doctor && (
+                <IonSplitPane contentId="main_2">
+                  <DoctorMenu />
+                  <IonRouterOutlet id="main_2">
+                    <Redirect exact from="/" to="/doc/dashboard" />
+                    <Route path="/doc/dashboard" exact={true}>
+                      <DoctorDashboard />
+                    </Route>
+                    <Route path="/doc/notification" exact={true}>
+                      <DoctorNotifications />
+                    </Route>
+                    <Route path="/doc/profile" exact={true}>
+                      <Doc_Profile />
+                    </Route>
+                    <Route path="/doc/appointments" exact={true}>
+                      <Appointments />
+                    </Route>
+                    <Route path="/doc/health_units_d" exact={true}>
+                      <Health_units_d />
+                    </Route>
+                    <Route path="/doc/Patients" exact={true}>
+                      <Patients />
+                    </Route>
+                    <Route path="/doc/diagnoses" exact={true}>
+                      <DoctorDiagnoses />
+                    </Route>
+                    <Route path="/doc/consult" exact={true}>
+                      <Doc_Consult />
+                    </Route>
+                    <Route path="/doc/refer_patients" exact={true}>
+                      <Refer_patient />
+                    </Route>
+
+                    {/* Redirect any unknown doctor routes to dashboard */}
+                    <Redirect to="/doc/dashboard" />
+                  </IonRouterOutlet>
                 </IonSplitPane>
-              </>
-            )}
+              )}
 
-            {currentUser.role === UserRole.Doctor && (
-              <IonSplitPane contentId="main_2">
-                <DoctorMenu />
-                <IonRouterOutlet id="main_2">
-                  <Redirect exact from="/" to="/doc/dashboard" />
-                  <Route path="/doc/dashboard" exact={true}>
-                    <DoctorDashboard />
-                  </Route>
-                  <Route path="/doc/profile" exact={true}>
-                    <Doc_Profile />
-                  </Route>
-                  <Route path="/doc/appointments" exact={true}>
-                    <Appointments />
-                  </Route>
-                  <Route path="/doc/health_units_d" exact={true}>
-                    <Health_units_d />
-                  </Route>
-                  <Route path="/doc/Patients" exact={true}>
-                    <Patients />
-                  </Route>
-                  <Route path="/doc/diagnoses" exact={true}>
-                    <DoctorDiagnoses />
-                  </Route>
-                  <Route path="/doc/consult" exact={true}>
-                    <Doc_Consult />
-                  </Route>
-                  <Route path="/doc/refer_patients" exact={true}>
-                    <Refer_patient />
-                  </Route>
+              {currentUser.role === UserRole.Admin && (
+                <IonSplitPane contentId="main_3">
+                  <AdminMenu />
+                  <IonRouterOutlet id="main_3">
+                    <Redirect exact from="/" to="/admin/dashboard" />
+                    <Route path="/admin/dashboard" exact={true}>
+                      <AdminDashboard />
+                    </Route>
+                    <Route path="/admin/profile" exact={true}>
+                      <Admin_Profile />
+                    </Route>
+                    <Route path="/admin/appointments" exact={true}>
+                      <Admin_Appointments />
+                    </Route>
+                    <Route path="/admin/sms_patient" exact={true}>
+                      <SMS_patient />
+                    </Route>
+                    <Route path="/admin/sms_doctor" exact={true}>
+                      <SMS_doctor />
+                    </Route>
+                    <Route path="/admin/patient" exact={true}>
+                      <Admin_patient />
+                    </Route>
+                    <Route path="/admin/doctor" exact={true}>
+                      <Admin_doctor />
+                    </Route>
+                    <Route path="/admin/diagnoses" exact={true}>
+                      <Admin_diagnoses />
+                    </Route>
+                    <Route path="/admin/analytics" exact={true}>
+                      <Analytics />
+                    </Route>
+                    <Route path="/admin/health_units" exact={true}>
+                      <Health_units />
+                    </Route>
 
-                  {/* Redirect any unknown doctor routes to dashboard */}
-                  <Redirect to="/doc/dashboard" />
-                </IonRouterOutlet>
-              </IonSplitPane>
-            )}
+                    {/* Redirect any unknown admin routes to dashboard */}
+                    <Redirect to="/admin/dashboard" />
+                  </IonRouterOutlet>
+                </IonSplitPane>
+              )}
 
-            {currentUser.role === UserRole.Admin && (
-              <IonSplitPane contentId="main_3">
-                <AdminMenu />
-                <IonRouterOutlet id="main_3">
-                  <Redirect exact from="/" to="/admin/dashboard" />
-                  <Route path="/admin/dashboard" exact={true}>
-                    <AdminDashboard />
-                  </Route>
-                  <Route path="/admin/profile" exact={true}>
-                    <Admin_Profile />
-                  </Route>
-                  <Route path="/admin/appointments" exact={true}>
-                    <Admin_Appointments />
-                  </Route>
-                  <Route path="/admin/sms_patient" exact={true}>
-                    <SMS_patient />
-                  </Route>
-                  <Route path="/admin/sms_doctor" exact={true}>
-                    <SMS_doctor />
-                  </Route>
-                  <Route path="/admin/patient" exact={true}>
-                    <Admin_patient />
-                  </Route>
-                  <Route path="/admin/doctor" exact={true}>
-                    <Admin_doctor />
-                  </Route>
-                  <Route path="/admin/diagnoses" exact={true}>
-                    <Admin_diagnoses />
-                  </Route>
-                  <Route path="/admin/analytics" exact={true}>
-                    <Analytics />
-                  </Route>
-                  <Route path="/admin/health_units" exact={true}>
-                    <Health_units />
-                  </Route>
-
-                  {/* Redirect any unknown admin routes to dashboard */}
-                  <Redirect to="/admin/dashboard" />
-                </IonRouterOutlet>
-              </IonSplitPane>
-            )}
-
-            {/* Fallback for users with unknown roles */}
-            {![UserRole.Patient, UserRole.Doctor, UserRole.Admin].includes(
-              currentUser.role
-            ) && (
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  height: "100vh",
-                }}
-              >
-                <div>
-                  <p>Unknown user role: {currentUser.role}</p>
-                  <button onClick={() => authService.logout()}>Logout</button>
+              {/* Fallback for users with unknown roles */}
+              {![UserRole.Patient, UserRole.Doctor, UserRole.Admin].includes(
+                currentUser.role
+              ) && (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    height: "100vh",
+                  }}
+                >
+                  <div>
+                    <p>Unknown user role: {currentUser.role}</p>
+                    <button onClick={() => authService.logout()}>Logout</button>
+                  </div>
                 </div>
-              </div>
-            )}
-          </>
-        )}
-      </IonReactRouter>
-    </IonApp>
+              )}
+            </>
+          )}
+        </IonReactRouter>
+      </IonApp>
+    </NotificationProvider>
   );
 };
 

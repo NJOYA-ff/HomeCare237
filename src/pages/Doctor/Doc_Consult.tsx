@@ -6,8 +6,6 @@ import {
   IonTitle,
   IonToolbar,
   IonSearchbar,
-  IonCard,
-  IonCardHeader,
   IonCardTitle,
   IonCardSubtitle,
   IonAvatar,
@@ -17,7 +15,6 @@ import {
   IonList,
   IonItem,
   IonText,
-  IonBadge,
   IonModal,
   IonButtons,
   IonTextarea,
@@ -32,29 +29,18 @@ import {
   IonAlert,
   IonProgressBar,
   IonImg,
-  createGesture,
   IonPopover,
   IonBackButton,
-  IonCardContent,
 } from "@ionic/react";
+import { useNotifications } from "../../context/NotificationContext";
 import {
-  call,
-  videocam,
-  send,
   attach,
-  person,
-  star,
   medical,
-  location,
-  time,
   close,
   play,
   document,
   image,
   pause,
-  download,
-  mic,
-  stop,
   checkmarkDone,
   checkmark,
   arrowBack,
@@ -62,20 +48,13 @@ import {
   callOutline,
   videocamOutline,
   micOutline,
-  trash,
   downloadOutline,
-  lockClosed,
-  lockOpen,
-  trailSignOutline,
   trashOutline,
   documentText,
-  calendar,
   timeOutline,
-  notifications,
 } from "ionicons/icons";
 import { useIonToast } from "@ionic/react";
 import "./Consult.scss";
-import { Filesystem, Directory } from "@capacitor/filesystem";
 import { db, auth, storage } from "../../firebaseconfig";
 import {
   collection,
@@ -87,17 +66,10 @@ import {
   query,
   where,
   orderBy,
-  Timestamp,
   getDoc,
-  setDoc,
   serverTimestamp,
 } from "firebase/firestore";
-import {
-  ref,
-  uploadBytes,
-  getDownloadURL,
-  uploadBytesResumable,
-} from "firebase/storage";
+import { ref, getDownloadURL, uploadBytesResumable } from "firebase/storage";
 import { onAuthStateChanged } from "firebase/auth";
 
 // Updated interfaces to match Consult component
@@ -162,7 +134,7 @@ const Doc_Consult: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState("");
   const [showDocumentModal, setShowDocumentModal] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<Attachment | null>(
-    null
+    null,
   );
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -187,6 +159,8 @@ const Doc_Consult: React.FC = () => {
   const recordingIntervalRef = useRef<any>(null);
   const amplitudeIntervalRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const seenMessageIdsRef = useRef<Set<string>>(new Set());
+  const messageListenerInitializedRef = useRef(false);
   const contentRef = useRef<HTMLIonContentElement>(null);
   const messageInputRef = useRef<HTMLIonTextareaElement>(null);
   const progressIntervalRef = useRef<any>(null);
@@ -199,6 +173,8 @@ const Doc_Consult: React.FC = () => {
   const [presentToast] = useIonToast();
   const [showAttachmentPopover, setShowAttachmentPopover] = useState(false);
   const popover = useRef<HTMLIonPopoverElement>(null);
+
+  const { sendLocalNotification } = useNotifications();
 
   const openPopover = (e: any) => {
     setShowAttachmentPopover(true);
@@ -246,7 +222,7 @@ const Doc_Consult: React.FC = () => {
     const q = query(
       chatsRef,
       where("doctorId", "==", doctorId),
-      orderBy("lastMessageTime", "desc")
+      orderBy("lastMessageTime", "desc"),
     );
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
@@ -260,7 +236,7 @@ const Doc_Consult: React.FC = () => {
         if (!patientData) {
           try {
             const patientDoc = await getDoc(
-              doc(db, "patients", chatData.patientId)
+              doc(db, "patients", chatData.patientId),
             );
             if (patientDoc.exists()) {
               patientData = patientDoc.data() as Patient;
@@ -291,6 +267,9 @@ const Doc_Consult: React.FC = () => {
       const messagesRef = collection(db, "chats", selectedChat.id, "messages");
       const q = query(messagesRef, orderBy("timestamp", "asc"));
 
+      messageListenerInitializedRef.current = false;
+      seenMessageIdsRef.current.clear();
+
       const unsubscribe = onSnapshot(q, (snapshot) => {
         const messagesData: Message[] = [];
         snapshot.forEach((document) => {
@@ -299,6 +278,65 @@ const Doc_Consult: React.FC = () => {
             ...document.data(),
           } as Message);
         });
+
+        // On initial load, mark all messages as seen so we don't spam notifications
+        if (!messageListenerInitializedRef.current) {
+          messagesData.forEach((msg) => {
+            seenMessageIdsRef.current.add(msg.id);
+          });
+          messageListenerInitializedRef.current = true;
+        } else {
+          // For new messages, send notification if from patient
+          messagesData.forEach((msg) => {
+            if (
+              !seenMessageIdsRef.current.has(msg.id) &&
+              msg.sender === "patient"
+            ) {
+              try {
+                const patientName = selectedPatient?.name || "Patient";
+                const messagePreview = msg.text || "(attachment)";
+                const timestamp =
+                  msg.timestamp?.toDate?.() || new Date(msg.timestamp);
+                const timeStr = timestamp.toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                });
+
+                // Send local notification
+                sendLocalNotification(patientName, messagePreview, {
+                  timestamp: timeStr,
+                  patientName,
+                  message: messagePreview,
+                  chatId: selectedChat.id,
+                });
+
+                // Save to Firestore notifications collection
+                if (currentUser) {
+                  addDoc(collection(db, "notifications"), {
+                    recipientId: currentUser.uid,
+                    title: patientName,
+                    body: messagePreview,
+                    timestamp: serverTimestamp(),
+                    read: false,
+                    type: "message",
+                    chatId: selectedChat.id,
+                    senderId: msg.senderId,
+                    messageId: msg.id,
+                  }).catch((error) => {
+                    console.error(
+                      "Failed to save notification to Firestore:",
+                      error,
+                    );
+                  });
+                }
+              } catch (error) {
+                console.error("Failed to send notification:", error);
+              }
+            }
+            seenMessageIdsRef.current.add(msg.id);
+          });
+        }
+
         setMessages(messagesData);
 
         // Mark messages as read
@@ -307,12 +345,12 @@ const Doc_Consult: React.FC = () => {
 
       return unsubscribe;
     }
-  }, [selectedChat]);
+  }, [selectedChat, selectedPatient, sendLocalNotification]);
 
   const markMessagesAsRead = async () => {
     if (selectedChat && currentUser) {
       const unreadMessages = messages.filter(
-        (msg) => msg.senderId !== currentUser.uid && msg.status !== "read"
+        (msg) => msg.senderId !== currentUser.uid && msg.status !== "read",
       );
 
       for (const message of unreadMessages) {
@@ -320,7 +358,7 @@ const Doc_Consult: React.FC = () => {
           doc(db, "chats", selectedChat.id, "messages", message.id),
           {
             status: "read",
-          }
+          },
         );
       }
 
@@ -367,7 +405,7 @@ const Doc_Consult: React.FC = () => {
     (patient) =>
       patient.name.toLowerCase().includes(searchText.toLowerCase()) ||
       (patient.condition &&
-        patient.condition.toLowerCase().includes(searchText.toLowerCase()))
+        patient.condition.toLowerCase().includes(searchText.toLowerCase())),
   );
 
   const handleSelectPatient = async (patient: Patient) => {
@@ -382,7 +420,7 @@ const Doc_Consult: React.FC = () => {
 
     // Check if chat already exists
     const existingChat = chatSessions.find(
-      (chat) => chat.patientId === patient.id
+      (chat) => chat.patientId === patient.id,
     );
 
     if (existingChat) {
@@ -472,7 +510,7 @@ const Doc_Consult: React.FC = () => {
       // Add message to Firestore
       await addDoc(
         collection(db, "chats", selectedChat.id, "messages"),
-        messageData
+        messageData,
       );
 
       // Update chat session
@@ -525,8 +563,8 @@ const Doc_Consult: React.FC = () => {
                 prev.map((att) =>
                   att.id === attachment.id
                     ? { ...att, uploadProgress: progress }
-                    : att
-                )
+                    : att,
+                ),
               );
             },
             (error) => {
@@ -540,7 +578,7 @@ const Doc_Consult: React.FC = () => {
                 storagePath: storagePath,
                 uploadProgress: 100,
               });
-            }
+            },
           );
         })
         .catch(reject);
@@ -613,7 +651,7 @@ const Doc_Consult: React.FC = () => {
       amplitudeIntervalRef.current = setInterval(() => {
         if (analyserRef.current) {
           const dataArray = new Uint8Array(
-            analyserRef.current.frequencyBinCount
+            analyserRef.current.frequencyBinCount,
           );
           analyserRef.current.getByteFrequencyData(dataArray);
           const amplitude = Math.max(...dataArray) / 255;
@@ -623,7 +661,7 @@ const Doc_Consult: React.FC = () => {
     } catch (error) {
       console.error("Error starting recording:", error);
       setAlertMessage(
-        "Microphone access is required for voice messages. Please allow microphone permissions and try again."
+        "Microphone access is required for voice messages. Please allow microphone permissions and try again.",
       );
       setShowAlert(true);
     }
@@ -719,9 +757,9 @@ const Doc_Consult: React.FC = () => {
                   isPlaying: true,
                   duration: audioRef.current?.duration || 0,
                 }
-              : att
+              : att,
           ),
-        }))
+        })),
       );
     };
 
@@ -732,9 +770,9 @@ const Doc_Consult: React.FC = () => {
           attachments: msg.attachments?.map((att) =>
             att.id === attachment.id
               ? { ...att, currentTime: audioRef.current?.currentTime || 0 }
-              : att
+              : att,
           ),
-        }))
+        })),
       );
     };
 
@@ -745,9 +783,9 @@ const Doc_Consult: React.FC = () => {
           attachments: msg.attachments?.map((att) =>
             att.id === attachment.id
               ? { ...att, isPlaying: false, currentTime: 0 }
-              : att
+              : att,
           ),
-        }))
+        })),
       );
     };
 
@@ -761,9 +799,9 @@ const Doc_Consult: React.FC = () => {
         prev.map((msg) => ({
           ...msg,
           attachments: msg.attachments?.map((att) =>
-            att.id === attachment.id ? { ...att, isPlaying: false } : att
+            att.id === attachment.id ? { ...att, isPlaying: false } : att,
           ),
-        }))
+        })),
       );
     }
   };
@@ -778,7 +816,7 @@ const Doc_Consult: React.FC = () => {
             ...att,
             isPlaying: false,
           })),
-        }))
+        })),
       );
     }
   };
@@ -988,7 +1026,7 @@ const Doc_Consult: React.FC = () => {
                         </div>
                       )}
                     </div>
-                  )
+                  ),
                 )}
               </div>
             )}

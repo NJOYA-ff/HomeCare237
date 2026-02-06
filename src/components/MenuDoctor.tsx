@@ -10,9 +10,7 @@ import {
   IonMenuToggle,
   IonNote,
 } from "@ionic/react";
-import dashboard from "@material-design-icons/svg/outlined/dashboard.svg";
-import termo from "@material-design-icons/svg/outlined/device_thermostat.svg";
-import GroupAddIcon from "@material-design-icons/svg/filled/group_add.svg";
+// removed unused material svg imports in favor of react-icons
 import { useLocation } from "react-router-dom";
 import {
   businessOutline,
@@ -23,7 +21,18 @@ import {
   person,
   personCircleOutline,
 } from "ionicons/icons";
+import {
+  FaTachometerAlt,
+  FaUserCircle,
+  FaCalendarAlt,
+  FaUsers,
+  FaFileMedical,
+  FaComments,
+  FaUserMd,
+  FaHospital,
+} from "react-icons/fa";
 import "./Menu.css";
+import { MdSpaceDashboard } from "react-icons/md";
 
 interface AppPage {
   url: string;
@@ -36,8 +45,8 @@ const appPages: AppPage[] = [
   {
     title: "Dashboard",
     url: "/doc/dashboard",
-    iosIcon: dashboard,
-    mdIcon: dashboard,
+    iosIcon: personCircleOutline,
+    mdIcon: personCircleOutline,
   },
   {
     title: "Profile",
@@ -60,8 +69,8 @@ const appPages: AppPage[] = [
   {
     title: "Diagnoses",
     url: "/doc/diagnoses",
-    iosIcon: termo,
-    mdIcon: termo,
+    iosIcon: person,
+    mdIcon: person,
   },
   {
     title: "Consult",
@@ -72,8 +81,8 @@ const appPages: AppPage[] = [
   {
     title: "Refer Patients",
     url: "/doc/refer_patients",
-    iosIcon: GroupAddIcon,
-    mdIcon: GroupAddIcon,
+    iosIcon: peopleOutline,
+    mdIcon: peopleOutline,
   },
   {
     title: "Health Units",
@@ -90,8 +99,6 @@ const DoctorMenu: React.FC = () => {
     <IonMenu contentId="main_2" type="overlay">
       <IonContent>
         <IonList id="inbox-list">
-          <IonListHeader>Inbox</IonListHeader>
-          <IonNote>hi@ionicframework.com</IonNote>
           {appPages.map((appPage, index) => {
             return (
               <IonMenuToggle key={index} autoHide={false}>
@@ -104,12 +111,16 @@ const DoctorMenu: React.FC = () => {
                   lines="none"
                   detail={false}
                 >
-                  <IonIcon
-                    aria-hidden="true"
-                    slot="start"
-                    ios={appPage.iosIcon}
-                    md={appPage.mdIcon}
-                  />
+                  <span slot="start" className="menu-icon">
+                    {appPage.url === "/doc/dashboard" && <MdSpaceDashboard />}
+                    {appPage.url === "/doc/profile" && <FaUserCircle />}
+                    {appPage.url === "/doc/appointments" && <FaCalendarAlt />}
+                    {appPage.url === "/doc/patients" && <FaUsers />}
+                    {appPage.url === "/doc/diagnoses" && <FaFileMedical />}
+                    {appPage.url === "/doc/consult" && <FaComments />}
+                    {appPage.url === "/doc/refer_patients" && <FaUserMd />}
+                    {appPage.url === "/doc/health_units_d" && <FaHospital />}
+                  </span>
                   <IonLabel>{appPage.title}</IonLabel>
                 </IonItem>
               </IonMenuToggle>

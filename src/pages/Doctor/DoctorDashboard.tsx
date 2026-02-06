@@ -33,6 +33,7 @@ import {
   IonMenuButton,
   IonChip,
 } from "@ionic/react";
+import GroupAddIcon from "@material-design-icons/svg/filled/group_add.svg";
 import {
   calendar,
   person,
@@ -68,6 +69,7 @@ import {
 import { onAuthStateChanged, User } from "firebase/auth";
 import { AnimatePresence, motion } from "framer-motion";
 import { FiMenu } from "react-icons/fi";
+import { useNotifications } from "../../context/NotificationContext";
 
 // Updated Types to match your appointments data structure
 interface Appointment {
@@ -100,7 +102,46 @@ interface Appointment {
   notes?: string;
   doctorId?: string;
 }
-
+interface Doctor {
+  id: string;
+  name: string;
+  specialization: string;
+  avatar: string;
+  rating: number;
+  reviews: number;
+  region: string;
+  city: string;
+  address: string;
+  consultationFee: number;
+  languages: string[];
+  availableSlots: string[];
+  isAvailable: boolean;
+  experience: number;
+  email?: string;
+  phone?: string;
+}
+interface Referral {
+  id: string;
+  referringDoctorId: string;
+  referringDoctorName: string;
+  receivingDoctorId: string;
+  receivingDoctorName: string;
+  receivingDoctorSpecialization: string;
+  patientId: string;
+  patientName: string;
+  patientEmail: string;
+  referralDate: string;
+  reason: string;
+  clinicalNotes: string;
+  urgency: "routine" | "urgent" | "emergency";
+  status: "pending" | "accepted" | "rejected" | "completed";
+  additionalInstructions: string;
+  createdAt: any;
+  updatedAt: any;
+  receivingDoctor?: Doctor;
+  patient?: Patient;
+  referringDoctor?: Doctor;
+}
 interface Patient {
   id: string;
   name: string;
@@ -146,7 +187,7 @@ interface DoctorProfile {
 const DoctorDashboard: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [doctorProfile, setDoctorProfile] = useState<DoctorProfile | null>(
-    null
+    null,
   );
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [filteredAppointments, setFilteredAppointments] = useState<
@@ -169,7 +210,9 @@ const DoctorDashboard: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const contentRef = useRef<HTMLIonContentElement>(null);
   const [showfilter, setShowFilter] = useState(false);
-
+  const [receivedReferrals, setReceivedReferrals] = useState<Referral[]>([]);
+  const { unreadCount, markAsRead, clearAll, sendLocalNotification } =
+    useNotifications();
   // Safe value converter for Firestore data
   const safeValue = (value: any): string => {
     if (value === null || value === undefined) {
@@ -270,7 +313,7 @@ const DoctorDashboard: React.FC = () => {
   // Load dashboard data from Firestore
   const loadDashboardData = async (
     doctorId: string,
-    profile: DoctorProfile
+    profile: DoctorProfile,
   ) => {
     try {
       setLoading(true);
@@ -280,7 +323,7 @@ const DoctorDashboard: React.FC = () => {
         collection(db, "appointments"),
         where("doctorId", "==", doctorId), // UNCOMMENTED
         orderBy("createdAt", "desc"), // UNCOMMENTED - using createdAt for ordering
-        limit(50) // UNCOMMENTED
+        limit(50), // UNCOMMENTED
       );
 
       const appointmentsSnapshot = await getDocs(appointmentsQuery);
@@ -337,10 +380,28 @@ const DoctorDashboard: React.FC = () => {
 
       setRecentPatients(patientsData);
 
+      // Load received referrals
+      try {
+        const referralsQuery = query(
+          collection(db, "referrals"),
+          where("receivingDoctorId", "==", doctorId),
+          orderBy("createdAt", "desc"),
+          limit(50),
+        );
+        const referralsSnapshot = await getDocs(referralsQuery);
+        const referrals: Referral[] = [];
+        referralsSnapshot.forEach((rDoc) => {
+          referrals.push({ id: rDoc.id, ...(rDoc.data() as any) } as Referral);
+        });
+        setReceivedReferrals(referrals);
+      } catch (err) {
+        console.error("Error loading received referrals:", err);
+      }
+
       // Calculate stats
       const totalAppointments = appointmentsData.length;
       const completedAppointments = appointmentsData.filter(
-        (app) => app.status === "completed" || app.status === "accepted"
+        (app) => app.status === "completed" || app.status === "accepted",
       ).length;
 
       const totalPatients = patientIds.size;
@@ -349,7 +410,7 @@ const DoctorDashboard: React.FC = () => {
       // Calculate earnings from completed appointments
       const earnings = appointmentsData
         .filter(
-          (app) => app.status === "completed" || app.status === "accepted"
+          (app) => app.status === "completed" || app.status === "accepted",
         )
         .reduce((total, app) => {
           const fee = parseInt(app.consultationFee) || consultationFee;
@@ -381,7 +442,7 @@ const DoctorDashboard: React.FC = () => {
       collection(db, "appointments"),
       where("doctorId", "==", currentUser.uid), // UNCOMMENTED
       orderBy("createdAt", "desc"), // UNCOMMENTED
-      limit(50) // UNCOMMENTED
+      limit(50), // UNCOMMENTED
     );
 
     const unsubscribe = onSnapshot(appointmentsQuery, (snapshot) => {
@@ -402,13 +463,13 @@ const DoctorDashboard: React.FC = () => {
 
       // Update stats
       const completedAppointments = updatedAppointments.filter(
-        (app) => app.status === "completed" || app.status === "accepted"
+        (app) => app.status === "completed" || app.status === "accepted",
       ).length;
 
       const consultationFee = doctorProfile?.consultationFee || 5000;
       const earnings = updatedAppointments
         .filter(
-          (app) => app.status === "completed" || app.status === "accepted"
+          (app) => app.status === "completed" || app.status === "accepted",
         )
         .reduce((total, app) => {
           const fee = parseInt(app.consultationFee) || consultationFee;
@@ -443,7 +504,7 @@ const DoctorDashboard: React.FC = () => {
           (app.service &&
             app.service.toLowerCase().includes(searchText.toLowerCase())) ||
           (app.symptoms &&
-            app.symptoms.toLowerCase().includes(searchText.toLowerCase()))
+            app.symptoms.toLowerCase().includes(searchText.toLowerCase())),
       );
     }
 
@@ -539,7 +600,7 @@ const DoctorDashboard: React.FC = () => {
 
   const updateAppointmentStatus = async (
     appointmentId: string,
-    status: Appointment["status"]
+    status: Appointment["status"],
   ) => {
     try {
       const appointmentRef = doc(db, "appointments", appointmentId);
@@ -627,11 +688,13 @@ const DoctorDashboard: React.FC = () => {
             {doctorProfile ? `Dr. ${doctorProfile.name}` : "Doctor Dashboard"}
           </IonTitle>
           <IonButtons slot="end">
-            <IonButton>
+            <IonButton routerLink="/doc/notification">
               <IonIcon icon={notifications} />
-            </IonButton>
-            <IonButton>
-              <IonIcon icon={chatbubbleEllipses} />
+              {unreadCount > 0 && (
+                <IonBadge color="danger" style={{ marginLeft: "8px" }}>
+                  {unreadCount}
+                </IonBadge>
+              )}
             </IonButton>
           </IonButtons>
         </IonToolbar>
@@ -719,12 +782,10 @@ const DoctorDashboard: React.FC = () => {
                           background: "rgba(var(--ion-color-success-rgb), 0.1)",
                         }}
                       >
-                        <IonIcon icon={wallet} color="success" />
+                        <IonIcon icon={GroupAddIcon} color="success" />
                       </div>
-                      <IonCardTitle>
-                        {formatCurrency(stats.earnings)}
-                      </IonCardTitle>
-                      <IonNote>Earnings</IonNote>
+                      <IonCardTitle>{receivedReferrals.length}</IonCardTitle>
+                      <IonNote>Referrals</IonNote>
                     </IonCardContent>
                   </IonCard>
                 </IonCol>
@@ -767,17 +828,6 @@ const DoctorDashboard: React.FC = () => {
                       <IonLabel>Upcoming</IonLabel>
                     </IonSegmentButton>
                   </IonSegment>
-
-                  <IonItem lines="none">
-                    <IonButton
-                      fill="clear"
-                      color="medium"
-                      slot="start"
-                      onClick={handleshowfilter}
-                    >
-                      <IonIcon icon={filter} slot="icon-only" />
-                    </IonButton>
-                  </IonItem>
                 </div>
               </div>
 
@@ -1121,7 +1171,7 @@ const DoctorDashboard: React.FC = () => {
                         onClick={() =>
                           updateAppointmentStatus(
                             selectedAppointment.id,
-                            "accepted"
+                            "accepted",
                           )
                         }
                       >
@@ -1134,7 +1184,7 @@ const DoctorDashboard: React.FC = () => {
                         onClick={() =>
                           updateAppointmentStatus(
                             selectedAppointment.id,
-                            "rejected"
+                            "rejected",
                           )
                         }
                       >
@@ -1150,7 +1200,7 @@ const DoctorDashboard: React.FC = () => {
                       onClick={() =>
                         updateAppointmentStatus(
                           selectedAppointment.id,
-                          "completed"
+                          "completed",
                         )
                       }
                     >

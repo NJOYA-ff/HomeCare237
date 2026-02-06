@@ -27,7 +27,17 @@ import {
   person,
   personCircleOutline,
 } from "ionicons/icons";
+import {
+  FaTachometerAlt,
+  FaUserCircle,
+  FaCalendarAlt,
+  FaHospital,
+  FaComments,
+  FaRegCommentDots,
+  FaFileMedical,
+} from "react-icons/fa";
 import "./Menu.css";
+import { MdSpaceDashboard } from "react-icons/md";
 
 interface AppPage {
   url: string;
@@ -108,8 +118,6 @@ const AdminMenu: React.FC = () => {
     <IonMenu contentId="main_3" type="overlay">
       <IonContent>
         <IonList id="inbox-list">
-          <IonListHeader>Inbox</IonListHeader>
-          <IonNote>hi@ionicframework.com</IonNote>
           {appPages.map((appPage, index) => {
             return (
               <IonMenuToggle key={index} autoHide={false}>
@@ -122,12 +130,20 @@ const AdminMenu: React.FC = () => {
                   lines="none"
                   detail={false}
                 >
-                  <IonIcon
-                    aria-hidden="true"
-                    slot="start"
-                    ios={appPage.iosIcon}
-                    md={appPage.mdIcon}
-                  />
+                  <span slot="start" className="menu-icon">
+                    {appPage.url === "/admin/dashboard" && <MdSpaceDashboard />}
+                    {appPage.url === "/admin/profile" && <FaUserCircle />}
+                    {appPage.url === "/admin/appointments" && <FaCalendarAlt />}
+                    {appPage.url === "/admin/health_units" && <FaHospital />}
+                    {appPage.url === "/admin/sms_doctor" && <FaComments />}
+                    {appPage.url === "/admin/sms_patient" && (
+                      <FaRegCommentDots />
+                    )}
+                    {appPage.url === "/admin/diagnoses" && <FaFileMedical />}
+                    {appPage.url === "/admin/patient" && <FaUserCircle />}
+                    {appPage.url === "/admin/doctor" && <FaUserCircle />}
+                    {appPage.url === "/admin/analytics" && <FaTachometerAlt />}
+                  </span>
                   <IonLabel>{appPage.title}</IonLabel>
                 </IonItem>
               </IonMenuToggle>

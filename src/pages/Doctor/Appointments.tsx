@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   IonContent,
   IonHeader,
@@ -53,8 +53,10 @@ import {
   orderBy,
   Timestamp,
   getDoc,
+  addDoc,
 } from "firebase/firestore";
 import { db } from "../../firebaseconfig";
+import twilioMs from "../../components/Services/twilioServiceMs";
 import "./Appointments.scss";
 import { getAuth } from "firebase/auth";
 
@@ -87,6 +89,7 @@ interface Appointment {
   id: string;
   patientId: string;
   doctorId: string; // Added doctorId field
+  doctorName: string;
   patientName: string;
   patientImage: string;
   date: string;
@@ -105,6 +108,7 @@ interface Appointment {
     dateOfBirth?: string;
     gender?: string;
     email?: string;
+    phone?: string;
     emergencyContact?: EmergencyContact;
     bloodType?: string;
     allergies?: string[];
@@ -128,6 +132,7 @@ const Appointments: React.FC = () => {
     "accept" | "reject" | "complete" | ""
   >("");
   const [currentDoctorId, setCurrentDoctorId] = useState<string>("");
+  const prevAppointmentIds = useRef<Set<string>>(new Set());
 
   // Get current doctor ID on component mount
   useEffect(() => {
@@ -210,7 +215,7 @@ const Appointments: React.FC = () => {
 
   // Format emergency contact for display
   const formatEmergencyContact = (
-    emergencyContact: EmergencyContact | undefined
+    emergencyContact: EmergencyContact | undefined,
   ): string => {
     if (!emergencyContact) return "N/A";
 
@@ -250,7 +255,7 @@ const Appointments: React.FC = () => {
 
   // Fetch patient data by ID - with enhanced error handling
   const fetchPatientData = async (
-    patientId: string
+    patientId: string,
   ): Promise<Patient | null> => {
     try {
       if (!patientId) return null;
@@ -284,7 +289,7 @@ const Appointments: React.FC = () => {
   // Process appointment data from Firestore - with fallback for missing data
   const processAppointmentData = async (
     docId: string,
-    data: any
+    data: any,
   ): Promise<Appointment> => {
     console.log("Processing appointment data:", { id: docId, data });
 
@@ -297,7 +302,7 @@ const Appointments: React.FC = () => {
       } catch (error) {
         console.error(
           "Error fetching patient data, continuing without it:",
-          error
+          error,
         );
         // Continue without patient data - don't let this break the appointment
       }
@@ -333,6 +338,7 @@ const Appointments: React.FC = () => {
       id: docId,
       patientId: data.patientId || "",
       doctorId: data.doctorId || "", // Added doctorId
+      doctorName: data.doctorName || "",
       patientName,
       patientImage,
       date: safeValue(data.date) || safeValue(data.createdAt) || "N/A",
@@ -371,7 +377,7 @@ const Appointments: React.FC = () => {
       setIsLoading(true);
       console.log(
         "Loading appointments from Firestore for doctor:",
-        currentDoctorId
+        currentDoctorId,
       );
 
       // Create a query that filters by doctorId
@@ -379,7 +385,7 @@ const Appointments: React.FC = () => {
       const q = query(
         appointmentsRef,
         where("doctorId", "==", currentDoctorId),
-        orderBy("createdAt", "desc")
+        orderBy("createdAt", "desc"),
       );
 
       const querySnapshot = await getDocs(q);
@@ -394,7 +400,7 @@ const Appointments: React.FC = () => {
           console.error(
             "Error processing appointment, skipping:",
             error,
-            doc.id
+            doc.id,
           );
           // Create a basic appointment even if processing fails
           const data = doc.data();
@@ -402,6 +408,7 @@ const Appointments: React.FC = () => {
             id: doc.id,
             patientId: data.patientId || "",
             doctorId: data.doctorId || "",
+            doctorName: data.doctorName || "",
             patientName: data.patientName || "Unknown Patient",
             patientImage:
               data.patientImage ||
@@ -449,7 +456,7 @@ const Appointments: React.FC = () => {
     const q = query(
       appointmentsRef,
       where("doctorId", "==", currentDoctorId),
-      orderBy("createdAt", "desc")
+      orderBy("createdAt", "desc"),
     );
 
     console.log("Setting up real-time listener for doctor's appointments...");
@@ -461,23 +468,48 @@ const Appointments: React.FC = () => {
           "Received snapshot with",
           querySnapshot.size,
           "documents for doctor:",
-          currentDoctorId
+          currentDoctorId,
         );
         const appointmentsData: Appointment[] = [];
+
+        // Determine if this is the first snapshot seen by this component
+        const isInitial = prevAppointmentIds.current.size === 0;
 
         // Process appointments sequentially
         for (const doc of querySnapshot.docs) {
           try {
             const appointment = await processAppointmentData(
               doc.id,
-              doc.data()
+              doc.data(),
             );
+            // If this is not the initial load and the appointment id was not seen
+            // before, this is a newly received appointment request — notify doctor
+            const isNew = !prevAppointmentIds.current.has(appointment.id);
             appointmentsData.push(appointment);
+
+            if (!isInitial && isNew) {
+              try {
+                await addDoc(collection(db, "notifications"), {
+                  recipientId: currentDoctorId,
+                  title: "New Appointment Request",
+                  body: `New appointment from ${
+                    appointment.patientName
+                  } on ${safeValue(appointment.date)} at ${safeTimeValue(
+                    appointment.time,
+                  )}.`,
+
+                  timestamp: Timestamp.now(),
+                  read: false,
+                });
+              } catch (err) {
+                console.warn("Failed to write doctor notification:", err);
+              }
+            }
           } catch (error) {
             console.error(
               "Error processing appointment in real-time listener, skipping:",
               error,
-              doc.id
+              doc.id,
             );
             // Create basic appointment as fallback
             const data = doc.data();
@@ -485,6 +517,7 @@ const Appointments: React.FC = () => {
               id: doc.id,
               patientId: data.patientId || "",
               doctorId: data.doctorId || "",
+              doctorName: data.doctorName || "",
               patientName: data.patientName || "Unknown Patient",
               patientImage:
                 data.patientImage ||
@@ -511,8 +544,12 @@ const Appointments: React.FC = () => {
 
         console.log(
           "Processed appointments for current doctor:",
-          appointmentsData
+          appointmentsData,
         );
+
+        // Update previously seen IDs so next snapshot can detect new additions
+        prevAppointmentIds.current = new Set(appointmentsData.map((a) => a.id));
+
         setAppointments(appointmentsData);
         setIsLoading(false);
       },
@@ -520,7 +557,7 @@ const Appointments: React.FC = () => {
         console.error("Error in real-time listener:", error);
         setIsLoading(false);
         // Don't set appointments to empty - keep existing data
-      }
+      },
     );
 
     return () => {
@@ -552,7 +589,7 @@ const Appointments: React.FC = () => {
           app.patientName.toLowerCase().includes(searchText.toLowerCase()) ||
           app.service.toLowerCase().includes(searchText.toLowerCase()) ||
           app.address.toLowerCase().includes(searchText.toLowerCase()) ||
-          app.phone.toLowerCase().includes(searchText.toLowerCase())
+          app.phone.toLowerCase().includes(searchText.toLowerCase()),
       );
     }
 
@@ -563,7 +600,7 @@ const Appointments: React.FC = () => {
     setSelectedAppointment(appointment);
     setActionType("accept");
     setAlertMessage(
-      `Are you sure you want to accept the appointment with ${appointment.patientName}?`
+      `Are you sure you want to accept the appointment with ${appointment.patientName}?`,
     );
     setShowAlert(true);
   };
@@ -572,7 +609,7 @@ const Appointments: React.FC = () => {
     setSelectedAppointment(appointment);
     setActionType("reject");
     setAlertMessage(
-      `Are you sure you want to reject the appointment with ${appointment.patientName}?`
+      `Are you sure you want to reject the appointment with ${appointment.patientName}?`,
     );
     setShowAlert(true);
   };
@@ -581,7 +618,7 @@ const Appointments: React.FC = () => {
     setSelectedAppointment(appointment);
     setActionType("complete");
     setAlertMessage(
-      `Mark appointment with ${appointment.patientName} as completed?`
+      `Mark appointment with ${appointment.patientName} as completed?`,
     );
     setShowAlert(true);
   };
@@ -597,16 +634,97 @@ const Appointments: React.FC = () => {
           status: "accepted",
           updatedAt: Timestamp.now(),
         });
+        // Notify patient via SMS about acceptance
+        try {
+          const patientPhone =
+            selectedAppointment.phone || selectedAppointment.patient?.phone;
+          if (patientPhone) {
+            await twilioMs.sendAppointmentStatusSMS(patientPhone, "accepted", {
+              id: selectedAppointment.id,
+              doctorName: "", // will be filled by send function if needed
+              date: selectedAppointment.date,
+              time: selectedAppointment.time,
+            });
+          }
+        } catch (err) {
+          console.warn("Failed to send acceptance SMS to patient:", err);
+        }
+        // Write a Firestore notification for the patient
+        try {
+          await addDoc(collection(db, "notifications"), {
+            recipientId: selectedAppointment.patientId,
+            title: "Appointment Accepted",
+            body: `Your appointment (ID: ${selectedAppointment.date}) with Dr. ${selectedAppointment.doctorName} has been accepted.`,
+
+            timestamp: Timestamp.now(),
+            read: false,
+          });
+        } catch (err) {
+          console.warn("Failed to write patient acceptance notification:", err);
+        }
       } else if (actionType === "reject") {
         await updateDoc(appointmentRef, {
           status: "rejected",
           updatedAt: Timestamp.now(),
         });
+        // Notify patient via SMS about rejection
+        try {
+          const patientPhone =
+            selectedAppointment.phone || selectedAppointment.patient?.phone;
+          if (patientPhone) {
+            await twilioMs.sendAppointmentStatusSMS(patientPhone, "rejected", {
+              id: selectedAppointment.id,
+              doctorName: "",
+              date: selectedAppointment.date,
+              time: selectedAppointment.time,
+            });
+          }
+        } catch (err) {
+          console.warn("Failed to send rejection SMS to patient:", err);
+        }
+        // Write a Firestore notification for the patient
+        try {
+          await addDoc(collection(db, "notifications"), {
+            recipientId: selectedAppointment.patientId,
+            title: "Appointment Rejected",
+            body: `Your appointment (ID: ${selectedAppointment.date}) with ${selectedAppointment.doctorName} has been rejected.`,
+            timestamp: Timestamp.now(),
+            read: false,
+          });
+        } catch (err) {
+          console.warn("Failed to write patient rejection notification:", err);
+        }
       } else if (actionType === "complete") {
         await updateDoc(appointmentRef, {
           status: "completed",
           updatedAt: Timestamp.now(),
         });
+        // Notify patient via SMS about completion (custom message)
+        try {
+          const patientPhone =
+            selectedAppointment.phone || selectedAppointment.patient?.phone;
+          if (patientPhone) {
+            await twilioMs.sendSMS({
+              to: patientPhone,
+              body: `✅ Your appointment (ID: ${selectedAppointment.date}) has been marked as completed. Thank you for using HomeCare.`,
+              appointmentId: selectedAppointment.id,
+            });
+          }
+        } catch (err) {
+          console.warn("Failed to send completion SMS to patient:", err);
+        }
+        // Write a Firestore notification for the patient
+        try {
+          await addDoc(collection(db, "notifications"), {
+            recipientId: selectedAppointment.patientId,
+            title: "Appointment Completed",
+            body: `Your appointment (ID: ${selectedAppointment.date}) with Dr. ${selectedAppointment.doctorName} has been marked as completed.`,
+            timestamp: Timestamp.now(),
+            read: false,
+          });
+        } catch (err) {
+          console.warn("Failed to write patient completion notification:", err);
+        }
       }
 
       console.log(`Appointment ${actionType}ed successfully`);
@@ -846,7 +964,7 @@ const Appointments: React.FC = () => {
                                     <span>
                                       Emergency:{" "}
                                       {formatEmergencyContact(
-                                        appointment.patient.emergencyContact
+                                        appointment.patient.emergencyContact,
                                       )}
                                     </span>
                                   )}
@@ -866,7 +984,7 @@ const Appointments: React.FC = () => {
                                     <p>Allergies</p>
                                     <h3>
                                       {formatArray(
-                                        appointment.patient.allergies
+                                        appointment.patient.allergies,
                                       )}
                                     </h3>
                                   </IonLabel>
@@ -888,7 +1006,7 @@ const Appointments: React.FC = () => {
                                     <p>Medical History</p>
                                     <h3>
                                       {formatArray(
-                                        appointment.patient.medicalHistory
+                                        appointment.patient.medicalHistory,
                                       )}
                                     </h3>
                                   </IonLabel>

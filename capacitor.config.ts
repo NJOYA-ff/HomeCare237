@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 const config: CapacitorConfig = {
   appId: "io.ionic.starter",
-  appName: "HomeCare",
+  appName: "HomeCare237",
   webDir: "dist",
   plugins: {
     SplashScreen: {
@@ -11,7 +11,7 @@ const config: CapacitorConfig = {
       backgroundColor: "#ffffffff",
       androidSplashResourceName: "splash",
       androidScaleType: "CENTER_CROP",
-      showSpinner: true,
+      showSpinner: false,
       androidSpinnerStyle: "large",
       iosSpinnerStyle: "small",
       spinnerColor: "#04589dff",
@@ -20,7 +20,14 @@ const config: CapacitorConfig = {
       layoutName: "launch_screen",
       useDialog: true,
     },
-
+    PushNotifications: {
+      presentationOptions: ["badge", "sound", "alert"],
+    },
+    LocalNotifications: {
+      smallIcon: "/src/pages/images/icon.svg",
+      iconColor: "#488AFF",
+      sound: "beep.wav",
+    },
     server: {
       androidScheme: "https",
     },

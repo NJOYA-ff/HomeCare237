@@ -28,6 +28,7 @@ import {
   FiHome,
   FiMapPin,
   FiCamera,
+  FiClock,
   FiBriefcase,
   FiAward,
   FiBook,
@@ -63,6 +64,8 @@ type FormData = {
   hospital: string;
   consultationFee: number;
   bio: string;
+  // Comma-separated slots input (e.g. "09:00,10:00,11:00")
+  availableSlotsInput?: string;
 };
 
 interface FirebaseError {
@@ -102,14 +105,14 @@ const DoctorSignup: React.FC = () => {
 
   const showToast = (
     message: string,
-    color: "success" | "danger" | "warning" = "success"
+    color: "success" | "danger" | "warning" = "success",
   ) => {
     setToast({ isOpen: true, message, color });
   };
 
   const uploadImageToStorage = async (
     file: File,
-    userId: string
+    userId: string,
   ): Promise<string> => {
     try {
       // Create a unique file name
@@ -132,7 +135,7 @@ const DoctorSignup: React.FC = () => {
   const saveDoctorDataToFirestore = async (
     userId: string,
     data: any,
-    profilePhotoURL?: string
+    profilePhotoURL?: string,
   ) => {
     try {
       const doctorData = {
@@ -196,6 +199,11 @@ const DoctorSignup: React.FC = () => {
         hospital: data.hospital,
         consultationFee: Number(data.consultationFee),
         bio: data.bio,
+        // parse available slots into array, trim and remove empty entries
+        availableSlots: (data.availableSlotsInput || "")
+          .split(",")
+          .map((s) => s.trim())
+          .filter((s) => s.length > 0),
       };
 
       // 5. Save doctor data to Firestore
@@ -289,21 +297,26 @@ const DoctorSignup: React.FC = () => {
   };
 
   const specializations = [
-    "Cardiology",
-    "Dermatology",
-    "Pediatrics",
-    "Neurology",
-    "Orthopedics",
-    "Psychiatry",
-    "Dentistry",
-    "Ophthalmology",
-    "Gynecology",
-    "General Surgery",
-    "Internal Medicine",
-    "Emergency Medicine",
-    "Radiology",
-    "Anesthesiology",
-    "Oncology",
+    "General Practitioner",
+    "Cardiologist",
+    "Pediatrician",
+    "Dermatologist",
+    "Gynecologist",
+    "Orthopedic Surgeon",
+    "Neurologist",
+    "Psychiatrist",
+    "Dentist",
+    "Ophthalmologist",
+    "ENT Specialist",
+    "Urologist",
+    "Endocrinologist",
+    "Gastroenterologist",
+    "Oncologist",
+    "Rheumatologist",
+    "Pulmonologist",
+    "Nephrologist",
+    "Allergist",
+    "Physiotherapist",
   ];
 
   return (
@@ -384,7 +397,7 @@ const DoctorSignup: React.FC = () => {
                       }}
                       onChange={(e) => {
                         handleImageChange(
-                          e as React.ChangeEvent<HTMLInputElement>
+                          e as React.ChangeEvent<HTMLInputElement>,
                         );
                         if (
                           typeof profilePhotoRegister.onChange === "function"
@@ -784,7 +797,7 @@ const DoctorSignup: React.FC = () => {
                       <IonItem className="form-item">
                         <IonInput
                           type="number"
-                          placeholder="Consultation Fee (USD)"
+                          placeholder="Consultation Fee (XAF)"
                           {...register("consultationFee", {
                             required: "Consultation fee is required",
                             min: {
@@ -803,6 +816,25 @@ const DoctorSignup: React.FC = () => {
                           {errors.consultationFee.message}
                         </span>
                       )}
+                    </motion.div>
+
+                    {/* Available Slots (comma separated) */}
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.72 }}
+                    >
+                      <IonItem className="form-item">
+                        <FiClock className="input-icon" />
+                        <IonInput
+                          type="text"
+                          placeholder="Available slots (e.g. 09:00,10:00,14:00)"
+                          {...register("availableSlotsInput")}
+                        />
+                      </IonItem>
+                      <small className="hint">
+                        Enter comma-separated times in 24-hour HH:MM format.
+                      </small>
                     </motion.div>
 
                     {/* Qualifications */}

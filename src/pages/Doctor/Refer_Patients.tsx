@@ -97,6 +97,21 @@ import {
 } from "ionicons/icons";
 import brainOutline from "@material-design-icons/svg/two-tone/healing.svg";
 import "./Refer_patients.scss";
+import {
+  FaStethoscope,
+  FaHeartbeat,
+  FaChild,
+  FaUserMd,
+  FaVenus,
+  FaBrain,
+  FaTooth,
+  FaEye,
+  FaAmbulance,
+  FaHospital,
+  FaPills,
+  FaSyringe,
+  FaBone,
+} from "react-icons/fa";
 
 // Types
 interface Doctor {
@@ -192,28 +207,28 @@ const medicalSpecialties = [
   "Physiotherapist",
 ];
 
-// Specialty icons mapping
-const specialtyIcons: { [key: string]: string } = {
-  "General Practitioner": medical,
-  Cardiologist: heartOutline,
-  Pediatrician: people,
-  Dermatologist: bodyOutline,
-  Gynecologist: medical,
-  "Orthopedic Surgeon": fitnessOutline,
-  Neurologist: brainOutline,
-  Psychiatrist: brainOutline,
-  Dentist: medical,
-  Ophthalmologist: eyeOutline,
-  "ENT Specialist": medical,
-  Urologist: medical,
-  Endocrinologist: medical,
-  Gastroenterologist: medical,
-  Oncologist: medical,
-  Rheumatologist: medical,
-  Pulmonologist: medical,
-  Nephrologist: medical,
-  Allergist: bandageOutline,
-  Physiotherapist: fitnessOutline,
+// Specialty icons mapping (react-icons)
+const specialtyIcons: { [key: string]: React.ReactNode } = {
+  "General Practitioner": <FaStethoscope />,
+  Cardiologist: <FaHeartbeat />,
+  Pediatrician: <FaChild />,
+  Dermatologist: <FaUserMd />,
+  Gynecologist: <FaVenus />,
+  "Orthopedic Surgeon": <FaBone />,
+  Neurologist: <FaBrain />,
+  Psychiatrist: <FaBrain />,
+  Dentist: <FaTooth />,
+  Ophthalmologist: <FaEye />,
+  "ENT Specialist": <FaHospital />,
+  Urologist: <FaHospital />,
+  Endocrinologist: <FaPills />,
+  Gastroenterologist: <FaPills />,
+  Oncologist: <FaHospital />,
+  Rheumatologist: <FaBone />,
+  Pulmonologist: <FaAmbulance />,
+  Nephrologist: <FaHospital />,
+  Allergist: <FaSyringe />,
+  Physiotherapist: <FaStethoscope />,
 };
 
 // Urgency levels
@@ -850,8 +865,8 @@ const Refer_patient: React.FC = () => {
     setSelectedReferral(null);
   };
 
-  const getSpecialtyIcon = (specialty: string) => {
-    return specialtyIcons[specialty] || medical;
+  const getSpecialtyIcon = (specialty: string): React.ReactNode => {
+    return specialtyIcons[specialty] || <IonIcon icon={medical} />;
   };
 
   // Initialize with some sample data if collections are empty
@@ -1217,11 +1232,9 @@ const Refer_patient: React.FC = () => {
                                       </IonText>
                                       <IonText color="medium">
                                         <p className="doctor-specialty-r">
-                                          <IonIcon
-                                            icon={getSpecialtyIcon(
-                                              doctor.specialization
-                                            )}
-                                          />
+                                          {getSpecialtyIcon(
+                                            doctor.specialization
+                                          )}
                                           {doctor.specialization}
                                         </p>
                                       </IonText>
@@ -1330,11 +1343,9 @@ const Refer_patient: React.FC = () => {
                                   </IonText>
                                   <IonText color="medium">
                                     <p className="doctor-specialty-r">
-                                      <IonIcon
-                                        icon={getSpecialtyIcon(
-                                          referral.receivingDoctorSpecialization
-                                        )}
-                                      />
+                                      {getSpecialtyIcon(
+                                        referral.receivingDoctorSpecialization
+                                      )}
                                       {referral.receivingDoctorSpecialization}
                                     </p>
                                     <p className="referral-direction">
@@ -1456,11 +1467,9 @@ const Refer_patient: React.FC = () => {
                                   </IonText>
                                   <IonText color="medium">
                                     <p className="doctor-specialty-r">
-                                      <IonIcon
-                                        icon={getSpecialtyIcon(
-                                          referral.receivingDoctorSpecialization
-                                        )}
-                                      />
+                                      {getSpecialtyIcon(
+                                        referral.receivingDoctorSpecialization
+                                      )}
                                       {referral.receivingDoctorSpecialization}
                                     </p>
                                     <p className="referral-direction">
@@ -1599,11 +1608,9 @@ const Refer_patient: React.FC = () => {
                           <div className="doctor-details-r">
                             <h4>{selectedReferral.referringDoctor.name}</h4>
                             <p>
-                              <IonIcon
-                                icon={getSpecialtyIcon(
-                                  selectedReferral.receivingDoctorSpecialization
-                                )}
-                              />
+                              {getSpecialtyIcon(
+                                selectedReferral.receivingDoctorSpecialization
+                              )}
                               {selectedReferral.receivingDoctorSpecialization}
                             </p>
                             <p>
@@ -1640,12 +1647,9 @@ const Refer_patient: React.FC = () => {
                           <div className="doctor-details-r">
                             <h4>{selectedReferral.receivingDoctor.name}</h4>
                             <p>
-                              <IonIcon
-                                icon={getSpecialtyIcon(
-                                  selectedReferral.receivingDoctor
-                                    .specialization
-                                )}
-                              />
+                              {getSpecialtyIcon(
+                                selectedReferral.receivingDoctor.specialization
+                              )}
                               {selectedReferral.receivingDoctor.specialization}
                             </p>
                             <p>

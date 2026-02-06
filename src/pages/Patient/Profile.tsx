@@ -55,7 +55,12 @@ import {
   updateDoc,
   collection,
   onSnapshot,
+  query,
+  where,
+  orderBy,
+  Timestamp,
 } from "firebase/firestore";
+
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { signOut } from "firebase/auth";
 import { db, storage, auth } from "../../firebaseconfig";
@@ -129,6 +134,7 @@ const defaultPatientData: Omit<PatientData, "id"> = {
 
 const Profile: React.FC = () => {
   const [patient, setPatient] = useState<PatientData | null>(null);
+  const [appointments, setAppointments] = useState<any[]>([]);
   const [tempData, setTempData] = useState<PatientData | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -136,7 +142,7 @@ const Profile: React.FC = () => {
   const [alertMessage, setAlertMessage] = useState("");
   const [initialLoad, setInitialLoad] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
+  const [showLogOutAlert, setShowLogOutAlert] = React.useState(false);
   // Get current user ID
   const currentUser = auth.currentUser;
   const patientId = currentUser?.uid;
@@ -410,6 +416,36 @@ const Profile: React.FC = () => {
     }
   };
 
+  // Listen to patient's appointments in real-time
+  useEffect(() => {
+    if (!patient?.id) return;
+
+    try {
+      const appointmentsQuery = query(
+        collection(db, "appointments"),
+        where("patientId", "==", patient.id),
+        where("status", "in", ["pending", "confirmed", "accepted"]),
+        orderBy("date", "asc")
+      );
+
+      const unsubscribe = onSnapshot(
+        appointmentsQuery,
+        (snapshot) => {
+          const appts: any[] = [];
+          snapshot.forEach((d) => appts.push({ id: d.id, ...d.data() }));
+          setAppointments(appts);
+        },
+        (error) => {
+          console.error("Error listening to appointments in Profile:", error);
+        }
+      );
+
+      return () => unsubscribe();
+    } catch (error) {
+      console.error("Error setting up appointments listener:", error);
+    }
+  }, [patient?.id]);
+
   // Safe getters for array lengths
   const getAllergiesCount = () => patient?.allergies?.length || 0;
   const getConditionsCount = () => patient?.conditions?.length || 0;
@@ -425,19 +461,81 @@ const Profile: React.FC = () => {
   const getConditions = () => patient?.conditions || [];
   const getMedications = () => patient?.medications || [];
 
+  // Determine next appointment from appointments list: prefer soonest future appointment
+  const nextAppointment = React.useMemo(() => {
+    if (!appointments || appointments.length === 0) return null;
+    try {
+      const now = new Date();
+
+      const mapped = appointments.map((a) => ({
+        ...a,
+        _dateObj:
+          a.date && typeof (a.date as any).toDate === "function"
+            ? (a.date as any).toDate()
+            : new Date(a.date as any),
+      }));
+
+      const future = mapped
+        .filter((a) => a._dateObj.getTime() >= now.getTime())
+        .sort((x, y) => x._dateObj.getTime() - y._dateObj.getTime());
+
+      if (future.length > 0) return future[0];
+
+      const allSorted = mapped.sort(
+        (x, y) => x._dateObj.getTime() - y._dateObj.getTime()
+      );
+      return allSorted[0];
+    } catch (error) {
+      console.error("Error computing next appointment in Profile:", error);
+      return appointments[0] || null;
+    }
+  }, [appointments]);
+
+  const formatAppointmentDate = (dateObj?: Date | null) => {
+    if (!dateObj) return "No date";
+    try {
+      const date = dateObj;
+      const now = new Date();
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      if (date.toDateString() === now.toDateString()) {
+        return `Today, ${date.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        })}`;
+      } else if (date.toDateString() === tomorrow.toDateString()) {
+        return `Tomorrow, ${date.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        })}`;
+      } else {
+        return `${date.toLocaleDateString()}, ${date.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        })}`;
+      }
+    } catch (error) {
+      console.error("Error formatting appointment date:", error);
+      return "Invalid date";
+    }
+  };
+
   // Show loading while data is being fetched initially
   if (initialLoad) {
     return (
       <IonPage>
-        <IonContent>
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            className="loading-spinner"
-          />
-          <IonText className="ion-text-center ion-padding">
-            <p>Loading your profile...</p>
-          </IonText>
+        <IonContent fullscreen className="ion-padding">
+          <div className="loading-container">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              className="loading-spinner"
+            />
+            <IonText className="ion-text-center ion-padding">
+              <p>Loading your Profile...</p>
+            </IonText>
+          </div>
         </IonContent>
       </IonPage>
     );
@@ -631,11 +729,27 @@ const Profile: React.FC = () => {
                   <span className="stat-label">Medications</span>
                 </div>
                 <div className="stat-item">
-                  <IonIcon icon={calendarOutline} color="tertiary" />
-                  <span className="stat-value">
-                    {patient.nextAppointment?.split(" ")[1] || "N/A"}
-                  </span>
-                  <span className="stat-label">Next Appt</span>
+                  <div
+                    onClick={() => {
+                      if (nextAppointment && nextAppointment.id) {
+                        history.push(
+                          `/patient/book_appointment?appointmentId=${nextAppointment.id}`
+                        );
+                      }
+                    }}
+                    style={{ cursor: nextAppointment ? "pointer" : "default" }}
+                  >
+                    <IonIcon icon={calendarOutline} color="tertiary" />
+                    <IonLabel>
+                      <span className="stat-value">
+                        {nextAppointment
+                          ? formatAppointmentDate(nextAppointment._dateObj)
+                          : "N/A"}
+                      </span>
+                    </IonLabel>
+
+                    <span className="stat-label">Next Appt</span>
+                  </div>
                 </div>
               </motion.div>
             </div>
@@ -1043,12 +1157,32 @@ const Profile: React.FC = () => {
           transition={{ delay: 0.3 }}
           className="profile-actions"
         >
-          <IonButton color="danger" fill="outline" onClick={handleLogout}>
+          <IonButton
+            color="danger"
+            fill="outline"
+            onClick={() => setShowLogOutAlert(true)}
+          >
             <IonIcon slot="start" icon={logOutOutline} />
             Log Out
           </IonButton>
         </motion.div>
       </IonContent>
+      <IonAlert
+        isOpen={showLogOutAlert}
+        onDidDismiss={() => setShowLogOutAlert(false)}
+        header="Log Out"
+        message="Are you sure you want to Log out?"
+        buttons={[
+          {
+            text: "Cancel",
+            role: "cancel",
+          },
+          {
+            text: "Yes, Log out",
+            handler: handleLogout,
+          },
+        ]}
+      />
     </IonPage>
   );
 };

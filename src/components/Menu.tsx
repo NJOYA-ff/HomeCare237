@@ -21,10 +21,19 @@ import {
   personCircleOutline,
   receiptOutline,
 } from "ionicons/icons";
+import {
+  FaTachometerAlt,
+  FaUserCircle,
+  FaCalendarAlt,
+  FaComments,
+  FaFileMedical,
+  FaHospital,
+} from "react-icons/fa";
 import dashboard from "@material-design-icons/svg/outlined/dashboard.svg";
 import calend from "@material-design-icons/svg/outlined/edit_calendar.svg";
 import termo from "@material-design-icons/svg/outlined/device_thermostat.svg";
 import "./Menu.css";
+import { MdSpaceBar, MdSpaceDashboard } from "react-icons/md";
 
 interface AppPage {
   url: string;
@@ -65,6 +74,7 @@ const appPages: AppPage[] = [
     iosIcon: termo,
     mdIcon: termo,
   },
+
   {
     title: "Health Units",
     url: "/patient/health_units_p",
@@ -80,8 +90,6 @@ const PatientMenu: React.FC = () => {
     <IonMenu contentId="main" type="overlay">
       <IonContent>
         <IonList id="inbox-list">
-          <IonListHeader>Inbox</IonListHeader>
-          <IonNote>hi@ionicframework.com</IonNote>
           {appPages.map((appPage, index) => {
             return (
               <IonMenuToggle key={index} autoHide={false}>
@@ -94,13 +102,21 @@ const PatientMenu: React.FC = () => {
                   lines="none"
                   detail={false}
                 >
-                  <IonIcon
-                    aria-hidden="true"
-                    slot="start"
-                    ios={appPage.iosIcon}
-                    md={appPage.mdIcon}
-                  />
-                  <IonLabel>{appPage.title}</IonLabel>
+                  <span slot="start" className="menu-icon">
+                    {appPage.url === "/patient/dashboard" && (
+                      <MdSpaceDashboard />
+                    )}
+                    {appPage.url === "/patient/profile" && <FaUserCircle />}
+                    {appPage.url === "/patient/book_appointment" && (
+                      <FaCalendarAlt />
+                    )}
+                    {appPage.url === "/patient/consult" && <FaComments />}
+                    {appPage.url === "/patient/diagnoses" && <FaFileMedical />}
+                    {appPage.url === "/patient/health_units_p" && (
+                      <FaHospital />
+                    )}
+                  </span>
+                  <IonLabel className="menu-label">{appPage.title}</IonLabel>
                 </IonItem>
               </IonMenuToggle>
             );

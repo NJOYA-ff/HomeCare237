@@ -13,32 +13,23 @@ import {
   IonList,
   IonButtons,
   IonBackButton,
-  IonBadge,
   IonText,
   IonAlert,
   IonLoading,
-  IonSelect,
-  IonSelectOption,
   IonTextarea,
   IonInput,
   IonChip,
-  IonGrid,
-  IonRow,
-  IonCol,
   IonToggle,
 } from "@ionic/react";
 import {
   mailOutline,
   callOutline,
   locationOutline,
-  settingsOutline,
   logOutOutline,
-  notificationsOutline,
   calendarOutline,
   shieldCheckmarkOutline,
   cameraOutline,
   pencilOutline,
-  lockClosedOutline,
   starOutline,
   schoolOutline,
   languageOutline,
@@ -49,18 +40,11 @@ import {
   documentTextOutline,
 } from "ionicons/icons";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  doc,
-  getDoc,
-  setDoc,
-  updateDoc,
-  DocumentReference,
-  DocumentData,
-} from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { onAuthStateChanged, User, signOut } from "firebase/auth";
+import { onAuthStateChanged, User } from "firebase/auth";
 import { db, auth, storage } from "../../firebaseconfig";
-import { authService, UserRole } from "../../App";
+import { authService } from "../../App";
 import "./Doctor.scss";
 import { useHistory } from "react-router";
 
@@ -68,7 +52,7 @@ interface DoctorData {
   name: string;
   email: string;
   password?: string;
-  phone: string;
+  contact: string;
   address: string;
   joinDate: string;
   notifications: number;
@@ -81,7 +65,7 @@ interface DoctorData {
   languages: string[];
   education: string;
   licenseNumber: string;
-  availableHours: string;
+  availableSlots: string[];
   isAvailable: boolean;
   uid?: string;
 }
@@ -89,7 +73,7 @@ interface DoctorData {
 const defaultDoctorData: DoctorData = {
   name: "",
   email: "",
-  phone: "",
+  contact: "",
   address: "",
   joinDate: new Date().toLocaleDateString("en-US", {
     year: "numeric",
@@ -106,7 +90,7 @@ const defaultDoctorData: DoctorData = {
   languages: [],
   education: "",
   licenseNumber: "",
-  availableHours: "",
+  availableSlots: [],
   isAvailable: true,
 };
 
@@ -114,12 +98,14 @@ const Doc_profile: React.FC = () => {
   const [doctor, setDoctor] = useState<DoctorData>(defaultDoctorData);
   const [isEditing, setIsEditing] = useState(false);
   const [tempData, setTempData] = useState<DoctorData>(defaultDoctorData);
-  const [showAvatarOptions, setShowAvatarOptions] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const slotInputRef = useRef<HTMLIonInputElement>(null);
+  const languageInputRef = useRef<HTMLIonInputElement>(null);
+  const [showLogOutAlert, setShowLogOutAlert] = useState(false);
 
   // Listen for authentication state changes
   useEffect(() => {
@@ -142,17 +128,39 @@ const Doc_profile: React.FC = () => {
       const doctorSnap = await getDoc(doctorRef);
 
       if (doctorSnap.exists()) {
-        const doctorData = doctorSnap.data() as DoctorData;
-        setDoctor((prev) => ({
+        const raw = doctorSnap.data() as any;
+
+        // Normalize available slots
+        const availableSlots: string[] = Array.isArray(raw.availableSlots)
+          ? raw.availableSlots
+          : raw.availableHours
+          ? (raw.availableHours + "")
+              .split(",")
+              .map((s: string) => s.trim())
+              .filter((s: string) => s.length > 0)
+          : [];
+
+        // Normalize languages
+        const languages: string[] = Array.isArray(raw.languages)
+          ? raw.languages
+          : raw.languages
+          ? typeof raw.languages === "string"
+            ? raw.languages
+                .split(",")
+                .map((s: string) => s.trim())
+                .filter((s: string) => s.length > 0)
+            : []
+          : [];
+
+        const doctorData: DoctorData = {
           ...defaultDoctorData,
-          ...doctorData,
-          uid,
-        }));
-        setTempData((prev) => ({
-          ...defaultDoctorData,
-          ...doctorData,
-          uid,
-        }));
+          ...raw,
+          availableSlots,
+          languages,
+        } as DoctorData;
+
+        setDoctor({ ...doctorData, uid });
+        setTempData({ ...doctorData, uid });
       } else {
         // Create initial doctor document with default data
         const initialData: DoctorData = {
@@ -181,7 +189,7 @@ const Doc_profile: React.FC = () => {
 
   const handleInputChange = (
     field: keyof DoctorData,
-    value: string | number | boolean | string[]
+    value: string | number | boolean | string[],
   ) => {
     setTempData({
       ...tempData,
@@ -201,7 +209,7 @@ const Doc_profile: React.FC = () => {
 
       await updateDoc(doctorRef, updateData);
 
-      setDoctor(tempData);
+      setDoctor(tempData as DoctorData);
       setIsEditing(false);
       setShowAlert(true);
     } catch (error) {
@@ -212,15 +220,38 @@ const Doc_profile: React.FC = () => {
     }
   };
 
+  // Save a single field immediately to Firestore
+  const saveField = async (field: string, value: any) => {
+    if (!currentUser) {
+      console.error("No current user to save field");
+      return;
+    }
+    try {
+      setIsLoading(true);
+      const doctorRef = doc(db, "doctors", currentUser.uid);
+
+      // Prepare the payload
+      const payload: any = { [field]: value };
+
+      console.log("Saving to Firebase:", field, "Value:", payload[field]);
+      await updateDoc(doctorRef, payload);
+
+      // Update local state
+      setDoctor((prev) => ({ ...prev, [field]: value }));
+
+      console.log("Successfully saved to Firebase:", field);
+    } catch (e: any) {
+      console.error("Failed to save field to Firebase:", field, "Error:", e);
+      console.error("Error details:", e.message);
+      throw e;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const cancelEditing = () => {
     setTempData(doctor);
     setIsEditing(false);
-  };
-
-  const handleAvatarClick = () => {
-    if (isEditing) {
-      setShowAvatarOptions(true);
-    }
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -246,10 +277,9 @@ const Doc_profile: React.FC = () => {
       const downloadURL = await getDownloadURL(snapshot.ref);
 
       // Update temp data with new avatar URL
-      setTempData({
-        ...tempData,
-        avatar: downloadURL,
-      });
+      setTempData({ ...tempData, avatar: downloadURL });
+      // persist avatar immediately
+      await saveField("avatar", downloadURL);
     } catch (error) {
       console.error("Error uploading avatar:", error);
       alert("Error uploading image. Please try again.");
@@ -258,34 +288,129 @@ const Doc_profile: React.FC = () => {
     }
   };
 
-  const takePhoto = () => {
-    // Camera functionality would be implemented here
-    alert("Camera functionality would be implemented here");
-    setShowAvatarOptions(false);
-  };
-
   const selectFromGallery = () => {
     fileInputRef.current?.click();
-    setShowAvatarOptions(false);
   };
 
-  const addLanguage = (lang: string) => {
-    if (lang && !tempData.languages.includes(lang)) {
-      handleInputChange("languages", [...tempData.languages, lang]);
+  const addLanguage = async () => {
+    if (!languageInputRef.current) return;
+
+    const inputValue = await languageInputRef.current.getInputElement();
+    const lang = inputValue.value.trim();
+
+    if (!lang) return;
+
+    try {
+      // Create a new array with the new language
+      const updatedLanguages = [...tempData.languages, lang];
+
+      // Update local state
+      handleInputChange("languages", updatedLanguages);
+
+      // Save to Firebase
+      await saveField("languages", updatedLanguages);
+
+      // Clear input
+      inputValue.value = "";
+
+      console.log("Language added successfully:", lang);
+    } catch (e) {
+      console.error("Error adding language:", e);
+      alert("Failed to add language. Please try again.");
     }
   };
 
-  const removeLanguage = (index: number) => {
-    const updatedLanguages = [...tempData.languages];
-    updatedLanguages.splice(index, 1);
-    handleInputChange("languages", updatedLanguages);
+  const removeLanguage = async (index: number) => {
+    try {
+      // Create a new array without the removed language
+      const updatedLanguages = [...tempData.languages];
+      updatedLanguages.splice(index, 1);
+
+      // Update local state
+      handleInputChange("languages", updatedLanguages);
+
+      // Save to Firebase
+      await saveField("languages", updatedLanguages);
+
+      console.log("Language removed successfully");
+    } catch (e) {
+      console.error("Error removing language:", e);
+      alert("Failed to remove language. Please try again.");
+    }
   };
+
+  const addSlot = async () => {
+    if (!slotInputRef.current) return;
+
+    const inputValue = await slotInputRef.current.getInputElement();
+    const slot = inputValue.value.trim();
+
+    if (!slot) return;
+
+    // Validate time format (HH:MM, 24-hour)
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(slot)) {
+      alert("Please enter time in HH:MM (24-hour) format (e.g., 09:00, 14:30)");
+      return;
+    }
+
+    try {
+      // Create a new array with the new slot
+      const updatedSlots = [...tempData.availableSlots, slot];
+
+      // Update local state
+      handleInputChange("availableSlots", updatedSlots);
+
+      // Save to Firebase
+      await saveField("availableSlots", updatedSlots);
+
+      // Clear input
+      inputValue.value = "";
+
+      console.log("Slot added successfully:", slot);
+    } catch (e) {
+      console.error("Error adding slot:", e);
+      alert("Failed to add slot. Please try again.");
+    }
+  };
+
+  const removeSlot = async (index: number) => {
+    try {
+      // Create a new array without the removed slot
+      const updatedSlots = [...tempData.availableSlots];
+      updatedSlots.splice(index, 1);
+
+      // Update local state
+      handleInputChange("availableSlots", updatedSlots);
+
+      // Save to Firebase
+      await saveField("availableSlots", updatedSlots);
+
+      console.log("Slot removed successfully");
+    } catch (e) {
+      console.error("Error removing slot:", e);
+      alert("Failed to remove slot. Please try again.");
+    }
+  };
+
+  const handleLanguageKeyPress = async (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      await addLanguage();
+    }
+  };
+
+  const handleSlotKeyPress = async (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      await addSlot();
+    }
+  };
+
   const history = useHistory();
   const handleLogout = async () => {
     try {
       await authService.logout();
       history.push("/Doctor_signin");
-      // Redirect to login page or handle logout
     } catch (error) {
       console.error("Error signing out:", error);
     }
@@ -362,7 +487,7 @@ const Doc_profile: React.FC = () => {
               whileHover={{ scale: isEditing ? 1.05 : 1 }}
               whileTap={{ scale: isEditing ? 0.95 : 1 }}
               className="avatar-container"
-              onClick={selectFromGallery}
+              onClick={isEditing ? selectFromGallery : undefined}
             >
               <IonAvatar className="profile-avatar">
                 <img
@@ -384,6 +509,7 @@ const Doc_profile: React.FC = () => {
                   onIonInput={(e) => handleInputChange("name", e.detail.value!)}
                   className="profile-edit-input"
                   placeholder="Enter your name"
+                  onIonBlur={() => saveField("name", tempData.name)}
                 />
               ) : (
                 <IonText color="dark">
@@ -403,6 +529,9 @@ const Doc_profile: React.FC = () => {
                     }
                     className="profile-edit-input"
                     placeholder="Enter your specialty"
+                    onIonBlur={() =>
+                      saveField("specialization", tempData.specialization)
+                    }
                   />
                 ) : (
                   <span>{doctor.specialization || "Specialty not set"}</span>
@@ -462,17 +591,18 @@ const Doc_profile: React.FC = () => {
                   {isEditing ? (
                     <IonInput
                       type="tel"
-                      value={tempData.phone}
+                      value={tempData.contact}
                       onIonInput={(e) =>
-                        handleInputChange("phone", e.detail.value!)
+                        handleInputChange("contact", e.detail.value!)
                       }
                       className="profile-edit-input"
                       placeholder="Enter phone number"
+                      onIonBlur={() => saveField("contact", tempData.contact)}
                     />
                   ) : (
                     <IonLabel>
                       <h3>Phone</h3>
-                      <p>{doctor.phone || "No phone number set"}</p>
+                      <p>{doctor.contact || "No contact number set"}</p>
                     </IonLabel>
                   )}
                 </IonItem>
@@ -491,6 +621,7 @@ const Doc_profile: React.FC = () => {
                       }
                       className="profile-edit-input"
                       placeholder="Enter address"
+                      onIonBlur={() => saveField("address", tempData.address)}
                     />
                   ) : (
                     <IonLabel>
@@ -512,11 +643,17 @@ const Doc_profile: React.FC = () => {
                       onIonInput={(e) =>
                         handleInputChange(
                           "consultationFee",
-                          parseInt(e.detail.value!) || 0
+                          parseInt(e.detail.value!) || 0,
                         )
                       }
                       className="profile-edit-input"
                       placeholder="Enter consultation fee"
+                      onIonBlur={() =>
+                        saveField(
+                          "consultationFee",
+                          Number(tempData.consultationFee),
+                        )
+                      }
                     />
                   ) : (
                     <IonLabel>
@@ -542,6 +679,9 @@ const Doc_profile: React.FC = () => {
                       }
                       className="profile-edit-input"
                       placeholder="Enter education"
+                      onIonBlur={() =>
+                        saveField("education", tempData.education)
+                      }
                     />
                   ) : (
                     <IonLabel>
@@ -569,6 +709,9 @@ const Doc_profile: React.FC = () => {
                       }
                       className="profile-edit-input"
                       placeholder="Enter license number"
+                      onIonBlur={() =>
+                        saveField("licenseNumber", tempData.licenseNumber)
+                      }
                     />
                   ) : (
                     <IonLabel>
@@ -584,19 +727,39 @@ const Doc_profile: React.FC = () => {
                 <IonItem className="profile-d-item">
                   <IonIcon slot="start" icon={timeOutline} color="medium" />
                   {isEditing ? (
-                    <IonInput
-                      type="text"
-                      value={tempData.availableHours}
-                      onIonInput={(e) =>
-                        handleInputChange("availableHours", e.detail.value!)
-                      }
-                      className="profile-edit-input"
-                      placeholder="Enter available hours"
-                    />
+                    <IonLabel>
+                      <h3>Available Slots</h3>
+                      <div className="slots-edit">
+                        <IonInput
+                          ref={slotInputRef}
+                          placeholder="Add slot e.g. 09:00"
+                          onKeyPress={handleSlotKeyPress}
+                          className="profile-edit-input"
+                          onIonBlur={addSlot}
+                        />
+
+                        <div className="slot-chips">
+                          {tempData.availableSlots.map((s, i) => (
+                            <IonChip key={i} color="primary">
+                              <IonLabel>{s}</IonLabel>
+                              <IonIcon
+                                icon={closeCircleOutline}
+                                onClick={() => removeSlot(i)}
+                              />
+                            </IonChip>
+                          ))}
+                        </div>
+                      </div>
+                    </IonLabel>
                   ) : (
                     <IonLabel>
-                      <h3>Available Hours</h3>
-                      <p>{doctor.availableHours || "No available hours set"}</p>
+                      <h3>Available Slots</h3>
+                      <p>
+                        {doctor.availableSlots &&
+                        doctor.availableSlots.length > 0
+                          ? doctor.availableSlots.join(", ")
+                          : "No available slots set"}
+                      </p>
                     </IonLabel>
                   )}
                 </IonItem>
@@ -611,15 +774,13 @@ const Doc_profile: React.FC = () => {
                     {isEditing ? (
                       <div className="languages-edit">
                         <IonInput
+                          ref={languageInputRef}
                           placeholder="Add a language"
-                          onKeyPress={(e) => {
-                            if (e.key === "Enter") {
-                              addLanguage((e.target as HTMLInputElement).value);
-                              (e.target as HTMLInputElement).value = "";
-                            }
-                          }}
+                          onKeyPress={handleLanguageKeyPress}
                           className="language-input"
+                          onIonBlur={addLanguage}
                         />
+
                         <div className="language-chips">
                           {tempData.languages.map((lang, index) => (
                             <IonChip key={index} color="primary">
@@ -662,6 +823,7 @@ const Doc_profile: React.FC = () => {
                         rows={4}
                         className="profile-edit-textarea"
                         placeholder="Enter your bio"
+                        onIonBlur={() => saveField("bio", tempData.bio)}
                       />
                     ) : (
                       <p>{doctor.bio || "No bio set"}</p>
@@ -689,10 +851,16 @@ const Doc_profile: React.FC = () => {
                   {isEditing && (
                     <IonToggle
                       checked={tempData.isAvailable}
-                      onIonChange={(e) =>
-                        handleInputChange("isAvailable", e.detail.checked)
-                      }
                       slot="end"
+                      onIonChange={async (e) => {
+                        const checked = e.detail.checked;
+                        handleInputChange("isAvailable", checked);
+                        try {
+                          await saveField("isAvailable", checked);
+                        } catch (err) {
+                          console.error("Failed to save availability:", err);
+                        }
+                      }}
                     />
                   )}
                 </IonItem>
@@ -722,7 +890,7 @@ const Doc_profile: React.FC = () => {
               className="edit-actions"
             >
               <IonButton color="primary" onClick={saveChanges}>
-                Save Changes
+                Save All Changes
               </IonButton>
             </motion.div>
           )}
@@ -734,12 +902,32 @@ const Doc_profile: React.FC = () => {
           transition={{ delay: 0.3 }}
           className="profile-actions"
         >
-          <IonButton color="danger" fill="outline" onClick={handleLogout}>
+          <IonButton
+            color="danger"
+            fill="outline"
+            onClick={() => setShowLogOutAlert(true)}
+          >
             <IonIcon slot="start" icon={logOutOutline} />
             Log Out
           </IonButton>
         </motion.div>
       </IonContent>
+      <IonAlert
+        isOpen={showLogOutAlert}
+        onDidDismiss={() => setShowLogOutAlert(false)}
+        header="Log Out"
+        message="Are you sure you want to Log out?"
+        buttons={[
+          {
+            text: "Cancel",
+            role: "cancel",
+          },
+          {
+            text: "Yes, Log out",
+            handler: handleLogout,
+          },
+        ]}
+      />
     </IonPage>
   );
 };

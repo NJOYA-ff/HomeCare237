@@ -20,6 +20,7 @@ import {
   IonModal,
   IonButtons,
   IonBackButton,
+  IonToast,
 } from "@ionic/react";
 import { db, auth } from "../../firebaseconfig";
 import {
@@ -41,6 +42,7 @@ import {
   checkmarkCircleOutline,
   timeOutline,
   closeOutline,
+  downloadOutline,
 } from "ionicons/icons";
 import {
   PDFDownloadLink,
@@ -49,8 +51,10 @@ import {
   Text,
   View,
   StyleSheet,
+  pdf,
 } from "@react-pdf/renderer";
-import download from "@material-design-icons/svg/outlined/download.svg";
+import { Directory, Filesystem } from "@capacitor/filesystem";
+import { Capacitor } from "@capacitor/core";
 import "./Diagnoses.scss";
 import { motion } from "framer-motion";
 
@@ -105,7 +109,7 @@ interface Patient {
   medicalRecordNumber: string;
 }
 
-// PDF Styles (keep the same styles)
+// PDF Styles
 const styles = StyleSheet.create({
   page: {
     flexDirection: "column",
@@ -173,7 +177,7 @@ const styles = StyleSheet.create({
   },
 });
 
-// PDF Document Components with patient data
+// PDF Document Components with explicit return type
 const DiagnosisPDF: React.FC<{ diagnosis: Diagnosis; patient: Patient }> = ({
   diagnosis,
   patient,
@@ -458,6 +462,9 @@ const PrescriptionPDF: React.FC<{
   </Document>
 );
 
+// Define a type for PDF documents
+type PDFDocumentType = React.ReactElement | undefined;
+
 // Main Diagnoses Page Component
 const Diagnoses: React.FC = () => {
   const [diagnoses, setDiagnoses] = useState<Diagnosis[]>([]);
@@ -465,6 +472,8 @@ const Diagnoses: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showAlert, setShowAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
 
   useEffect(() => {
     const fetchDiagnoses = async () => {
@@ -477,7 +486,6 @@ const Diagnoses: React.FC = () => {
           return;
         }
 
-        // Get patient data
         const patientDoc = await getDoc(doc(db, "patients", user.uid));
         if (!patientDoc.exists()) {
           setAlertMessage("Patient record not found.");
@@ -489,14 +497,12 @@ const Diagnoses: React.FC = () => {
         const patientData = patientDoc.data() as Patient;
         setPatient(patientData);
 
-        // Query diagnoses for this patient
         const diagnosesQuery = query(
           collection(db, "diagnoses"),
           where("patientId", "==", user.uid),
           orderBy("date", "desc")
         );
 
-        // Real-time listener for diagnoses
         const unsubscribe = onSnapshot(
           diagnosesQuery,
           (querySnapshot) => {
@@ -531,6 +537,76 @@ const Diagnoses: React.FC = () => {
 
     fetchDiagnoses();
   }, []);
+
+  // Function to save PDF to device
+  const savePDFToDevice = async (
+    pdfDocument: PDFDocumentType,
+    fileName: string
+  ) => {
+    try {
+      // Generate PDF blob
+      const blob = await pdf(pdfDocument as any).toBlob();
+
+      // For mobile devices using Capacitor (non-web platforms)
+      if (Capacitor.getPlatform && Capacitor.getPlatform() !== "web") {
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+
+        reader.onloadend = async () => {
+          const base64Data = reader.result as string;
+          const base64Content = base64Data.split(",")[1]; // Remove data URL prefix
+
+          try {
+            // Create directory if it doesn't exist
+            try {
+              await Filesystem.mkdir({
+                path: "HomeCare/Documents",
+                directory: Directory.Documents,
+                recursive: true,
+              });
+            } catch (e) {
+              // Directory might already exist
+              console.log("Directory creation:", e);
+            }
+
+            // Save the file
+            await Filesystem.writeFile({
+              path: `HomeCare/Documents/${fileName}.pdf`,
+              data: base64Content,
+              directory: Directory.Documents,
+              recursive: true,
+            });
+
+            setToastMessage(
+              `PDF saved to Documents/HomeCare/Documents/${fileName}.pdf`
+            );
+            setShowToast(true);
+          } catch (error) {
+            console.error("Error saving PDF:", error);
+            setToastMessage("Failed to save PDF. Please try again.");
+            setShowToast(true);
+          }
+        };
+      } else {
+        // For web browsers
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `${fileName}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        setToastMessage("PDF downloaded to your device.");
+        setShowToast(true);
+      }
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      setToastMessage("Failed to generate PDF.");
+      setShowToast(true);
+    }
+  };
 
   if (loading) {
     return (
@@ -580,6 +656,7 @@ const Diagnoses: React.FC = () => {
                 key={diagnosis.id}
                 diagnosis={diagnosis}
                 patient={patient!}
+                onSavePDF={savePDFToDevice}
               />
             ))
           )}
@@ -592,6 +669,14 @@ const Diagnoses: React.FC = () => {
           message={alertMessage}
           buttons={["OK"]}
         />
+
+        <IonToast
+          isOpen={showToast}
+          onDidDismiss={() => setShowToast(false)}
+          message={toastMessage}
+          duration={3000}
+          position="bottom"
+        />
       </IonContent>
     </IonPage>
   );
@@ -600,9 +685,10 @@ const Diagnoses: React.FC = () => {
 const DiagnosisCard: React.FC<{
   diagnosis: Diagnosis;
   patient: Patient;
-}> = ({ diagnosis, patient }) => {
-  const [showLabResultsModal, setShowLabResultsModal] = useState(false);
-  const [showPrescriptionsModal, setShowPrescriptionsModal] = useState(false);
+  onSavePDF: (pdfDocument: PDFDocumentType, fileName: string) => void;
+}> = ({ diagnosis, patient, onSavePDF }) => {
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-CM", {
@@ -612,18 +698,46 @@ const DiagnosisCard: React.FC<{
     });
   };
 
+  const handleSaveFullReport = async () => {
+    if (isSaving) return;
+
+    setIsSaving(true);
+    try {
+      const fileName = `Diagnosis_${diagnosis.condition.replace(
+        /\s+/g,
+        "_"
+      )}_${Date.now()}`;
+      await onSavePDF(
+        <DiagnosisPDF diagnosis={diagnosis} patient={patient} />,
+        fileName
+      );
+    } catch (error) {
+      console.error("Error saving report:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
   return (
     <>
-      <IonCard className="diagnosis-card-p">
+      <IonCard
+        className="diagnosis-card-p"
+        style={{
+          borderLeftColor:
+            diagnosis.status === "active"
+              ? "#f59e0b"
+              : diagnosis.status === "resolved"
+              ? "#10b981"
+              : "#3b82f6",
+        }}
+      >
         <IonCardHeader className="card-header-p">
           <div className="card-header-content">
             <div>
-              <IonCardTitle class="card-title-p">
+              <IonCardTitle className="card-title-p">
                 {diagnosis.condition}
               </IonCardTitle>
               <p className="diagnosis-date">
-                <IonIcon icon={calendarOutline} />
-                {formatDate(diagnosis.date)}
+                <IonIcon icon={calendarOutline} /> {formatDate(diagnosis.date)}
               </p>
             </div>
             <IonBadge
@@ -647,57 +761,36 @@ const DiagnosisCard: React.FC<{
           <p className="diagnosis-description">{diagnosis.description}</p>
 
           <div className="action-buttons">
-            {diagnosis.labResults.length > 0 && (
-              <IonButton
-                expand="block"
-                onClick={() => setShowLabResultsModal(true)}
-              >
-                <IonIcon icon={flaskOutline} slot="start" />
-                View Lab Results ({diagnosis.labResults.length})
+            {(diagnosis.labResults.length > 0 ||
+              diagnosis.prescriptions.length > 0) && (
+              <IonButton size="small" onClick={() => setShowDetailsModal(true)}>
+                <IonIcon icon={documentTextOutline} slot="start" /> Details
               </IonButton>
             )}
 
-            {diagnosis.prescriptions.length > 0 && (
-              <IonButton
-                expand="block"
-                onClick={() => setShowPrescriptionsModal(true)}
-              >
-                <IonIcon icon={medicalOutline} slot="start" />
-                View Prescriptions ({diagnosis.prescriptions.length})
-              </IonButton>
-            )}
-
-            <PDFDownloadLink
-              document={
-                <DiagnosisPDF diagnosis={diagnosis} patient={patient} />
-              }
-              fileName={`Diagnosis_${diagnosis.condition.replace(
-                /\s+/g,
-                "_"
-              )}.pdf`}
-              className="pdf-download-link"
+            <IonButton
+              size="small"
+              fill="outline"
+              onClick={handleSaveFullReport}
+              disabled={isSaving}
             >
-              {({ loading }) => (
-                <IonButton expand="block" fill="outline" disabled={loading}>
-                  <IonIcon icon={download} slot="start" />
-                  {loading ? "Preparing..." : "Export Full Report"}
-                </IonButton>
-              )}
-            </PDFDownloadLink>
+              <IonIcon icon={downloadOutline} slot="start" />{" "}
+              {isSaving ? "Saving..." : "Save"}
+            </IonButton>
           </div>
         </IonCardContent>
       </IonCard>
 
-      {/* Lab Results Modal */}
+      {/* Details Modal (Lab Results + Prescriptions) */}
       <IonModal
-        isOpen={showLabResultsModal}
-        onDidDismiss={() => setShowLabResultsModal(false)}
+        isOpen={showDetailsModal}
+        onDidDismiss={() => setShowDetailsModal(false)}
       >
         <IonHeader>
           <IonToolbar>
-            <IonTitle>Lab Results</IonTitle>
+            <IonTitle>Details</IonTitle>
             <IonButtons slot="end">
-              <IonButton onClick={() => setShowLabResultsModal(false)}>
+              <IonButton onClick={() => setShowDetailsModal(false)}>
                 <IonIcon icon={closeOutline} />
               </IonButton>
             </IonButtons>
@@ -705,41 +798,33 @@ const DiagnosisCard: React.FC<{
         </IonHeader>
         <IonContent>
           <div className="modal-content">
-            {diagnosis.labResults.map((labResult) => (
-              <LabResultItem
-                key={labResult.id}
-                labResult={labResult}
-                patient={patient}
-              />
-            ))}
-          </div>
-        </IonContent>
-      </IonModal>
+            {diagnosis.labResults && diagnosis.labResults.length > 0 && (
+              <section className="details-section">
+                <h3>Lab Results</h3>
+                {diagnosis.labResults.map((labResult) => (
+                  <LabResultItem
+                    key={labResult.id}
+                    labResult={labResult}
+                    patient={patient}
+                    onSavePDF={onSavePDF}
+                  />
+                ))}
+              </section>
+            )}
 
-      {/* Prescriptions Modal */}
-      <IonModal
-        isOpen={showPrescriptionsModal}
-        onDidDismiss={() => setShowPrescriptionsModal(false)}
-      >
-        <IonHeader>
-          <IonToolbar>
-            <IonTitle>Prescriptions</IonTitle>
-            <IonButtons slot="end">
-              <IonButton onClick={() => setShowPrescriptionsModal(false)}>
-                <IonIcon icon={closeOutline} />
-              </IonButton>
-            </IonButtons>
-          </IonToolbar>
-        </IonHeader>
-        <IonContent>
-          <div className="modal-content">
-            {diagnosis.prescriptions.map((prescription) => (
-              <PrescriptionItem
-                key={prescription.id}
-                prescription={prescription}
-                patient={patient}
-              />
-            ))}
+            {diagnosis.prescriptions && diagnosis.prescriptions.length > 0 && (
+              <section className="details-section">
+                <h3>Prescriptions</h3>
+                {diagnosis.prescriptions.map((prescription) => (
+                  <PrescriptionItem
+                    key={prescription.id}
+                    prescription={prescription}
+                    patient={patient}
+                    onSavePDF={onSavePDF}
+                  />
+                ))}
+              </section>
+            )}
           </div>
         </IonContent>
       </IonModal>
@@ -750,7 +835,30 @@ const DiagnosisCard: React.FC<{
 const LabResultItem: React.FC<{
   labResult: LabResult;
   patient: Patient;
-}> = ({ labResult, patient }) => {
+  onSavePDF: (pdfDocument: PDFDocumentType, fileName: string) => void;
+}> = ({ labResult, patient, onSavePDF }) => {
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSaveLabResult = async () => {
+    if (isSaving) return;
+
+    setIsSaving(true);
+    try {
+      const fileName = `Lab_Result_${labResult.name.replace(
+        /\s+/g,
+        "_"
+      )}_${Date.now()}`;
+      await onSavePDF(
+        <LabResultPDF labResult={labResult} patient={patient} />,
+        fileName
+      );
+    } catch (error) {
+      console.error("Error saving lab result:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <IonCard className="lab-result-card">
       <IonCardHeader>
@@ -794,24 +902,21 @@ const LabResultItem: React.FC<{
           </div>
         )}
 
-        <PDFDownloadLink
-          document={<LabResultPDF labResult={labResult} patient={patient} />}
-          fileName={`Lab_Result_${labResult.name.replace(/\s+/g, "_")}.pdf`}
-          className="pdf-download-link"
+        <IonButton
+          expand="block"
+          fill="outline"
+          onClick={handleSaveLabResult}
+          disabled={isSaving}
         >
-          {({ loading }) => (
-            <IonButton expand="block" fill="outline" disabled={loading}>
-              {loading ? (
-                <IonSpinner name="crescent" />
-              ) : (
-                <>
-                  <IonIcon icon={download} slot="start" />
-                  Save as PDF
-                </>
-              )}
-            </IonButton>
+          {isSaving ? (
+            <IonSpinner name="crescent" />
+          ) : (
+            <>
+              <IonIcon icon={downloadOutline} slot="start" />
+              Save as PDF
+            </>
           )}
-        </PDFDownloadLink>
+        </IonButton>
       </IonCardContent>
     </IonCard>
   );
@@ -820,7 +925,30 @@ const LabResultItem: React.FC<{
 const PrescriptionItem: React.FC<{
   prescription: Prescription;
   patient: Patient;
-}> = ({ prescription, patient }) => {
+  onSavePDF: (pdfDocument: PDFDocumentType, fileName: string) => void;
+}> = ({ prescription, patient, onSavePDF }) => {
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSavePrescription = async () => {
+    if (isSaving) return;
+
+    setIsSaving(true);
+    try {
+      const fileName = `Prescription_${prescription.medication.replace(
+        /\s+/g,
+        "_"
+      )}_${Date.now()}`;
+      await onSavePDF(
+        <PrescriptionPDF prescription={prescription} patient={patient} />,
+        fileName
+      );
+    } catch (error) {
+      console.error("Error saving prescription:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <IonCard className="prescription-card">
       <IonCardHeader>
@@ -866,29 +994,21 @@ const PrescriptionItem: React.FC<{
           </div>
         )}
 
-        <PDFDownloadLink
-          document={
-            <PrescriptionPDF prescription={prescription} patient={patient} />
-          }
-          fileName={`Prescription_${prescription.medication.replace(
-            /\s+/g,
-            "_"
-          )}.pdf`}
-          className="pdf-download-link"
+        <IonButton
+          expand="block"
+          fill="outline"
+          onClick={handleSavePrescription}
+          disabled={isSaving}
         >
-          {({ loading }) => (
-            <IonButton expand="block" fill="outline" disabled={loading}>
-              {loading ? (
-                <IonSpinner name="crescent" />
-              ) : (
-                <>
-                  <IonIcon icon={download} slot="start" />
-                  Save as PDF
-                </>
-              )}
-            </IonButton>
+          {isSaving ? (
+            <IonSpinner name="crescent" />
+          ) : (
+            <>
+              <IonIcon icon={downloadOutline} slot="start" />
+              Save as PDF
+            </>
           )}
-        </PDFDownloadLink>
+        </IonButton>
       </IonCardContent>
     </IonCard>
   );

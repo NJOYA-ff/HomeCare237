@@ -1,0 +1,65 @@
+/* Specialties page styles */
+.specialties-page {
+  padding: 12px;
+}
+
+.specialties-card {
+  padding-bottom: 8px;
+}
+
+.specialties-title {
+  font-size: 18px;
+  padding: 12px 0;
+}
+
+.specialties-grid {
+  margin-top: 8px;
+}
+
+.specialty-doctor-card {
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.specialty-doctor-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 30px rgba(25, 118, 210, 0.08);
+}
+
+.doctor-row {
+  display: flex;
+  align-items: center;
+}
+
+// .doctor-avatar img {
+//   width: 56px;
+//   height: 56px;
+//   object-fit: cover;
+//   border-radius: 8px;
+// }
+
+.doctor-meta h4 {
+  margin: 0 0 4px 0;
+}
+
+.doctor-meta .muted {
+  color: var(--ion-color-medium);
+  margin: 0;
+}
+
+.book-now-btn {
+  --background: linear-gradient(90deg, #1a237e 0%, #1976d2 100%);
+  --border-radius: 10px;
+  color: white;
+}
+
+@media (max-width: 768px) {
+  .doctor-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .doctor-action {
+    width: 100%;
+    margin-top: 8px;
+  }
+}

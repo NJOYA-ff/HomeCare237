@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
+import { useHistory } from "react-router";
 import {
   IonContent,
   IonHeader,
@@ -34,6 +35,9 @@ import {
   IonImg,
   IonAlert,
   IonToast,
+  IonPopover,
+  IonList,
+  IonItem as IonListItem,
 } from "@ionic/react";
 import {
   collection,
@@ -49,6 +53,78 @@ import {
   Timestamp,
   addDoc,
 } from "firebase/firestore";
+import {
+  FaHeartbeat,
+  FaStethoscope,
+  FaPills,
+  FaSyringe,
+  FaHospital,
+  FaUserMd,
+  FaClinicMedical,
+  FaProcedures,
+  FaXRay,
+  FaAllergies,
+  FaBandAid,
+  FaBookMedical,
+  FaCapsules,
+  FaDiagnoses,
+  FaDna,
+  FaFileMedical,
+  FaFirstAid,
+  FaFlask,
+  FaHeart,
+  FaLungs,
+  FaPrescriptionBottle,
+  FaPrescriptionBottleAlt,
+  FaShieldAlt,
+  FaSkullCrossbones,
+  FaTeeth,
+  FaThermometerHalf,
+  FaTooth,
+  FaChild,
+  FaVenus,
+  FaBrain,
+  FaBone,
+  FaAmbulance,
+  FaEye,
+  FaUserInjured,
+  FaVial,
+  FaWeight,
+} from "react-icons/fa";
+
+import {
+  GiBrain,
+  GiKidneys,
+  GiLiver,
+  GiHand,
+  GiMedicalPack,
+  GiMedicalDrip,
+  GiMedicalPackAlt,
+  GiMedicines,
+  GiMedicinePills,
+  GiMedicalThermometer,
+  GiHeartBeats,
+  GiLungs,
+  GiStomach,
+} from "react-icons/gi";
+
+import {
+  MdHealthAndSafety,
+  MdLocalPharmacy,
+  MdMedicalServices,
+  MdMonitorHeart,
+  MdSick,
+  MdVaccines,
+  MdCoronavirus,
+  MdAirlineSeatReclineExtra,
+  MdBloodtype,
+  MdEmergency,
+  MdLocalHospital,
+  MdMedicalInformation,
+  MdPsychology,
+  MdSensors,
+  MdSupportAgent,
+} from "react-icons/md";
 import { ref, getDownloadURL } from "firebase/storage";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { db, storage, auth } from "../../firebaseconfig";
@@ -63,6 +139,20 @@ import {
   heartOutline,
   star,
   callOutline,
+  chevronForward,
+  fitness,
+  ellipsisHorizontal,
+} from "ionicons/icons";
+import { medicalIcons, ioniconsMedical } from "../../utils/MedicalIcons";
+import monitor_heart from "@material-design-icons/svg/outlined/heart_broken.svg";
+import {
+  medical,
+  people,
+  bodyOutline,
+  fitnessOutline,
+  banOutline,
+  eyeOutline,
+  bandageOutline,
 } from "ionicons/icons";
 import "./Dashboard.scss";
 
@@ -70,6 +160,7 @@ import VoiceFlowChatModal from "./Chat-interface";
 import { motion } from "framer-motion";
 import { FiMenu } from "react-icons/fi";
 import Menu from "@material-design-icons/svg/round/menu_open.svg";
+import { useNotifications } from "../../context/NotificationContext";
 // Interfaces for type safety
 interface UserData {
   id: string;
@@ -82,6 +173,7 @@ interface UserData {
 interface Appointment {
   id: string;
   doctorId: string;
+  userName: string;
   doctorName: string;
   doctorSpecialization: string;
   date: Timestamp;
@@ -101,6 +193,7 @@ interface HealthMetric {
 
 interface Doctor {
   id: string;
+  userName: string;
   name: string;
   specialty: string;
   rating: number;
@@ -122,7 +215,13 @@ const PatientDashboard: React.FC = () => {
   const [alertMessage, setAlertMessage] = useState("");
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
-
+  const {
+    notifications,
+    unreadCount,
+    markAsRead,
+    clearAll,
+    sendLocalNotification,
+  } = useNotifications();
   // Firebase data states
   const [upcomingAppointments, setUpcomingAppointments] = useState<
     Appointment[]
@@ -145,8 +244,6 @@ const PatientDashboard: React.FC = () => {
       } else {
         setLoading(false);
         console.log("No user logged in");
-        // Optionally redirect to login page
-        // window.location.href = '/login';
       }
     });
 
@@ -157,12 +254,12 @@ const PatientDashboard: React.FC = () => {
   useEffect(() => {
     if (!userData.id) return;
 
-    // Real-time listener for appointments
+    // Real-time listener for appointments (newest first)
     const appointmentsQuery = query(
       collection(db, "appointments"),
       where("patientId", "==", userData.id),
-      where("status", "in", ["scheduled", "confirmed"]),
-      orderBy("date", "asc")
+      where("status", "in", ["pending", "confirmed"]),
+      orderBy("date", "asc"),
     );
 
     const unsubscribeAppointments = onSnapshot(
@@ -177,14 +274,14 @@ const PatientDashboard: React.FC = () => {
       (error) => {
         console.error("Error listening to appointments:", error);
         showError("Failed to load appointments");
-      }
+      },
     );
 
     // Real-time listener for health metrics
     const metricsQuery = query(
       collection(db, "healthMetrics"),
       where("patientId", "==", userData.id),
-      orderBy("timestamp", "desc")
+      orderBy("timestamp", "desc"),
     );
 
     const unsubscribeMetrics = onSnapshot(
@@ -205,7 +302,7 @@ const PatientDashboard: React.FC = () => {
       (error) => {
         console.error("Error listening to health metrics:", error);
         showError("Failed to load health metrics");
-      }
+      },
     );
 
     return () => {
@@ -227,7 +324,7 @@ const PatientDashboard: React.FC = () => {
         if (userDataFromFirestore.profileImage) {
           try {
             const imageUrl = await getDownloadURL(
-              ref(storage, userDataFromFirestore.profileImage)
+              ref(storage, userDataFromFirestore.profileImage),
             );
             setUserData((prev) => ({ ...prev, profileImage: imageUrl }));
           } catch (error) {
@@ -270,9 +367,9 @@ const PatientDashboard: React.FC = () => {
         query(
           collection(db, "appointments"),
           where("patientId", "==", userId),
-          where("status", "in", ["scheduled", "accepted"]),
-          orderBy("date", "asc")
-        )
+          where("status", "in", ["pending", "accepted"]),
+          orderBy("date", "desc"),
+        ),
       );
 
       const appointments: Appointment[] = [];
@@ -286,8 +383,8 @@ const PatientDashboard: React.FC = () => {
         query(
           collection(db, "healthMetrics"),
           where("patientId", "==", userId),
-          orderBy("timestamp", "desc")
-        )
+          orderBy("timestamp", "desc"),
+        ),
       );
 
       const metrics: HealthMetric[] = [];
@@ -324,7 +421,7 @@ const PatientDashboard: React.FC = () => {
         if (doctorData.profileImage) {
           try {
             imageUrl = await getDownloadURL(
-              ref(storage, doctorData.profileImage)
+              ref(storage, doctorData.profileImage),
             );
           } catch (error) {
             console.log("Using default avatar for doctor:", doctorData.name);
@@ -333,6 +430,7 @@ const PatientDashboard: React.FC = () => {
 
         doctors.push({
           id: doc.id,
+          userName: doctorData.userName || "doctor",
           name: doctorData.name,
           specialty: doctorData.specialization,
           rating: doctorData.rating || 4.5,
@@ -462,6 +560,92 @@ const PatientDashboard: React.FC = () => {
     return `${metric.value} ${metric.unit}`;
   };
 
+  // Specialties list (use same variable as Book_Appointment)
+  const medicalSpecialties = [
+    "General Practitioner",
+    "Cardiologist",
+    "Pediatrician",
+    "Dermatologist",
+    "Gynecologist",
+    "Orthopedic Surgeon",
+    "Neurologist",
+    "Psychiatrist",
+    "Dentist",
+    "Ophthalmologist",
+    "ENT Specialist",
+    "Urologist",
+    "Endocrinologist",
+    "Gastroenterologist",
+    "Oncologist",
+    "Rheumatologist",
+    "Pulmonologist",
+    "Nephrologist",
+    "Allergist",
+    "Physiotherapist",
+  ];
+
+  const specialtyIcons: { [key: string]: React.ReactNode } = {
+    "General Practitioner": <FaStethoscope />,
+    Cardiologist: <FaHeartbeat />,
+    Pediatrician: <FaChild />,
+    Dermatologist: <FaUserMd />,
+    Gynecologist: <FaVenus />,
+    "Orthopedic Surgeon": <FaBone />,
+    Neurologist: <FaBrain />,
+    Psychiatrist: <FaBrain />,
+    Dentist: <FaTooth />,
+    Ophthalmologist: <FaEye />,
+    "ENT Specialist": <FaHospital />,
+    Urologist: <FaHospital />,
+    Endocrinologist: <FaPills />,
+    Gastroenterologist: <FaPills />,
+    Oncologist: <FaHospital />,
+    Rheumatologist: <FaBone />,
+    Pulmonologist: <FaLungs />,
+    Nephrologist: <FaHospital />,
+    Allergist: <FaSyringe />,
+    Physiotherapist: <FaStethoscope />,
+  };
+
+  // Popover state for extra specialties
+  const [showSpecialtyPopover, setShowSpecialtyPopover] = useState(false);
+  const [popoverEvent, setPopoverEvent] = useState<any>(null);
+  const history = useHistory();
+
+  // Determine the next appointment to show: prefer the soonest future appointment (>= now).
+  const nextAppointment = useMemo(() => {
+    if (!upcomingAppointments || upcomingAppointments.length === 0) return null;
+    try {
+      const now = new Date();
+
+      // Normalize appointment dates to JS Date objects
+      const mapped = upcomingAppointments.map((a) => ({
+        ...a,
+        _dateObj:
+          a.date && typeof (a.date as any).toDate === "function"
+            ? (a.date as any).toDate()
+            : new Date(a.date as any),
+      }));
+
+      // Filter future appointments (including today) and sort ascending (soonest first)
+      const future = mapped
+        .filter((a) => a._dateObj.getTime() >= now.getTime())
+        .sort((x, y) => x._dateObj.getTime() - y._dateObj.getTime());
+
+      if (future.length > 0)
+        return future[0] as Appointment & { _dateObj: Date };
+
+      // Fallback: return the soonest appointment by date even if it's in the past
+      const allSorted = mapped.sort(
+        (x, y) => x._dateObj.getTime() - y._dateObj.getTime(),
+      );
+      return allSorted[0] as Appointment & { _dateObj: Date };
+    } catch (error) {
+      console.error("Error computing next appointment:", error);
+      return upcomingAppointments[0] || null;
+    }
+  }, [upcomingAppointments]);
+
   // Animation effects
   useEffect(() => {
     if (!loading) {
@@ -492,14 +676,16 @@ const PatientDashboard: React.FC = () => {
       <IonHeader class="ion-no-border">
         <IonToolbar className="patient-dashboard-toolbar">
           <IonButtons slot="start">
-            <IonMenuButton>
-              <IonIcon icon={Menu} />
-            </IonMenuButton>
+            <IonMenuButton />
           </IonButtons>
           <IonTitle slot="start">HomeCare</IonTitle>
-          <IonButton fill="clear" slot="end">
+          <IonButton fill="clear" slot="end" routerLink="/notifications">
+            {unreadCount > 0 && (
+              <IonBadge color="danger" style={{ marginLeft: "8px" }}>
+                {unreadCount}
+              </IonBadge>
+            )}
             <IonIcon icon={notificationsOutline} />
-            <IonBadge color="danger">2</IonBadge>
           </IonButton>
         </IonToolbar>
       </IonHeader>
@@ -638,6 +824,121 @@ const PatientDashboard: React.FC = () => {
                       : "danger"
                   }
                 />
+                {/* Specialties quick links */}
+              </IonCardContent>
+            </IonCard>
+            <IonCard className="specialties-section">
+              <IonCardHeader>
+                <IonCardTitle>Find a Specialist </IonCardTitle>
+              </IonCardHeader>
+
+              <IonCardContent className="specialties-grid-container">
+                <IonGrid className="specialties-grid">
+                  <IonRow className="specialty-row">
+                    {medicalSpecialties.slice(0, 4).map((specialty, index) => (
+                      <IonCol
+                        size="3"
+                        key={specialty}
+                        className="specialty-col"
+                      >
+                        <IonGrid className="specialty-card">
+                          <IonButton
+                            className={`specialty-btn specialty-btn-${
+                              index + 1
+                            }`}
+                            expand="block"
+                            fill="clear"
+                            routerLink={`/patient/specialties?specialty=${encodeURIComponent(
+                              specialty,
+                            )}`}
+                          >
+                            <div className="specialty-icon-wrapper">
+                              <span className="specialty-icon">
+                                {specialtyIcons[specialty] || (
+                                  <IonIcon icon={medical} />
+                                )}
+                              </span>
+                            </div>
+                          </IonButton>
+                          <IonLabel className="specialty-label">
+                            <span className="specialty-name">
+                              {specialty.split(" ")[0]}
+                            </span>
+                            {specialty.includes(" ") && (
+                              <span className="specialty-fullname">
+                                {specialty}
+                              </span>
+                            )}
+                          </IonLabel>{" "}
+                        </IonGrid>
+                      </IonCol>
+                    ))}
+
+                    {/* More Button */}
+                  </IonRow>
+                </IonGrid>
+                <IonItem lines="none" className="more-item">
+                  {" "}
+                  <IonButton
+                    fill="clear"
+                    slot="end"
+                    onClick={(e) => {
+                      setPopoverEvent(e.nativeEvent);
+                      setShowSpecialtyPopover(true);
+                    }}
+                  >
+                    <IonGrid className="specialty-icon-wrapper">
+                      <IonIcon icon={ellipsisHorizontal} />
+                    </IonGrid>
+                  </IonButton>
+                </IonItem>
+
+                <IonPopover
+                  isOpen={showSpecialtyPopover}
+                  event={popoverEvent}
+                  onDidDismiss={() => setShowSpecialtyPopover(false)}
+                  className="specialty-popover"
+                >
+                  <IonList className="specialty-popover-list">
+                    <div className="popover-header">
+                      <h3>All Specialties</h3>
+                    </div>
+                    {medicalSpecialties.slice(4).map((spec) => (
+                      <IonListItem
+                        key={spec}
+                        button
+                        detail={false}
+                        className="specialty-popover-item"
+                        onClick={() => {
+                          setShowSpecialtyPopover(false);
+                          history.push(
+                            `/patient/specialties?specialty=${encodeURIComponent(
+                              spec,
+                            )}`,
+                          );
+                        }}
+                      >
+                        <div className="popover-item-content">
+                          <div className="popover-icon-wrapper">
+                            <span className="popover-icon">
+                              {specialtyIcons[spec] || (
+                                <IonIcon icon={medical} />
+                              )}
+                            </span>
+                          </div>
+                          <div className="popover-text">
+                            <span className="popover-specialty-name">
+                              {spec}
+                            </span>
+                            <span className="popover-description">
+                              Find {spec.toLowerCase()} specialists
+                            </span>
+                          </div>
+                        </div>
+                      </IonListItem>
+                    ))}
+                  </IonList>
+                </IonPopover>
               </IonCardContent>
             </IonCard>
 
@@ -683,26 +984,37 @@ const PatientDashboard: React.FC = () => {
                           <p className="ion-text-center">
                             No recent health metrics available
                           </p>
-                        </IonText>
+                        </IonText>{" "}
                       </IonCol>
                     )}
                     <IonCol size="6">
                       <IonCard
                         className="metric-card"
                         button
-                        routerLink="/patient/appointments"
+                        routerLink={
+                          nextAppointment
+                            ? `/patient/book_appointment?appointmentId=${nextAppointment.id}`
+                            : "/patient/book_appointment"
+                        }
                       >
                         <IonCardContent>
                           <IonIcon icon={calendarOutline} color="primary" />
                           <h3>Next Appointment</h3>
                           <p>
-                            {upcomingAppointments[0]
-                              ? formatAppointmentDate(
-                                  upcomingAppointments[0].date
-                                )
+                            {nextAppointment
+                              ? formatAppointmentDate(nextAppointment.date)
                               : "No appointments"}
                           </p>
-                          <IonChip color="primary">Scheduled</IonChip>
+                          <h2>
+                            with Dr.
+                            {nextAppointment
+                              ? nextAppointment.doctorName ||
+                                nextAppointment.userName
+                              : "N/A"}
+                          </h2>
+                          <IonChip color="primary">
+                            {nextAppointment?.status}
+                          </IonChip>
                         </IonCardContent>
                       </IonCard>
                     </IonCol>
@@ -728,7 +1040,7 @@ const PatientDashboard: React.FC = () => {
                                 <img src={doctor.image} alt={doctor.name} />
                               </IonAvatar>
                               <div className="doctor-info">
-                                <h4>Dr.{doctor.name}</h4> <br />
+                                <h4>Dr.{doctor.userName}</h4> <br />
                                 <p>{doctor.specialty}</p>
                               </div>
                             </div>
@@ -809,7 +1121,7 @@ const PatientDashboard: React.FC = () => {
                       <IonButton
                         fill="outline"
                         slot="end"
-                        routerLink={`/patient/appointment/${appointment.id}`}
+                        routerLink={`/patient/book_appointment?appointmentId=${appointment.id}`}
                       >
                         View
                       </IonButton>

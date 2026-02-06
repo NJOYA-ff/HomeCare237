@@ -1,13 +1,5 @@
-/* src/components/PerplexityChatModal.css */
-
-/* Base Styles */
-.perplexity-modal {
-  --border-radius: 13px;
-}
-
 .health-toolbar {
   padding: 5px;
-  --background: linear-gradient(90deg, #1a237e 0%, #1976d2 100%);
 }
 
 .health-toolbar ion-avatar {
@@ -383,7 +375,7 @@
 
 .send-button {
   --border-radius: 50%;
-  --background: linear-gradient(90deg, #1a237e 0%, #1976d2 100%);
+
   --background-activated: var(--ion-color-primary-shade);
   --background-focused: var(--ion-color-primary-shade);
 }

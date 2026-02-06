@@ -81,7 +81,7 @@ const VoiceFlowChatModal: React.FC<VoiceFlowChatModalProps> = ({
   const [userName, setUserName] = useState<string>("User");
   const contentRef = useRef<HTMLIonContentElement>(null);
   const voiceFlowService = useRef(
-    new VoiceFlowService(apiKey, versionID)
+    new VoiceFlowService(apiKey, versionID),
   ).current;
 
   // Get current user from Firebase Auth
@@ -122,7 +122,7 @@ const VoiceFlowChatModal: React.FC<VoiceFlowChatModalProps> = ({
       const q = query(
         messagesRef,
         where("userId", "==", userId),
-        orderBy("timestamp", "asc")
+        orderBy("timestamp", "asc"),
       );
 
       const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -178,7 +178,7 @@ const VoiceFlowChatModal: React.FC<VoiceFlowChatModalProps> = ({
   }, [isOpen, currentUser]);
 
   const determineMessageType = (
-    content: string
+    content: string,
   ): "general" | "symptom" | "advice" | "warning" => {
     const lowerContent = content.toLowerCase();
 
@@ -216,7 +216,7 @@ const VoiceFlowChatModal: React.FC<VoiceFlowChatModalProps> = ({
   const saveMessageToFirebase = async (
     userId: string,
     userName: string,
-    message: Omit<Message, "id">
+    message: Omit<Message, "id">,
   ) => {
     try {
       const messagesRef = collection(db, "healthChats");
@@ -250,7 +250,7 @@ const VoiceFlowChatModal: React.FC<VoiceFlowChatModalProps> = ({
     const firebaseId = await saveMessageToFirebase(
       currentUser.uid,
       userName,
-      userMessage
+      userMessage,
     );
     if (firebaseId) {
       userMessage.firebaseId = firebaseId;
@@ -284,10 +284,10 @@ const VoiceFlowChatModal: React.FC<VoiceFlowChatModalProps> = ({
             prev.map((msg) =>
               msg.id === assistantMessageId
                 ? { ...msg, content: msg.content + chunk }
-                : msg
-            )
+                : msg,
+            ),
           );
-        }
+        },
       );
 
       // Determine message type and mark streaming as complete
@@ -307,7 +307,7 @@ const VoiceFlowChatModal: React.FC<VoiceFlowChatModalProps> = ({
       const assistantFirebaseId = await saveMessageToFirebase(
         currentUser.uid,
         "Health Assistant",
-        assistantFirebaseMessage
+        assistantFirebaseMessage,
       );
 
       setMessages((prev) =>
@@ -319,18 +319,18 @@ const VoiceFlowChatModal: React.FC<VoiceFlowChatModalProps> = ({
                 type: messageType,
                 firebaseId: assistantFirebaseId || undefined,
               }
-            : msg
-        )
+            : msg,
+        ),
       );
     } catch (error) {
       // Remove streaming message and show error
       setMessages((prev) =>
-        prev.filter((msg) => msg.id !== assistantMessageId)
+        prev.filter((msg) => msg.id !== assistantMessageId),
       );
       setError(
         error instanceof Error
           ? error.message
-          : "An unknown error occurred. Please check your connection and try again."
+          : "An unknown error occurred. Please check your connection and try again.",
       );
     } finally {
       setIsLoading(false);
@@ -401,7 +401,7 @@ const VoiceFlowChatModal: React.FC<VoiceFlowChatModalProps> = ({
           </IonAvatar>
           <IonTitle className="assistant-title">Health Assistant</IonTitle>
 
-          <IonButton slot="end" fill="clear" onClick={onClose} color={"light"}>
+          <IonButton slot="end" fill="clear" onClick={onClose} color={"dark"}>
             <IonIcon icon={close} />
           </IonButton>
         </IonToolbar>
@@ -551,14 +551,7 @@ const VoiceFlowChatModal: React.FC<VoiceFlowChatModalProps> = ({
                     Clear Conversation
                   </IonButton>
                   <IonText color="medium" className="api-info">
-                    <IonIcon icon={medical} />
                     Powered by VoiceFlow
-                    {currentUser && (
-                      <span className="user-status">
-                        {" "}
-                        • Signed in as {userName}
-                      </span>
-                    )}
                   </IonText>
                 </div>
               </IonCol>

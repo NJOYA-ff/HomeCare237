@@ -1,0 +1,32 @@
+// NotificationPage.scss
+
+.notification-list {
+  background: transparent;
+  ion-item {
+    --border-radius: 12px;
+    margin-bottom: 8px;
+
+    &.unread {
+      --background: rgba(var(--ion-color-primary-rgb), 0.1);
+      --color: var(--ion-color-dark);
+      h2 {
+        color: var(--ion-color-dark);
+        font-weight: bold;
+      }
+      p {
+        color: var(--ion-color-dark);
+      }
+    }
+    &.read {
+      --background: var(--ion-color-light-shade);
+      --color: var(--ion-color-dark);
+      h2 {
+        color: var(--ion-color-dark);
+        font-weight: bold;
+      }
+      p {
+        color: var(--ion-color-dark);
+      }
+    }
+  }
+}

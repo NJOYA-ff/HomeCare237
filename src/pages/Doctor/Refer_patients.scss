@@ -661,22 +661,18 @@ ion-badge {
   // Status badges
   &[color="warning"] {
     background: var(--ion-color-warning-tint);
-    color: var(--ion-color-warning-shade);
   }
 
   &[color="success"] {
     background: var(--ion-color-success-tint);
-    color: var(--ion-color-success-shade);
   }
 
   &[color="danger"] {
     background: var(--ion-color-danger-tint);
-    color: var(--ion-color-danger-shade);
   }
 
   &[color="primary"] {
     background: var(--ion-color-primary-tint);
-    color: var(--ion-color-primary-shade);
   }
 }
 
