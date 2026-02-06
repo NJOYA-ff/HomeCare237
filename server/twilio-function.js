@@ -1,21 +1,4 @@
-/**
- * Simple Express-based Twilio endpoint example.
- *
- * Usage (development):
- * 1. Install dependencies: npm install express body-parser twilio
- * 2. Set environment variables:
- *    - TWILIO_ACCOUNT_SID
- *    - TWILIO_API_KEY (optional - preferred)
- *    - TWILIO_API_SECRET (optional - preferred)
- *    - TWILIO_AUTH_TOKEN (fallback if API key/secret not provided)
- *    - TWILIO_PHONE_NUMBER (the 'from' phone number in E.164)
- * 3. Run: node twilio-function.js
- *
- * This file is intended as a minimal example for deploying to a Node host or
- * adapting into a serverless function (Azure Functions, Vercel Serverless,
- * AWS Lambda with API Gateway) — do NOT embed Twilio credentials in the
- * browser/client.
- */
+
 
 const express = require("express");
 const bodyParser = require("body-parser");
