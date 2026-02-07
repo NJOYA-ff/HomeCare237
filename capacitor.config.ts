@@ -3,6 +3,10 @@ const config: CapacitorConfig = {
   appId: "io.ionic.starter",
   appName: "HomeCare237",
   webDir: "dist",
+  android: {
+    backgroundColor: "#ffffff",
+    allowMixedContent: true,
+  },
   plugins: {
     SplashScreen: {
       launchShowDuration: 3000,
