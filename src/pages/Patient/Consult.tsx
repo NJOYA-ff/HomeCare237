@@ -29,7 +29,7 @@ import {
   IonAlert,
   IonProgressBar,
   IonImg,
-  IonPopover,
+  useIonActionSheet,
   IonBackButton,
   IonFooter,
 } from "@ionic/react";
@@ -77,6 +77,8 @@ import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { onAuthStateChanged } from "firebase/auth";
 import VideoChatModal from "./VideoChat";
 import AudioCallModal from "./AudioCallModal";
+import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
+import { Capacitor } from "@capacitor/core";
 
 // Updated interfaces for Firebase
 interface Doctor {
@@ -98,7 +100,7 @@ interface Doctor {
 interface Message {
   id: string;
   text: string;
-  sender: "patient" | "doctor";
+  sender: "patient" | "doctor" | "admin";
   senderId: string;
   timestamp: any;
   status: "sent" | "delivered" | "read";
@@ -176,8 +178,7 @@ const Consult: React.FC = () => {
 
   const [animateCards, setAnimateCards] = useState(false);
   const [presentToast] = useIonToast();
-  const [showAttachmentPopover, setShowAttachmentPopover] = useState(false);
-  const popover = useRef<HTMLIonPopoverElement>(null);
+  const [presentActionSheet] = useIonActionSheet();
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [roomToken, setRoomToken] = useState<string>("");
   const [isCallModalOpen, setIsCallModalOpen] = useState(false);
@@ -185,9 +186,52 @@ const Consult: React.FC = () => {
   const [contactName, setContactName] = useState("John Doe");
 
   const { sendLocalNotification } = useNotifications();
+  const [fileToUpload, setFileToUpload] = useState<{
+    file: File | null;
+    type: "image" | "document";
+  }>({ file: null, type: "image" });
 
   const handleCallButtonClick = () => {
     setIsCallModalOpen(true);
+  };
+
+  // Take photo using Capacitor Camera and add as attachment
+  const handleTakePhoto = async () => {
+    try {
+      const photo = await Camera.getPhoto({
+        resultType: CameraResultType.DataUrl,
+        source: CameraSource.Camera,
+        quality: 90,
+      });
+
+      if (!photo || !photo.dataUrl) return;
+
+      // Convert dataUrl to blob then to File to create object URL
+      const res = await fetch(photo.dataUrl);
+      const blob = await res.blob();
+      const file = new File([blob], `photo_${Date.now()}.jpg`, {
+        type: blob.type || "image/jpeg",
+      });
+      const objectUrl = URL.createObjectURL(file);
+
+      const attachment: Attachment = {
+        id: Math.random().toString(36).substring(7),
+        type: "image",
+        url: objectUrl,
+        name: file.name,
+        isPlaying: false,
+        currentTime: 0,
+      };
+
+      setAttachments((prev) => [...prev, attachment]);
+    } catch (error) {
+      console.error("Camera error:", error);
+      presentToast({
+        message: "Unable to take photo",
+        duration: 2000,
+        color: "danger",
+      });
+    }
   };
   // Mock token generation - replace with your actual backend call
   const generateToken = async (roomName: string): Promise<string> => {
@@ -206,6 +250,7 @@ const Consult: React.FC = () => {
       console.error("Failed to start video call:", error);
     }
   };
+
   // Firebase listeners
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
@@ -316,14 +361,17 @@ const Consult: React.FC = () => {
           });
           messageListenerInitializedRef.current = true;
         } else {
-          // For new messages, send notification if from doctor
+          // For new messages, send notification if from doctor or admin
           messagesData.forEach((msg) => {
             if (
               !seenMessageIdsRef.current.has(msg.id) &&
-              msg.sender === "doctor"
+              (msg.sender === "doctor" || msg.sender === "admin")
             ) {
               try {
-                const doctorName = selectedDoctor?.name || "Doctor";
+                const senderName =
+                  msg.sender === "admin"
+                    ? "Admin"
+                    : selectedDoctor?.name || "Doctor";
                 const messagePreview = msg.text || "(attachment)";
                 const timestamp =
                   msg.timestamp?.toDate?.() || new Date(msg.timestamp);
@@ -333,9 +381,9 @@ const Consult: React.FC = () => {
                 });
 
                 // Send local notification
-                sendLocalNotification(doctorName, messagePreview, {
+                sendLocalNotification(senderName, messagePreview, {
                   timestamp: timeStr,
-                  doctorName,
+                  doctorName: senderName,
                   message: messagePreview,
                   chatId: selectedChat.id,
                 });
@@ -344,7 +392,7 @@ const Consult: React.FC = () => {
                 if (currentUser) {
                   addDoc(collection(db, "notifications"), {
                     recipientId: currentUser.uid,
-                    title: doctorName,
+                    title: senderName,
                     body: messagePreview,
                     timestamp: serverTimestamp(),
                     read: false,
@@ -399,8 +447,29 @@ const Consult: React.FC = () => {
     }
   };
 
-  const openPopover = (e: any) => {
-    setShowAttachmentPopover(true);
+  const openAttachmentActionSheet = async () => {
+    await presentActionSheet({
+      buttons: [
+        {
+          text: "Photo & Video",
+          icon: image,
+          handler: () => {
+            handleTakePhoto();
+          },
+        },
+        {
+          text: "Document",
+          icon: documentText,
+          handler: () => {
+            fileInputRef.current?.click();
+          },
+        },
+        {
+          text: "Cancel",
+          role: "cancel",
+        },
+      ],
+    });
   };
 
   useIonViewWillEnter(() => {
@@ -900,15 +969,25 @@ const Consult: React.FC = () => {
 
   const renderMessage = (msg: Message) => {
     const isPatient = msg.sender === "patient";
+    const isAdmin = msg.sender === "admin";
 
     return (
       <div
         key={msg.id}
         className={`message ${
-          isPatient ? "patient-message" : "doctor-message"
+          isPatient
+            ? "patient-message"
+            : isAdmin
+            ? "admin-message"
+            : "doctor-message"
         }`}
       >
         <div className="message-content">
+          {isAdmin && (
+            <div className="admin-badge">
+              <IonChip color="warning">Admin</IonChip>
+            </div>
+          )}
           <p>{msg.text}</p>
 
           {msg.attachments && msg.attachments.length > 0 && (
@@ -1268,9 +1347,8 @@ const Consult: React.FC = () => {
                         <IonButton
                           fill="clear"
                           color="medium"
-                          onClick={openPopover}
+                          onClick={openAttachmentActionSheet}
                           className="attachment-btn"
-                          id="attachment-popover-trigger"
                         >
                           <IonIcon icon={attach} color="primary" />
                         </IonButton>
@@ -1381,36 +1459,7 @@ const Consult: React.FC = () => {
           </>
         )}
 
-        {/* Modals and popovers */}
-        <IonPopover
-          ref={popover}
-          isOpen={showAttachmentPopover}
-          onDidDismiss={() => setShowAttachmentPopover(false)}
-          className="attachment-popover"
-        >
-          <IonList>
-            <IonItem
-              button
-              onClick={() => {
-                fileInputRef.current?.click();
-                setShowAttachmentPopover(false);
-              }}
-            >
-              <IonIcon icon={image} slot="start" />
-              <IonLabel>Photo & Video</IonLabel>
-            </IonItem>
-            <IonItem
-              button
-              onClick={() => {
-                fileInputRef.current?.click();
-                setShowAttachmentPopover(false);
-              }}
-            >
-              <IonIcon icon={documentText} slot="start" />
-              <IonLabel>Document</IonLabel>
-            </IonItem>
-          </IonList>
-        </IonPopover>
+        {/* Modals */}
 
         <input
           type="file"

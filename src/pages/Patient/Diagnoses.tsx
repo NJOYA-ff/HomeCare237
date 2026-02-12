@@ -500,7 +500,7 @@ const Diagnoses: React.FC = () => {
         const diagnosesQuery = query(
           collection(db, "diagnoses"),
           where("patientId", "==", user.uid),
-          orderBy("date", "desc")
+          orderBy("date", "desc"),
         );
 
         const unsubscribe = onSnapshot(
@@ -519,11 +519,11 @@ const Diagnoses: React.FC = () => {
           (error) => {
             console.error("Error fetching diagnoses:", error);
             setAlertMessage(
-              "Failed to load diagnoses. Please try again later."
+              "Failed to load diagnoses. Please try again later.",
             );
             setShowAlert(true);
             setLoading(false);
-          }
+          },
         );
 
         return unsubscribe;
@@ -541,7 +541,7 @@ const Diagnoses: React.FC = () => {
   // Function to save PDF to device
   const savePDFToDevice = async (
     pdfDocument: PDFDocumentType,
-    fileName: string
+    fileName: string,
   ) => {
     try {
       // Generate PDF blob
@@ -578,7 +578,7 @@ const Diagnoses: React.FC = () => {
             });
 
             setToastMessage(
-              `PDF saved to Documents/HomeCare/Documents/${fileName}.pdf`
+              `PDF saved to Documents/HomeCare/Documents/${fileName}.pdf`,
             );
             setShowToast(true);
           } catch (error) {
@@ -705,11 +705,11 @@ const DiagnosisCard: React.FC<{
     try {
       const fileName = `Diagnosis_${diagnosis.condition.replace(
         /\s+/g,
-        "_"
+        "_",
       )}_${Date.now()}`;
       await onSavePDF(
         <DiagnosisPDF diagnosis={diagnosis} patient={patient} />,
-        fileName
+        fileName,
       );
     } catch (error) {
       console.error("Error saving report:", error);
@@ -719,17 +719,7 @@ const DiagnosisCard: React.FC<{
   };
   return (
     <>
-      <IonCard
-        className="diagnosis-card-p"
-        style={{
-          borderLeftColor:
-            diagnosis.status === "active"
-              ? "#f59e0b"
-              : diagnosis.status === "resolved"
-              ? "#10b981"
-              : "#3b82f6",
-        }}
-      >
+      <IonCard className="diagnosis-card-p">
         <IonCardHeader className="card-header-p">
           <div className="card-header-content">
             <div>
@@ -740,11 +730,11 @@ const DiagnosisCard: React.FC<{
                 <IonIcon icon={calendarOutline} /> {formatDate(diagnosis.date)}
               </p>
             </div>
-            <IonBadge
+            <IonChip
               color={diagnosis.status === "active" ? "warning" : "success"}
             >
               {diagnosis.status}
-            </IonBadge>
+            </IonChip>
           </div>
         </IonCardHeader>
 
@@ -846,11 +836,11 @@ const LabResultItem: React.FC<{
     try {
       const fileName = `Lab_Result_${labResult.name.replace(
         /\s+/g,
-        "_"
+        "_",
       )}_${Date.now()}`;
       await onSavePDF(
         <LabResultPDF labResult={labResult} patient={patient} />,
-        fileName
+        fileName,
       );
     } catch (error) {
       console.error("Error saving lab result:", error);
@@ -936,11 +926,11 @@ const PrescriptionItem: React.FC<{
     try {
       const fileName = `Prescription_${prescription.medication.replace(
         /\s+/g,
-        "_"
+        "_",
       )}_${Date.now()}`;
       await onSavePDF(
         <PrescriptionPDF prescription={prescription} patient={patient} />,
-        fileName
+        fileName,
       );
     } catch (error) {
       console.error("Error saving prescription:", error);

@@ -57,6 +57,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../../firebaseconfig";
 import twilioMs from "../../components/Services/twilioServiceMs";
+import { useNotifications } from "../../context/NotificationContext";
 import "./Appointments.scss";
 import { getAuth } from "firebase/auth";
 
@@ -133,6 +134,7 @@ const Appointments: React.FC = () => {
   >("");
   const [currentDoctorId, setCurrentDoctorId] = useState<string>("");
   const prevAppointmentIds = useRef<Set<string>>(new Set());
+  const { sendLocalNotification } = useNotifications();
 
   // Get current doctor ID on component mount
   useEffect(() => {
@@ -659,6 +661,20 @@ const Appointments: React.FC = () => {
             timestamp: Timestamp.now(),
             read: false,
           });
+          // Send local notification to the current doctor for confirmation
+          try {
+            await sendLocalNotification(
+              "Appointment Accepted",
+              `You have accepted the appointment with ${selectedAppointment.patientName}.`,
+              {
+                appointmentId: selectedAppointment.id,
+                status: "accepted",
+                timestamp: Date.now(),
+              },
+            );
+          } catch (err) {
+            console.warn("Failed to send local notification:", err);
+          }
         } catch (err) {
           console.warn("Failed to write patient acceptance notification:", err);
         }
@@ -691,6 +707,20 @@ const Appointments: React.FC = () => {
             timestamp: Timestamp.now(),
             read: false,
           });
+          // Send local notification to the current doctor for confirmation
+          try {
+            await sendLocalNotification(
+              "Appointment Rejected",
+              `You have rejected the appointment with ${selectedAppointment.patientName}.`,
+              {
+                appointmentId: selectedAppointment.id,
+                status: "rejected",
+                timestamp: Date.now(),
+              },
+            );
+          } catch (err) {
+            console.warn("Failed to send local notification:", err);
+          }
         } catch (err) {
           console.warn("Failed to write patient rejection notification:", err);
         }
@@ -722,6 +752,20 @@ const Appointments: React.FC = () => {
             timestamp: Timestamp.now(),
             read: false,
           });
+          // Send local notification to the current doctor for confirmation
+          try {
+            await sendLocalNotification(
+              "Appointment Completed",
+              `You have marked the appointment with ${selectedAppointment.patientName} as completed.`,
+              {
+                appointmentId: selectedAppointment.id,
+                status: "completed",
+                timestamp: Date.now(),
+              },
+            );
+          } catch (err) {
+            console.warn("Failed to send local notification:", err);
+          }
         } catch (err) {
           console.warn("Failed to write patient completion notification:", err);
         }

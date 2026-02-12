@@ -142,6 +142,9 @@ const Profile: React.FC = () => {
   const [alertMessage, setAlertMessage] = useState("");
   const [initialLoad, setInitialLoad] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const allergyInputRef = useRef<any>(null);
+  const conditionInputRef = useRef<any>(null);
+  const medicationInputRef = useRef<any>(null);
   const [showLogOutAlert, setShowLogOutAlert] = React.useState(false);
   // Get current user ID
   const currentUser = auth.currentUser;
@@ -175,7 +178,7 @@ const Profile: React.FC = () => {
           : defaultPatientData.medications,
       };
     },
-    []
+    [],
   );
 
   // Load initial data once
@@ -253,7 +256,7 @@ const Profile: React.FC = () => {
       },
       (error) => {
         console.error("Error in real-time listener:", error);
-      }
+      },
     );
 
     return () => {
@@ -276,7 +279,7 @@ const Profile: React.FC = () => {
         [field]: value,
       });
     },
-    [tempData]
+    [tempData],
   );
 
   const handleNestedInputChange = useCallback(
@@ -291,7 +294,7 @@ const Profile: React.FC = () => {
         },
       });
     },
-    [tempData]
+    [tempData],
   );
 
   const saveChanges = async () => {
@@ -316,6 +319,32 @@ const Profile: React.FC = () => {
       setShowAlert(true);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Save a single field immediately to Firestore
+  const saveField = async (field: string, value: any) => {
+    if (!patientId) {
+      console.error("No patient ID to save field");
+      return;
+    }
+    try {
+      const patientDocRef = doc(db, "patients", patientId);
+
+      // Prepare the payload
+      const payload: any = { [field]: value };
+
+      console.log("Saving to Firebase:", field, "Value:", payload[field]);
+      await updateDoc(patientDocRef, payload);
+
+      // Update local state
+      setPatient((prev) => (prev ? { ...prev, [field]: value } : null));
+
+      console.log("Successfully saved to Firebase:", field);
+    } catch (e: any) {
+      console.error("Failed to save field to Firebase:", field, "Error:", e);
+      console.error("Error details:", e.message);
+      throw e;
     }
   };
 
@@ -378,32 +407,132 @@ const Profile: React.FC = () => {
     fileInputRef.current?.click();
   };
 
-  const addItem = useCallback(
-    (field: "allergies" | "conditions" | "medications", item: string) => {
-      if (!tempData) return;
+  const addItem = async (
+    field: "allergies" | "conditions" | "medications",
+    item: string,
+  ) => {
+    if (!tempData) return;
 
-      // Ensure the field exists and is an array
-      const currentItems = tempData[field] || [];
+    // Ensure the field exists and is an array
+    const currentItems = tempData[field] || [];
 
-      if (item && !currentItems.includes(item)) {
-        handleInputChange(field, [...currentItems, item]);
+    if (item && !currentItems.includes(item)) {
+      try {
+        // Create a new array with the new item
+        const updatedItems = [...currentItems, item];
+
+        // Update local state
+        handleInputChange(field, updatedItems);
+
+        // Save to Firebase
+        await saveField(field, updatedItems);
+
+        console.log("Item added successfully:", item);
+      } catch (e) {
+        console.error("Error adding item:", e);
+        setAlertMessage("Failed to add item. Please try again.");
+        setShowAlert(true);
       }
-    },
-    [tempData, handleInputChange]
-  );
+    }
+  };
 
-  const removeItem = useCallback(
-    (field: "allergies" | "conditions" | "medications", index: number) => {
-      if (!tempData) return;
+  const addAllergy = async () => {
+    if (!allergyInputRef.current) return;
 
-      // Ensure the field exists and is an array
+    const inputValue = await allergyInputRef.current.getInputElement();
+    const allergy = inputValue.value.trim();
+
+    if (!allergy) return;
+
+    try {
+      const currentItems = tempData?.allergies || [];
+      if (!currentItems.includes(allergy)) {
+        const updatedItems = [...currentItems, allergy];
+        handleInputChange("allergies", updatedItems);
+        await saveField("allergies", updatedItems);
+        inputValue.value = "";
+        console.log("Allergy added successfully:", allergy);
+      }
+    } catch (e) {
+      console.error("Error adding allergy:", e);
+      setAlertMessage("Failed to add allergy. Please try again.");
+      setShowAlert(true);
+    }
+  };
+
+  const addCondition = async () => {
+    if (!conditionInputRef.current) return;
+
+    const inputValue = await conditionInputRef.current.getInputElement();
+    const condition = inputValue.value.trim();
+
+    if (!condition) return;
+
+    try {
+      const currentItems = tempData?.conditions || [];
+      if (!currentItems.includes(condition)) {
+        const updatedItems = [...currentItems, condition];
+        handleInputChange("conditions", updatedItems);
+        await saveField("conditions", updatedItems);
+        inputValue.value = "";
+        console.log("Condition added successfully:", condition);
+      }
+    } catch (e) {
+      console.error("Error adding condition:", e);
+      setAlertMessage("Failed to add condition. Please try again.");
+      setShowAlert(true);
+    }
+  };
+
+  const addMedication = async () => {
+    if (!medicationInputRef.current) return;
+
+    const inputValue = await medicationInputRef.current.getInputElement();
+    const medication = inputValue.value.trim();
+
+    if (!medication) return;
+
+    try {
+      const currentItems = tempData?.medications || [];
+      if (!currentItems.includes(medication)) {
+        const updatedItems = [...currentItems, medication];
+        handleInputChange("medications", updatedItems);
+        await saveField("medications", updatedItems);
+        inputValue.value = "";
+        console.log("Medication added successfully:", medication);
+      }
+    } catch (e) {
+      console.error("Error adding medication:", e);
+      setAlertMessage("Failed to add medication. Please try again.");
+      setShowAlert(true);
+    }
+  };
+
+  const removeItem = async (
+    field: "allergies" | "conditions" | "medications",
+    index: number,
+  ) => {
+    if (!tempData) return;
+
+    try {
+      // Create a new array without the removed item
       const currentItems = tempData[field] || [];
       const updatedItems = [...currentItems];
       updatedItems.splice(index, 1);
+
+      // Update local state
       handleInputChange(field, updatedItems);
-    },
-    [tempData, handleInputChange]
-  );
+
+      // Save to Firebase
+      await saveField(field, updatedItems);
+
+      console.log("Item removed successfully");
+    } catch (e) {
+      console.error("Error removing item:", e);
+      setAlertMessage("Failed to remove item. Please try again.");
+      setShowAlert(true);
+    }
+  };
   const history = useHistory();
   const handleLogout = async () => {
     try {
@@ -425,7 +554,7 @@ const Profile: React.FC = () => {
         collection(db, "appointments"),
         where("patientId", "==", patient.id),
         where("status", "in", ["pending", "confirmed", "accepted"]),
-        orderBy("date", "asc")
+        orderBy("date", "asc"),
       );
 
       const unsubscribe = onSnapshot(
@@ -437,7 +566,7 @@ const Profile: React.FC = () => {
         },
         (error) => {
           console.error("Error listening to appointments in Profile:", error);
-        }
+        },
       );
 
       return () => unsubscribe();
@@ -482,7 +611,7 @@ const Profile: React.FC = () => {
       if (future.length > 0) return future[0];
 
       const allSorted = mapped.sort(
-        (x, y) => x._dateObj.getTime() - y._dateObj.getTime()
+        (x, y) => x._dateObj.getTime() - y._dateObj.getTime(),
       );
       return allSorted[0];
     } catch (error) {
@@ -733,7 +862,7 @@ const Profile: React.FC = () => {
                     onClick={() => {
                       if (nextAppointment && nextAppointment.id) {
                         history.push(
-                          `/patient/book_appointment?appointmentId=${nextAppointment.id}`
+                          `/patient/book_appointment?appointmentId=${nextAppointment.id}`,
                         );
                       }
                     }}
@@ -885,7 +1014,7 @@ const Profile: React.FC = () => {
                             handleNestedInputChange(
                               "emergencyContact",
                               "name",
-                              e.detail.value!
+                              e.detail.value!,
                             )
                           }
                           className="profile-edit-input"
@@ -897,7 +1026,7 @@ const Profile: React.FC = () => {
                             handleNestedInputChange(
                               "emergencyContact",
                               "phone",
-                              e.detail.value!
+                              e.detail.value!,
                             )
                           }
                           className="profile-edit-input"
@@ -909,7 +1038,7 @@ const Profile: React.FC = () => {
                             handleNestedInputChange(
                               "emergencyContact",
                               "relationship",
-                              e.detail.value!
+                              e.detail.value!,
                             )
                           }
                           className="profile-edit-input"
@@ -947,7 +1076,7 @@ const Profile: React.FC = () => {
                             handleNestedInputChange(
                               "insurance",
                               "provider",
-                              e.detail.value!
+                              e.detail.value!,
                             )
                           }
                           className="profile-edit-input"
@@ -959,7 +1088,7 @@ const Profile: React.FC = () => {
                             handleNestedInputChange(
                               "insurance",
                               "policyNumber",
-                              e.detail.value!
+                              e.detail.value!,
                             )
                           }
                           className="profile-edit-input"
@@ -987,17 +1116,16 @@ const Profile: React.FC = () => {
                     {isEditing ? (
                       <div className="items-edit">
                         <IonInput
+                          ref={allergyInputRef}
                           placeholder="Add an allergy"
-                          onKeyPress={(e) => {
+                          onKeyPress={async (e) => {
                             if (e.key === "Enter") {
-                              addItem(
-                                "allergies",
-                                (e.target as HTMLInputElement).value
-                              );
-                              (e.target as HTMLInputElement).value = "";
+                              e.preventDefault();
+                              await addAllergy();
                             }
                           }}
                           className="item-input"
+                          onIonBlur={addAllergy}
                         />
                         <div className="item-chips">
                           {(tempData.allergies || []).map((allergy, index) => (
@@ -1027,17 +1155,16 @@ const Profile: React.FC = () => {
                     {isEditing ? (
                       <div className="items-edit">
                         <IonInput
+                          ref={conditionInputRef}
                           placeholder="Add a condition"
-                          onKeyPress={(e) => {
+                          onKeyPress={async (e) => {
                             if (e.key === "Enter") {
-                              addItem(
-                                "conditions",
-                                (e.target as HTMLInputElement).value
-                              );
-                              (e.target as HTMLInputElement).value = "";
+                              e.preventDefault();
+                              await addCondition();
                             }
                           }}
                           className="item-input"
+                          onIonBlur={addCondition}
                         />
                         <div className="item-chips">
                           {(tempData.conditions || []).map(
@@ -1051,7 +1178,7 @@ const Profile: React.FC = () => {
                                   }
                                 />
                               </IonChip>
-                            )
+                            ),
                           )}
                         </div>
                       </div>
@@ -1071,17 +1198,16 @@ const Profile: React.FC = () => {
                     {isEditing ? (
                       <div className="items-edit">
                         <IonInput
+                          ref={medicationInputRef}
                           placeholder="Add a medication"
-                          onKeyPress={(e) => {
+                          onKeyPress={async (e) => {
                             if (e.key === "Enter") {
-                              addItem(
-                                "medications",
-                                (e.target as HTMLInputElement).value
-                              );
-                              (e.target as HTMLInputElement).value = "";
+                              e.preventDefault();
+                              await addMedication();
                             }
                           }}
                           className="item-input"
+                          onIonBlur={addMedication}
                         />
                         <div className="item-chips">
                           {(tempData.medications || []).map(
@@ -1095,7 +1221,7 @@ const Profile: React.FC = () => {
                                   }
                                 />
                               </IonChip>
-                            )
+                            ),
                           )}
                         </div>
                       </div>

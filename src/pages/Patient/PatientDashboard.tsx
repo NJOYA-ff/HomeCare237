@@ -156,7 +156,7 @@ import {
 } from "ionicons/icons";
 import "./Dashboard.scss";
 
-import VoiceFlowChatModal from "./Chat-interface";
+import VoiceflowChat from "./Chat-interface";
 import { motion } from "framer-motion";
 import { FiMenu } from "react-icons/fi";
 import Menu from "@material-design-icons/svg/round/menu_open.svg";
@@ -207,7 +207,6 @@ interface Doctor {
 
 const PatientDashboard: React.FC = () => {
   const [currentState, setCurrentState] = useState<string>("healthy");
-  const [isChatOpen, setIsChatOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
@@ -1163,24 +1162,8 @@ const PatientDashboard: React.FC = () => {
               </IonCardContent>
             </IonCard>
 
-            {/* Chatbot Fab */}
-            <IonFab vertical="bottom" horizontal="end" slot="fixed">
-              <IonFabButton
-                className="chatbot-fab"
-                onClick={() => setIsChatOpen(true)}
-              >
-                <IonIcon icon={chatbubbleEllipsesOutline} />
-              </IonFabButton>
-              <VoiceFlowChatModal
-                {...({
-                  isOpen: isChatOpen,
-                  onClose: () => setIsChatOpen(false),
-                  apiKey: "VF.YOUR_API_KEY_HERE",
-                  versionID: "production",
-                  userId: userData.id || "unknown-user",
-                } as any)}
-              />
-            </IonFab>
+            {/* Chatbot */}
+            <VoiceflowChat />
           </>
         )}
       </IonContent>

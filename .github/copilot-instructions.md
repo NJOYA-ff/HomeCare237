@@ -1,47 +1,115 @@
 ## Quick orientation for code-generating agents
 
-This repository is an Ionic + React (Vite + TypeScript) app with Capacitor and several realtime/third-party integrations. The goal of these notes is to give an AI coding agent the concrete facts and conventions needed to be productive immediately.
+**HomeCare237** is an Ionic + React telemedicine app (Vite + TypeScript) with Capacitor native support, Firebase backend, and Twilio/WebRTC integrations. This guide helps AI agents be immediately productive.
 
-Key tech & commands
-- Framework: React + Ionic (Ionic React components used heavily). Build with Vite.
-- Native support: Capacitor is present (`ionic.config.json`, `@capacitor/*` deps). Typical flow: `npm run build` -> `npx cap sync` -> `npx cap open <platform>` (don’t run native build unless asked).
-- Scripts (use these exact npm scripts): `npm run dev` (vite dev), `npm run build` (tsc + vite build), `npm run preview`, `npm run test.unit` (vitest), `npm run test.e2e` (cypress), `npm run lint`.
+### Essential commands
 
-High-level architecture (what to know)
-- Role-based UI: the app routes are split by role in `src/App.tsx` — Patient, Doctor, Admin. Each role uses a different sidebar/menu (`src/components/Menu.tsx`, `MenuDoctor.tsx`, `MenuAdmin.tsx`) and a different router outlet id (`main`, `main_2`, `main_3`). Keep role routing consistent.
-- Firebase is the primary backend for auth and data (`src/firebaseconfig.ts`). Auth flow and Firestore lookups are implemented in `src/App.tsx` (AuthService singleton pattern). When modifying auth, update `findUserInCollections` usage and collection names: `patients`, `doctors`, `admins`, `users`.
-- Realtime/comms: Twilio and WebRTC are used for voice/video. Look at `src/components/Services/twilioService.ts` and `src/components/Services/WebRTCService.ts`.
-  - Twilio token acquisition expects a backend endpoint `POST /api/twilio/token` (see `getCallToken`). Do not hardcode tokens — assume backend dependency.
-  - `WebRTCService` contains an intentionally generic signalingChannel abstraction (placeholder). Any changes that assume a specific signaling protocol (socket.io, firebase, etc.) must also add or update a backend or coordination layer.
-- AI/voice integrations: `src/components/Services/AiModelService.ts` contains a VoiceFlow-style client. Treat it as an external API integration; changes require API key and runtime testing.
+```bash
+npm run dev          # Vite dev server (proxy to /api → http://localhost:3000)
+npm run build        # TypeScript compile + Vite build
+npm run test.unit    # Vitest (jsdom, setupTests.ts)
+npm run test.e2e     # Cypress e2e
+npm start:api        # Local Twilio server (node server/twilio-server.js)
+npx cap sync         # Sync Capacitor native code
+npx cap open ios/android  # Open native IDE
+```
 
-Project-specific conventions and quirks
-- Services location: service modules live under `src/components/Services` (not `src/services`). When adding new services follow this location.
-- Routing uses React Router v5 style (`<Route>`, `<Redirect>`, `exact` props). Do not migrate to v6 patterns without a full app-wide change.
-- Ionic usage: UI components and layout use `IonSplitPane`, `IonRouterOutlet`, and `Tabs` (see `src/components/Tabs.tsx`). When changing layout, preserve `contentId` values (`main`, `main_2`, `main_3`) used by menus.
-- Phone normalization: Twilio service includes Cameroon-specific formatting (`formatCameroonNumber`). Reuse or respect that helper if modifying calling flows.
-- TypeScript: `tsconfig.json` is strict. New code should be typed; however some service files intentionally use `any` to avoid runtime conflicts with external SDKs — follow existing patterns and add narrow types when safe.
+### Architecture overview
 
-Integration & risk areas (do not change lightly)
-- Firebase config lives in `src/firebaseconfig.ts` (project keys are present here). Don’t rotate or remove this without CI/ops coordination.
-- Twilio: `twilioService` expects a runtime `Device` on `window` and a backend token endpoint. Changing the Twilio flow requires backend updates.
-- Signaling: `WebRTCService.createSignalingChannel()` is a placeholder; any change that tight-couples signaling must include backend changes and tests.
+**Role-based routing** (`src/App.tsx`):
 
-Concrete examples to reference
-- Auth & role routing: `src/App.tsx` — follow the AuthService pattern and role checks.
-- Firebase bootstrapping: `src/firebaseconfig.ts` — import `db`, `auth`, `storage` where needed.
-- Twilio usage: `src/components/Services/twilioService.ts` — shows token fetch and Cameroon number formatting.
-- WebRTC: `src/components/Services/WebRTCService.ts` — shows how local/remote streams and signaling are expected to behave.
+- Three role types: Patient, Doctor, Admin (enum `UserRole`)
+- Each role has its own sidebar menu (Menu.tsx, MenuDoctor.tsx, MenuAdmin.tsx)
+- Each role routes to a different `IonRouterOutlet` with contentId: `main`, `main_2`, `main_3`
+- AuthService (singleton) bootstraps auth state and calls `findUserInCollections()` to locate user across collections: `patients`, `doctors`, `admins`, `users`
 
-How to contribute safe changes
-- When modifying runtime integrations (Twilio, WebRTC, VoiceFlow, Firebase), add a small README or comments describing any backend endpoints required and include a minimal stub/mock for unit tests.
-- Add unit tests with Vitest. Vite is configured to run tests with jsdom and `src/setupTests.ts` is the setup file (see `vite.config.ts`).
-- Preserve routing and `IonSplitPane` semantics; UI regressions are common if `contentId` or route paths change.
+**Data layer** (Firebase):
 
-If something is unclear or you need credentials/backends
-- Ask for the backend API spec or a sample token endpoint. Do not invent token endpoints or API keys.
+- Auth: `src/firebaseconfig.ts` exports `db`, `auth`, `storage`
+- Firestore collections: `patients`, `doctors`, `admins`, `users` (role-specific), plus `chats`, `notifications`, `appointments`
+- Real-time: `onSnapshot()` for live chat/notifications; `collection()` + `query()` for typed reads
+- NotificationContext (`src/context/NotificationContext.tsx`) manages app-wide toast notifications and unread badge
 
-Next step if asked to implement features
-- 1) Identify which role(s) are impacted (App.tsx routing). 2) Update service under `src/components/Services`. 3) Add unit tests (Vitest) and, if applicable, a small e2e Cypress test. 4) Run `npm run test.unit` and `npm run test.e2e` locally.
+**Communications**:
 
-If you want changes to this guidance, point to a specific section to refine.
+- **Twilio Voice**: `src/components/Services/twilioService.ts` (phone calls)
+  - Requires backend endpoint `POST /api/twilio/token` (local: http://localhost:3000)
+  - Device setup expects Twilio SDK on `window.Device` (loaded externally, not in npm deps)
+  - Cameroon-specific number formatting via `formatCameroonNumber()`
+- **SMS**: `src/components/Services/twilioServiceMs.ts` exports `sendSMS()` and `sendAppointmentStatusSMS()` — calls backend `/api/twilio/send` endpoint
+- **WebRTC**: `src/components/Services/WebRTCService.ts` (video, placeholder signaling)
+  - `createSignalingChannel()` is generic; backend must provide socket/Firebase signaling
+- **AI/Voice**: `src/components/Services/AiModelService.ts` (VoiceFlow-style client, external API key needed)
+
+### Project conventions
+
+- **Services location**: all service modules live in `src/components/Services/` (NOT `src/services/`)
+- **Routing**: React Router v5 style (`<Route>`, `<Redirect>`, `exact`); do not upgrade to v6 without full migration
+- **UI patterns**: wraps in `IonPage` → `IonHeader` + `IonContent`; preserve `contentId` values for split-pane layouts
+- **State management**: Context API for notifications; AuthService singleton for auth; local Firestore hooks for data
+- **TypeScript**: strict mode; some service files use `any` to avoid SDK conflicts — stay consistent
+- **Styling**: SCSS modules per page (e.g., `Page.scss`, `Admin.scss`); global theme in `src/theme/variables.css`
+
+### Common patterns & examples
+
+1. **Auth check in component**:
+
+   ```tsx
+   const authService = AuthService.getInstance();
+   if (
+     !authService.currentUser ||
+     authService.currentUser.role !== UserRole.Patient
+   ) {
+     return <Redirect to="/login" />;
+   }
+   ```
+
+2. **Firestore real-time chat query**:
+
+   ```tsx
+   const chatsRef = collection(db, "chats");
+   onSnapshot(q, (snapshot) => {
+     setChats(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+   });
+   ```
+
+3. **Send SMS via backend**:
+
+   ```tsx
+   import { sendSMS } from "../components/Services/twilioServiceMs";
+   await sendSMS({
+     phoneNumber: "+237XXXXXXXXX",
+     message: "Hello",
+     patientId: user.id,
+   });
+   ```
+
+4. **Toast notification**:
+   ```tsx
+   const { sendLocalNotification } = useNotifications();
+   await sendLocalNotification("Success", "Appointment booked");
+   ```
+
+### Integration risk areas — do not change lightly
+
+- **Firebase config** (`src/firebaseconfig.ts`): contains live project keys; changes require ops coordination
+- **Collection names** (`patients`, `doctors`, `admins`, `users`, `chats`, `notifications`): hardcoded in multiple places; refactor carefully with grep
+- **Twilio flow**: backend token endpoint (`/api/twilio/token`) and SMS endpoint (`/api/twilio/send`) are required; changing caller ID or auth method requires backend changes
+- **WebRTC signaling**: currently a placeholder; tight-coupling signaling to a backend protocol requires both frontend + backend tests
+- **Role routing**: `contentId` + outlet mapping; UI breaks if routes or IDs change
+
+### When adding features
+
+1. **Identify impact**: which roles are affected? Check role enum and routing in `src/App.tsx`
+2. **Data layer**: add Firestore collections/fields if needed; document new fields in comments
+3. **Service layer**: create/update service in `src/components/Services/`; add backend endpoint stub in `server/` if needed
+4. **UI**: add page(s) under `src/pages/{Role}/`; preserve role-specific routing
+5. **Tests**: Vitest for unit tests (`src/App.test.tsx` example); Cypress for e2e (`cypress/e2e/test.cy.ts`)
+6. **Backend**: if Twilio, SMS, or WebRTC, confirm backend endpoint exists and is documented
+
+### When unsure
+
+- Ask for backend API specs, Twilio tokens, or Firebase schema before implementing
+- Do not invent token endpoints or hardcode secrets
+- Check `server/TWILIO_README.md` for local SMS/voice setup
+- Use existing service patterns (e.g., `twilioServiceMs.sendSMS`) rather than inventing new integration patterns

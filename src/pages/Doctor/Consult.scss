@@ -14,12 +14,13 @@
         width: 40px;
         height: 40px;
         margin-right: 12px;
-
-        img {
-          border: 2px solid var(--ion-color-primary);
-        }
       }
-
+      .patient-searchbar {
+        padding: 8px;
+        --background: var(--ion-color-light);
+        --border-radius: 20px;
+        --box-shadow: none;
+      }
       .header-details {
         flex: 1;
 

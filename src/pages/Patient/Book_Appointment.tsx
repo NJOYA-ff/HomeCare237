@@ -674,6 +674,22 @@ const Book_Appointment: React.FC = () => {
         console.error("Error sending appointment SMS:", err);
       }
 
+      // Write Firestore notification for the doctor about the new appointment
+      try {
+        await addDoc(collection(db, "notifications"), {
+          recipientId: selectedDoctor.id,
+          title: "New Appointment Request",
+          body: `New appointment request from ${
+            currentUser.displayName || currentUser.email || "A patient"
+          } for ${formatDate(selectedDate)} at ${formatTime(selectedTime)}.`,
+          timestamp: Timestamp.now(),
+          read: false,
+          appointmentId: docRef.id,
+        });
+      } catch (err) {
+        console.warn("Failed to write doctor notification:", err);
+      }
+
       // The real-time listener will automatically update the appointments list
       setShowConfirmation(true);
       resetSelection();

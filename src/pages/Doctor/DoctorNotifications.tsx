@@ -37,9 +37,55 @@ const DoctorNotifications: React.FC = () => {
   const mountedRef = useRef(false);
   const [showClearAlert, setShowClearAlert] = React.useState(false);
 
-  const formatDate = (timestamp?: number) => {
+  const formatDate = (timestamp?: any) => {
     if (!timestamp) return "Just now";
-    return new Date(timestamp).toLocaleString();
+
+    let date: Date;
+
+    // Handle Firebase Timestamp objects
+    if (timestamp && typeof timestamp === "object" && "toDate" in timestamp) {
+      try {
+        date = timestamp.toDate();
+      } catch (e) {
+        console.error("Error converting Firebase timestamp:", e);
+        return "Just now";
+      }
+    }
+    // Handle millisecond timestamps (number)
+    else if (typeof timestamp === "number") {
+      date = new Date(timestamp);
+    }
+    // Handle ISO string timestamps
+    else if (typeof timestamp === "string") {
+      date = new Date(timestamp);
+    } else {
+      return "Just now";
+    }
+
+    // Format the date
+    const now = new Date();
+    const diffInMinutes = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60),
+    );
+
+    // Show relative time for recent notifications
+    if (diffInMinutes < 1) return "Just now";
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 7) return `${diffInDays}d ago`;
+
+    // Fall back to locale string for older dates
+    return date.toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
   };
 
   // Mirror behavior from patient page: send a local notification for newly received items

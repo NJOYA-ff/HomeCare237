@@ -25,6 +25,7 @@ import {
   FaUser,
 } from "react-icons/fa";
 import NotificationsPage from "../pages/Patient/NotificationPage";
+import { MdSpaceDashboard } from "react-icons/md";
 
 interface TabPage {
   title: string;
@@ -38,7 +39,7 @@ const tabPages: TabPage[] = [
   {
     title: "Home",
     url: "/patient/dashboard",
-    icon: <FaHome size={20} />,
+    icon: <MdSpaceDashboard size={20} />,
     tab: "home",
     color: "primary",
   },

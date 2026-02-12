@@ -26,6 +26,7 @@ import {
   fitnessOutline,
   eyeOutline,
   bandageOutline,
+  close,
 } from "ionicons/icons";
 import { db } from "../../firebaseconfig";
 import { collection, query, where, getDocs } from "firebase/firestore";
@@ -122,9 +123,17 @@ const SpecialtiesPage: React.FC = () => {
 
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar>
+      <IonHeader class="ion-no-border">
+        <IonToolbar className="patient-dashboard-toolbar">
           <IonTitle>{specialty || "Specialty"}</IonTitle>
+          <IonButton
+            slot="end"
+            fill="clear"
+            routerLink="/patient/dashboard"
+            color={"dark"}
+          >
+            <IonIcon icon={close} />
+          </IonButton>
         </IonToolbar>
       </IonHeader>
       <IonContent>

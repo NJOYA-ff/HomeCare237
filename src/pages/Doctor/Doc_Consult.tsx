@@ -29,7 +29,7 @@ import {
   IonAlert,
   IonProgressBar,
   IonImg,
-  IonPopover,
+  useIonActionSheet,
   IonBackButton,
 } from "@ionic/react";
 import { useNotifications } from "../../context/NotificationContext";
@@ -71,6 +71,7 @@ import {
 } from "firebase/firestore";
 import { ref, getDownloadURL, uploadBytesResumable } from "firebase/storage";
 import { onAuthStateChanged } from "firebase/auth";
+import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
 
 // Updated interfaces to match Consult component
 interface Patient {
@@ -93,7 +94,7 @@ interface Patient {
 interface Message {
   id: string;
   text: string;
-  sender: "patient" | "doctor";
+  sender: "patient" | "doctor" | "admin";
   senderId: string;
   timestamp: any;
   status: "sent" | "delivered" | "read";
@@ -171,13 +172,33 @@ const Doc_Consult: React.FC = () => {
 
   const [animateCards, setAnimateCards] = useState(false);
   const [presentToast] = useIonToast();
-  const [showAttachmentPopover, setShowAttachmentPopover] = useState(false);
-  const popover = useRef<HTMLIonPopoverElement>(null);
+  const [presentActionSheet] = useIonActionSheet();
 
   const { sendLocalNotification } = useNotifications();
 
-  const openPopover = (e: any) => {
-    setShowAttachmentPopover(true);
+  const openAttachmentActionSheet = async () => {
+    await presentActionSheet({
+      buttons: [
+        {
+          text: "Photo & Video",
+          icon: image,
+          handler: () => {
+            handleTakePhoto();
+          },
+        },
+        {
+          text: "Document",
+          icon: documentText,
+          handler: () => {
+            fileInputRef.current?.click();
+          },
+        },
+        {
+          text: "Cancel",
+          role: "cancel",
+        },
+      ],
+    });
   };
 
   // Initialize current user and load patients
@@ -286,14 +307,17 @@ const Doc_Consult: React.FC = () => {
           });
           messageListenerInitializedRef.current = true;
         } else {
-          // For new messages, send notification if from patient
+          // For new messages, send notification if from patient or admin
           messagesData.forEach((msg) => {
             if (
               !seenMessageIdsRef.current.has(msg.id) &&
-              msg.sender === "patient"
+              (msg.sender === "patient" || msg.sender === "admin")
             ) {
               try {
-                const patientName = selectedPatient?.name || "Patient";
+                const senderName =
+                  msg.sender === "admin"
+                    ? "Admin"
+                    : selectedPatient?.name || "Patient";
                 const messagePreview = msg.text || "(attachment)";
                 const timestamp =
                   msg.timestamp?.toDate?.() || new Date(msg.timestamp);
@@ -303,9 +327,9 @@ const Doc_Consult: React.FC = () => {
                 });
 
                 // Send local notification
-                sendLocalNotification(patientName, messagePreview, {
+                sendLocalNotification(senderName, messagePreview, {
                   timestamp: timeStr,
-                  patientName,
+                  patientName: senderName,
                   message: messagePreview,
                   chatId: selectedChat.id,
                 });
@@ -314,7 +338,7 @@ const Doc_Consult: React.FC = () => {
                 if (currentUser) {
                   addDoc(collection(db, "notifications"), {
                     recipientId: currentUser.uid,
-                    title: patientName,
+                    title: senderName,
                     body: messagePreview,
                     timestamp: serverTimestamp(),
                     read: false,
@@ -614,6 +638,44 @@ const Doc_Consult: React.FC = () => {
     }
   };
 
+  // Take photo using Capacitor Camera and add as attachment
+  const handleTakePhoto = async () => {
+    try {
+      const photo = await Camera.getPhoto({
+        resultType: CameraResultType.DataUrl,
+        source: CameraSource.Camera,
+        quality: 90,
+      });
+
+      if (!photo || !photo.dataUrl) return;
+
+      const res = await fetch(photo.dataUrl);
+      const blob = await res.blob();
+      const file = new File([blob], `photo_${Date.now()}.jpg`, {
+        type: blob.type || "image/jpeg",
+      });
+      const objectUrl = URL.createObjectURL(file);
+
+      const attachment: Attachment = {
+        id: Math.random().toString(36).substring(7),
+        type: "image",
+        url: objectUrl,
+        name: file.name,
+        isPlaying: false,
+        currentTime: 0,
+      };
+
+      setAttachments((prev) => [...prev, attachment]);
+    } catch (error) {
+      console.error("Camera error:", error);
+      presentToast({
+        message: "Unable to take photo",
+        duration: 2000,
+        color: "danger",
+      });
+    }
+  };
+
   // Recording functions
   const startRecording = async () => {
     try {
@@ -895,20 +957,34 @@ const Doc_Consult: React.FC = () => {
 
   const renderMessage = (msg: Message) => {
     const isDoctor = msg.sender === "doctor";
+    const isAdmin = msg.sender === "admin";
 
     return (
       <div
         key={msg.id}
         className={`message-wrapper ${
-          isDoctor ? "doctor-wrapper" : "patient-wrapper"
+          isDoctor
+            ? "doctor-wrapper"
+            : isAdmin
+            ? "admin-wrapper"
+            : "patient-wrapper"
         }`}
       >
         <div
           className={`message ${
-            isDoctor ? "doctor-message-d" : "patient-message-d"
+            isDoctor
+              ? "doctor-message-d"
+              : isAdmin
+              ? "admin-message-d"
+              : "patient-message-d"
           }`}
         >
           <div className="message-content">
+            {isAdmin && (
+              <div className="admin-badge">
+                <IonChip color="warning">Admin</IonChip>
+              </div>
+            )}
             <p>{msg.text}</p>
 
             {msg.attachments && msg.attachments.length > 0 && (
@@ -1346,9 +1422,8 @@ const Doc_Consult: React.FC = () => {
                     <IonButton
                       fill="clear"
                       color="medium"
-                      onClick={openPopover}
+                      onClick={openAttachmentActionSheet}
                       className="attachment-btn"
-                      id="attachment-popover-trigger"
                     >
                       <IonIcon icon={attach} color="primary" />
                     </IonButton>
@@ -1454,37 +1529,7 @@ const Doc_Consult: React.FC = () => {
           </>
         )}
 
-        {/* Attachment Popover */}
-        <IonPopover
-          ref={popover}
-          isOpen={showAttachmentPopover}
-          onDidDismiss={() => setShowAttachmentPopover(false)}
-          className="attachment-popover"
-        >
-          <IonList>
-            <IonItem
-              button
-              onClick={() => {
-                fileInputRef.current?.click();
-                setShowAttachmentPopover(false);
-              }}
-            >
-              <IonIcon icon={image} slot="start" />
-              <IonLabel>Photo & Video</IonLabel>
-            </IonItem>
-            <IonItem
-              button
-              onClick={() => {
-                fileInputRef.current?.click();
-                setShowAttachmentPopover(false);
-              }}
-            >
-              <IonIcon icon={documentText} slot="start" />
-              <IonLabel>Document</IonLabel>
-            </IonItem>
-          </IonList>
-        </IonPopover>
-
+        {/* Modals */}
         <input
           type="file"
           ref={fileInputRef}

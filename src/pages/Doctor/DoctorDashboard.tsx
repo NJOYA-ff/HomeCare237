@@ -67,7 +67,7 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { onAuthStateChanged, User } from "firebase/auth";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, Variants } from "framer-motion";
 import { FiMenu } from "react-icons/fi";
 import { useNotifications } from "../../context/NotificationContext";
 
@@ -183,6 +183,43 @@ interface DoctorProfile {
   totalRatings: number;
   availableSlots: string[];
 }
+
+type AnimationType = "spring" | "tween" | "keyframes";
+type CustomVariants = Variants & {
+  hidden: {
+    opacity: number;
+    y?: number;
+    x?: number;
+  };
+  visible: (i: number) => {
+    opacity: number;
+    y?: number;
+    x?: number;
+    transition: {
+      delay: number;
+      duration: number;
+      type: AnimationType;
+      stiffness?: number;
+    };
+  };
+};
+
+const listItemVariants: CustomVariants = {
+  hidden: {
+    opacity: 0,
+    x: -20,
+  },
+  visible: (i: number) => ({
+    opacity: 1,
+    x: 0,
+    transition: {
+      delay: i * 0.1,
+      duration: 0.5,
+      type: "spring" as AnimationType,
+      stiffness: 100,
+    },
+  }),
+};
 
 const DoctorDashboard: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -675,6 +712,26 @@ const DoctorDashboard: React.FC = () => {
     }
   };
 
+  const formatLastVisit = (dateString: string): string => {
+    if (!dateString || dateString === "Never") {
+      return "Never";
+    }
+    try {
+      const date = new Date(dateString);
+      // Check if the date is valid
+      if (isNaN(date.getTime())) {
+        return dateString; // Return original string if date is invalid
+      }
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    } catch (error) {
+      return dateString; // Return original string in case of an error
+    }
+  };
+
   return (
     <IonPage>
       <IonHeader className="ion-no-border dashboard-header">
@@ -895,30 +952,36 @@ const DoctorDashboard: React.FC = () => {
                     </IonAvatar>
                     <IonLabel>
                       <h2>{appointment.patientName}</h2>
-                      <p>
-                        <IonIcon icon={time} />
-                        {appointment.time}
+                      <div className="appointment-meta">
+                        <IonNote className="meta-item">
+                          <IonIcon className="meta-icon" icon={time} />
+                          <span className="meta-text">{appointment.time}</span>
+                        </IonNote>
                         {segment === "upcoming" && (
-                          <>
-                            &nbsp; • &nbsp;
-                            <IonIcon icon={calendar} />
-                            {formatDisplayDate(appointment.date)}
-                          </>
+                          <IonNote className="meta-item">
+                            <IonIcon className="meta-icon" icon={calendar} />
+                            <span className="meta-text">
+                              {formatDisplayDate(appointment.date)}
+                            </span>
+                          </IonNote>
                         )}
                         {appointment.address && (
-                          <>
-                            &nbsp; • &nbsp;
-                            <IonIcon icon={location} />
-                            {appointment.address}
-                          </>
+                          <IonNote className="meta-item">
+                            <IonIcon className="meta-icon" icon={location} />
+                            <span className="meta-text">
+                              {appointment.address}
+                            </span>
+                          </IonNote>
                         )}
-                      </p>
-                      {appointment.service && (
-                        <p>
-                          <IonIcon icon={medical} />
-                          {appointment.service}
-                        </p>
-                      )}
+                        {appointment.service && (
+                          <IonNote className="meta-item">
+                            <IonIcon className="meta-icon" icon={medical} />
+                            <span className="meta-text">
+                              {appointment.service}
+                            </span>
+                          </IonNote>
+                        )}
+                      </div>
                     </IonLabel>
                     <IonChip color={getStatusColor(appointment.status)}>
                       {getStatusDisplay(appointment.status)}
@@ -947,120 +1010,63 @@ const DoctorDashboard: React.FC = () => {
               )}
             </div>
 
-            {/* Recent Patients Section - UPDATED to use IonItems */}
-            <div className="recent-patients-section ion-padding">
-              <div className="section-header">
-                <IonText color="dark">
-                  <h2>Recent Patients</h2>
-                  <p className="patient-count">
+            {/* Recent Patients Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 }}
+              whileHover={{ scale: 1.01 }}
+            >
+              <IonCard className="activity-card">
+                <IonCardHeader>
+                  <IonCardTitle>Recent Patients</IonCardTitle>
+                  <IonCardSubtitle>
                     {recentPatients.length} patients
-                  </p>
-                </IonText>
-                <IonButton fill="clear" color="primary" size="small">
-                  View All
-                </IonButton>
-              </div>
-
-              <IonList className="recent-patients-list">
-                {recentPatients.map((patient, index) => (
-                  <IonItem
-                    key={patient.id}
-                    className="recent-patient-item"
-                    lines="full"
-                    button
-                    detail={true}
-                    style={{ animationDelay: `${index * 0.1}s` }}
-                  >
-                    <IonAvatar slot="start" className="patient-avatar">
-                      <img
-                        src={patient.image}
-                        alt={patient.name}
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src =
-                            "https://ionicframework.com/docs/img/demos/avatar.svg";
-                        }}
-                      />
-                    </IonAvatar>
-
-                    <div className="patient-info">
-                      <div className="patient-header">
-                        <h2>{patient.name}</h2>
-                        <IonChip
-                          color={getStatusColor(patient.status)}
-                          className="status-chip"
-                        >
-                          {patient.status}
-                        </IonChip>
-                      </div>
-
-                      <div className="patient-details">
-                        <p className="patient-meta">
-                          <span className="meta-item">
-                            <IonIcon icon={person} />
-                            {patient.gender}, {patient.age} years
-                          </span>
-                          {patient.phone && (
-                            <span className="meta-item">
-                              <IonIcon icon={call} />
-                              {patient.phone}
-                            </span>
-                          )}
-                        </p>
-
-                        <p className="patient-condition">
-                          <IonIcon icon={medical} />
-                          {patient.condition}
-                        </p>
-
-                        <div className="patient-footer">
-                          <span className="last-visit">
-                            <IonIcon icon={calendar} />
-                            Last visit: {patient.lastVisit}
-                          </span>
-
-                          <div className="patient-actions">
-                            <IonButton
-                              fill="clear"
-                              size="small"
-                              color="primary"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // Handle call action
-                              }}
-                            >
-                              <IonIcon icon={call} slot="icon-only" />
-                            </IonButton>
-                            <IonButton
-                              fill="clear"
-                              size="small"
-                              color="secondary"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // Handle message action
-                              }}
-                            >
-                              <IonIcon
-                                icon={chatbubbleEllipses}
-                                slot="icon-only"
-                              />
-                            </IonButton>
+                  </IonCardSubtitle>
+                </IonCardHeader>
+                <IonCardContent>
+                  <IonList lines="none" className="patient-list">
+                    {recentPatients.map((patient, index) => (
+                      <motion.div
+                        key={patient.id}
+                        custom={index}
+                        initial="hidden"
+                        animate="visible"
+                        variants={listItemVariants}
+                        whileHover={{ x: 5 }}
+                      >
+                        <IonItem className="patient-item" button detail>
+                          <IonAvatar slot="start">
+                            <img src={patient.image} alt={patient.name} />
+                          </IonAvatar>
+                          <IonLabel>
+                            <h2>{patient.name}</h2>
+                            <p>{patient.condition}</p>
+                          </IonLabel>
+                          <div className="patient-status">
+                            <IonChip color={getStatusColor(patient.status)}>
+                              {patient.status}
+                            </IonChip>
+                            <p className="last-checkup">
+                              <IonIcon icon={time} />
+                              {formatLastVisit(patient.lastVisit)}
+                            </p>
                           </div>
-                        </div>
-                      </div>
+                        </IonItem>
+                      </motion.div>
+                    ))}
+                  </IonList>
+                  {recentPatients.length === 0 && (
+                    <div className="empty-state ion-text-center ion-padding">
+                      <IonIcon icon={person} color="medium" size="large" />
+                      <IonText color="medium">
+                        <p>No recent patients found</p>
+                      </IonText>
                     </div>
-                  </IonItem>
-                ))}
-              </IonList>
-
-              {recentPatients.length === 0 && (
-                <div className="empty-state ion-text-center ion-padding">
-                  <IonIcon icon={person} color="medium" size="large" />
-                  <IonText color="medium">
-                    <p>No recent patients found</p>
-                  </IonText>
-                </div>
-              )}
-            </div>
+                  )}
+                </IonCardContent>
+              </IonCard>
+            </motion.div>
           </>
         )}
 

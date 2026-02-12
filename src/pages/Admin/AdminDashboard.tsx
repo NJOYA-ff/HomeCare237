@@ -25,6 +25,17 @@ import {
   IonChip,
 } from "@ionic/react";
 import {
+  collection,
+  getDocs,
+  onSnapshot,
+  query,
+  where,
+  orderBy,
+  limit,
+  Timestamp,
+} from "firebase/firestore";
+import { db } from "../../firebaseconfig";
+import {
   person,
   notifications,
   calendar,
@@ -191,178 +202,153 @@ const AdminDashboard: React.FC = () => {
     }),
   };
 
-  // Load data
+  // Load data from Firebase
   useEffect(() => {
-    // Simulate data loading
-    setTimeout(() => {
-      setStats({
-        patients: 187,
-        caregivers: 42,
-        appointments: 23,
-        alerts: 5,
-        healthUnits: 8,
-      });
+    let unsubscribeAppointments: (() => void) | null = null;
 
-      setRecentCaregivers([
-        {
-          id: 1,
-          name: "Dr. Sarah Johnson",
-          avatar: "https://ionicframework.com/docs/img/demos/avatar.svg",
-          status: "online",
-          specialty: "Geriatrics",
-          rating: 4.8,
-        },
-        {
-          id: 2,
-          name: "Dr. Michael Chen",
-          avatar: "https://ionicframework.com/docs/img/demos/avatar.svg",
-          status: "busy",
-          specialty: "Physical Therapy",
-          rating: 4.6,
-        },
-        {
-          id: 3,
-          name: "Nurse David Wilson",
-          avatar: "https://ionicframework.com/docs/img/demos/avatar.svg",
-          status: "offline",
-          specialty: "Post-Op Care",
-          rating: 4.9,
-        },
-        {
-          id: 4,
-          name: "Nurse Emily Davis",
-          avatar: "https://ionicframework.com/docs/img/demos/avatar.svg",
-          status: "online",
-          specialty: "Palliative Care",
-          rating: 4.7,
-        },
-      ]);
+    const loadFirebaseData = async () => {
+      try {
+        // Fetch patient count
+        const patientsSnapshot = await getDocs(collection(db, "patients"));
+        const patientCount = patientsSnapshot.size;
 
-      setRecentPatients([
-        {
-          id: 1,
-          name: "Robert Smith",
-          condition: "Post-op recovery",
-          status: "completed",
-          lastCheckup: "Today, 9:30 AM",
-          healthScore: 82,
-        },
-        {
-          id: 2,
-          name: "Emma Davis",
-          condition: "Chronic pain management",
-          status: "confirmed",
-          lastCheckup: "Yesterday",
-          healthScore: 65,
-        },
-        {
-          id: 3,
-          name: "James Brown",
-          condition: "Palliative care",
-          status: "pending",
-          lastCheckup: "Today, 11:15 AM",
-          healthScore: 32,
-        },
-        {
-          id: 4,
-          name: "Maria Garcia",
-          condition: "Physical therapy",
-          status: "completed",
-          lastCheckup: "Today, 2:45 PM",
-          healthScore: 78,
-        },
-      ]);
+        // Fetch doctor count
+        const doctorsSnapshot = await getDocs(collection(db, "doctors"));
+        const doctorCount = doctorsSnapshot.size;
 
-      setUpcomingAppointments([
-        {
-          id: 1,
-          patientName: "Robert Smith",
-          caregiverName: "Dr. Sarah Johnson",
-          date: "Today",
-          time: "2:00 PM",
-          status: "confirmed",
-          type: "Follow-up",
-        },
-        {
-          id: 2,
-          patientName: "Emma Davis",
-          caregiverName: "Dr. Michael Chen",
-          date: "Tomorrow",
-          time: "10:30 AM",
-          status: "confirmed",
-          type: "Therapy",
-        },
-        {
-          id: 3,
-          patientName: "New Patient",
-          caregiverName: "Unassigned",
-          date: "Tomorrow",
-          time: "3:45 PM",
-          status: "pending",
-          type: "Initial",
-        },
-        {
-          id: 4,
-          patientName: "James Brown",
-          caregiverName: "Nurse Emily Davis",
-          date: "Today",
-          time: "4:30 PM",
-          status: "confirmed",
-          type: "Medication",
-        },
-      ]);
+        // Fetch health units count
+        const unitsSnapshot = await getDocs(collection(db, "healthUnits"));
+        const unitsCount = unitsSnapshot.size;
 
-      setHealthUnits([
-        {
-          id: 1,
-          name: "Main Care Center",
-          location: "Downtown",
-          patients: 42,
-          capacity: 50,
-          status: "busy",
-        },
-        {
-          id: 2,
-          name: "Northside Clinic",
-          location: "North District",
-          patients: 28,
-          capacity: 40,
-          status: "optimal",
-        },
-        {
-          id: 3,
-          name: "Westend Facility",
-          location: "West District",
-          patients: 65,
-          capacity: 60,
-          status: "overcrowded",
-        },
-        {
-          id: 4,
-          name: "Eastside Hospice",
-          location: "East District",
-          patients: 18,
-          capacity: 25,
-          status: "optimal",
-        },
-      ]);
+        // Fetch recent doctors with real data
+        const doctorsData: Caregiver[] = [];
+        doctorsSnapshot.forEach((doc) => {
+          const data = doc.data();
+          doctorsData.push({
+            id: parseInt(doc.id) || doctorsData.length + 1,
+            name: data.name || "Unknown Doctor",
+            avatar:
+              data.profileImage ||
+              "https://ionicframework.com/docs/img/demos/avatar.svg",
+            status: data.status || "offline",
+            specialty:
+              data.specialization || data.specialty || "General Practice",
+            rating: data.rating || 4.5,
+          });
+        });
+        setRecentCaregivers(doctorsData.slice(0, 4));
 
-      setPatientStats({
-        ...patientStats,
-        series: [124, 42, 21],
-      });
+        // Fetch recent patients with real data
+        const patientsData: Patient[] = [];
+        patientsSnapshot.forEach((doc) => {
+          const data = doc.data();
+          patientsData.push({
+            id: parseInt(doc.id) || patientsData.length + 1,
+            name: data.name || "Unknown Patient",
+            condition: data.medicalCondition || "Not specified",
+            status: "completed",
+            lastCheckup: data.lastCheckupDate || "Not scheduled",
+            healthScore: data.healthScore || 75,
+          });
+        });
+        setRecentPatients(patientsData.slice(0, 4));
 
-      setAppointmentStats({
-        ...appointmentStats,
-        series: [
-          { name: "Pending", data: [4, 5, 6, 3, 7, 2, 0] },
-          { name: "Confirmed", data: [12, 15, 10, 14, 16, 8, 3] },
-          { name: "Completed", data: [18, 20, 15, 22, 19, 12, 5] },
-        ],
-      });
+        // Fetch health units with real data
+        const unitsData: HealthUnit[] = [];
+        unitsSnapshot.forEach((doc) => {
+          const data = doc.data();
+          const patients = data.patientsCount || 0;
+          const capacity = data.capacity || 50;
+          let status: "optimal" | "busy" | "overcrowded" = "optimal";
+          const percentage = (patients / capacity) * 100;
+          if (percentage > 90) status = "overcrowded";
+          else if (percentage > 70) status = "busy";
 
-      setLoading(false);
-    }, 1500);
+          unitsData.push({
+            id: parseInt(doc.id) || unitsData.length + 1,
+            name: data.name || "Unknown Unit",
+            location: data.location || "Not specified",
+            patients: patients,
+            capacity: capacity,
+            status: status,
+          });
+        });
+        setHealthUnits(unitsData);
+
+        // Update stats
+        setStats({
+          patients: patientCount,
+          caregivers: doctorCount,
+          appointments: 0, // Will be updated by real-time listener
+          alerts: 5,
+          healthUnits: unitsCount,
+        });
+
+        // Real-time listener for appointments
+        const appointmentsRef = collection(db, "appointments");
+        unsubscribeAppointments = onSnapshot(appointmentsRef, (snapshot) => {
+          const appointmentsData: Appointment[] = [];
+          let pendingCount = 0,
+            confirmedCount = 0,
+            completedCount = 0;
+
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            const status = data.status || "pending";
+            const date =
+              data.date instanceof Timestamp
+                ? data.date.toDate()
+                : new Date(data.date);
+            const dateStr = date.toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+            });
+
+            if (status === "pending") pendingCount++;
+            else if (status === "confirmed") confirmedCount++;
+            else if (status === "completed") completedCount++;
+
+            appointmentsData.push({
+              id: parseInt(doc.id) || appointmentsData.length + 1,
+              patientName: data.patientName || "Unknown",
+              caregiverName: data.doctorName || "Unassigned",
+              date: dateStr,
+              time: data.time || "TBD",
+              status: status,
+              type: data.type || "General",
+            });
+          });
+
+          setUpcomingAppointments(appointmentsData.slice(0, 4));
+
+          // Update appointment stats for chart
+          setStats((prev) => ({
+            ...prev,
+            appointments: snapshot.size,
+          }));
+
+          // Update patient stats chart
+          setPatientStats((prev) => ({
+            ...prev,
+            series: [completedCount, confirmedCount, pendingCount],
+          }));
+        });
+
+        setLoading(false);
+      } catch (error) {
+        console.error("Error loading Firebase data:", error);
+        setLoading(false);
+      }
+    };
+
+    loadFirebaseData();
+
+    // Cleanup subscription
+    return () => {
+      if (unsubscribeAppointments) {
+        unsubscribeAppointments();
+      }
+    };
   }, []);
 
   // Status badge color
@@ -602,7 +588,7 @@ const AdminDashboard: React.FC = () => {
                                       <span>
                                         {getCapacityPercentage(
                                           unit.patients,
-                                          unit.capacity
+                                          unit.capacity,
                                         )}
                                         % capacity
                                       </span>
@@ -725,7 +711,7 @@ const AdminDashboard: React.FC = () => {
                                     <IonIcon
                                       icon={heart}
                                       color={getHealthScoreColor(
-                                        patient.healthScore
+                                        patient.healthScore,
                                       )}
                                     />
                                   </IonAvatar>
@@ -736,7 +722,7 @@ const AdminDashboard: React.FC = () => {
                                       <span>Health Score: </span>
                                       <IonChip
                                         color={getHealthScoreColor(
-                                          patient.healthScore
+                                          patient.healthScore,
                                         )}
                                       >
                                         {patient.healthScore}

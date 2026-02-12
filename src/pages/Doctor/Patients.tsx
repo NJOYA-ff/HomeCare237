@@ -58,10 +58,11 @@ interface Patient {
   id: string;
   name: string;
   age: number;
-  gender: string;
+  sex: string;
+  contact: string;
   photo: string;
-  phone: string;
-  address: string;
+  town: string;
+  street: string;
   lastVisit: string;
   status: "stable" | "critical" | "recovering";
   bloodType: string;
@@ -107,12 +108,14 @@ const Patients: React.FC = () => {
             id: doc.id,
             name: data.name,
             age: data.age,
-            gender: data.gender,
+            sex: data.sex,
+            contact: data.contact,
             photo:
               data.photo ||
               "https://ionicframework.com/docs/img/demos/avatar.svg",
-            phone: data.phone,
-            address: data.address,
+
+            town: data.town,
+            street: data.street,
             lastVisit: data.lastVisit,
             status: data.status,
             bloodType: data.bloodType,
@@ -145,12 +148,13 @@ const Patients: React.FC = () => {
             id: doc.id,
             name: data.name,
             age: data.age,
-            gender: data.gender,
+            sex: data.sex,
             photo:
               data.photo ||
               "https://ionicframework.com/docs/img/demos/avatar.svg",
-            phone: data.phone,
-            address: data.address,
+            contact: data.contact,
+            town: data.town,
+            street: data.street,
             lastVisit: data.lastVisit,
             status: data.status,
             bloodType: data.bloodType,
@@ -165,7 +169,7 @@ const Patients: React.FC = () => {
       (error) => {
         console.error("Error listening to patients:", error);
         setLoading(false);
-      }
+      },
     );
 
     return () => unsubscribe();
@@ -180,7 +184,7 @@ const Patients: React.FC = () => {
       const medicalHistoryQuery = query(
         medicalHistoryCollection,
         where("patientId", "==", patientId),
-        orderBy("date", "desc")
+        orderBy("date", "desc"),
       );
       const querySnapshot = await getDocs(medicalHistoryQuery);
 
@@ -210,7 +214,7 @@ const Patients: React.FC = () => {
     const matchesSearch =
       patient.name.toLowerCase().includes(searchText.toLowerCase()) ||
       patient.conditions.some((condition) =>
-        condition.toLowerCase().includes(searchText.toLowerCase())
+        condition.toLowerCase().includes(searchText.toLowerCase()),
       );
 
     if (segment === "all") return matchesSearch;
@@ -249,7 +253,7 @@ const Patients: React.FC = () => {
   // Update patient (example function)
   const updatePatient = async (
     patientId: string,
-    updates: Partial<Patient>
+    updates: Partial<Patient>,
   ) => {
     try {
       const patientDoc = doc(db, "patients", patientId);
@@ -372,11 +376,12 @@ const Patients: React.FC = () => {
                       <h2>{patient.name}</h2>
                       <p>
                         {patient.age} yrs •{" "}
-                        {patient.gender === "male" ? "Male" : "Female"} •{" "}
+                        {patient.sex === "male" ? "Male" : "Female"} •{" "}
                         {patient.bloodType}
                       </p>
                     </div>
                     <IonChip
+                      className="status-chip"
                       color={
                         patient.status === "stable"
                           ? "success"
@@ -393,11 +398,13 @@ const Patients: React.FC = () => {
                     <div className="patient-details-p">
                       <div className="detail-item-p">
                         <IonIcon icon={call} />
-                        <span>{patient.phone}</span>
+                        <span>{patient.contact}</span>
                       </div>
                       <div className="detail-item-p">
                         <IonIcon icon={location} />
-                        <span>{patient.address}</span>
+                        <span>
+                          {patient.town} - {patient.street}
+                        </span>
                       </div>
                       <div className="detail-item-p">
                         <IonIcon icon={calendar} />
@@ -405,13 +412,15 @@ const Patients: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="conditions">
-                      {patient.conditions.map((condition, index) => (
-                        <IonChip key={index} color="primary" outline>
-                          {condition}
-                        </IonChip>
-                      ))}
-                    </div>
+                    {patient.conditions.length > 0 && (
+                      <div className="conditions patient-conditions">
+                        {patient.conditions.map((condition, index) => (
+                          <IonChip key={index} color="primary" outline>
+                            {condition}
+                          </IonChip>
+                        ))}
+                      </div>
+                    )}
                   </IonCardContent>
                 </IonCard>
               ))
@@ -449,7 +458,7 @@ const Patients: React.FC = () => {
                   <h1>{selectedPatient.name}</h1>
                   <p>
                     {selectedPatient.age} years •
-                    {selectedPatient.gender === "male" ? (
+                    {selectedPatient.sex === "male" ? (
                       <IonIcon icon={male} color="primary" />
                     ) : (
                       <IonIcon icon={female} color="danger" />
@@ -477,11 +486,13 @@ const Patients: React.FC = () => {
                     <IonList>
                       <IonItem>
                         <IonIcon icon={call} slot="start" />
-                        <IonLabel>{selectedPatient.phone}</IonLabel>
+                        <IonLabel>{selectedPatient.contact}</IonLabel>
                       </IonItem>
                       <IonItem>
                         <IonIcon icon={location} slot="start" />
-                        <IonLabel>{selectedPatient.address}</IonLabel>
+                        <IonLabel>
+                          {selectedPatient.town} - {selectedPatient.street}
+                        </IonLabel>
                       </IonItem>
                     </IonList>
                   </IonCardContent>

@@ -1,6 +1,7 @@
-/* Diagnoses.css */
+// /* Diagnoses.css */
 .diagnoses-container {
   padding: 16px;
+  margin-bottom: 1em;
 }
 ion-button {
   --border-radius: 6px;
@@ -35,18 +36,15 @@ ion-button {
 }
 
 .diagnosis-card-p {
-  margin-bottom: 10px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   animation: fadeIn 0.35s ease-out;
-  background: var(--ion-background-color, #fff);
-  border-left: 4px solid transparent;
+  border: solid 1px var(--ion-color-light-shade);
   padding: 10px;
 }
 .card-header-p {
-  --background: linear-gradient(90deg, #0f172a 0%, #0ea5e9 100%);
+  --background: rgba(var(--ion-color-primary-rgb), 0.1);
   padding: 8px 10px;
   border-radius: 8px;
 }
@@ -57,7 +55,7 @@ ion-button {
   width: 100%;
 }
 .card-title-p {
-  color: #fff;
+  color: var(--ion-color-dark);
   font-size: 1rem;
   margin: 0;
   font-weight: 600;
@@ -202,8 +200,6 @@ ion-button {
 }
 
 .action-buttons {
-  display: flex;
-  flex-direction: row;
   gap: 8px;
   margin-top: 12px;
   justify-content: space-between;
