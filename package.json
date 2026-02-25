@@ -18,7 +18,7 @@
     "@capacitor/android": "^7.4.2",
     "@capacitor/app": "7.0.1",
     "@capacitor/camera": "^7.0.3",
-    "@capacitor/core": "^8.1.0",
+    "@capacitor/core": "^7.5.0",
     "@capacitor/filesystem": "^7.1.6",
     "@capacitor/haptics": "7.0.1",
     "@capacitor/keyboard": "7.0.1",

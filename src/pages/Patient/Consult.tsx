@@ -1216,7 +1216,10 @@ const Consult: React.FC = () => {
           {isPatient && msg.status && (
             <IonIcon
               icon={msg.status === "read" ? checkmarkDone : checkmark}
-              className={`status-icon ${msg.status}`}
+              style={{
+                color: msg.status === "read" ? "#28c2f6" : "#8696a0",
+                fontSize: "16px",
+              }}
             />
           )}
         </div>
