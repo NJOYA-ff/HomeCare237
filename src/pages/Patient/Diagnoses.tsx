@@ -642,8 +642,18 @@ const Diagnoses: React.FC = () => {
           <IonTitle>My Diagnoses</IonTitle>
         </IonToolbar>
       </IonHeader>
-      <IonContent fullscreen>
-        <div className="diagnoses-container">
+      <IonContent fullscreen className="diagnoses-content">
+        <div className="diagnoses-shell">
+          <div className="diagnoses-hero">
+            <p className="tiny-greeting">
+              Hello {patient?.name ? patient.name.split(" ")[0] : "there"}
+            </p>
+            <h2 className="hero-title">My Diagnoses</h2>
+            <p className="hero-subtitle">
+              {diagnoses.length} record{diagnoses.length === 1 ? "" : "s"}
+            </p>
+          </div>
+
           {diagnoses.length === 0 ? (
             <div className="empty-state">
               <IonIcon icon={documentTextOutline} size="large" />
@@ -651,14 +661,16 @@ const Diagnoses: React.FC = () => {
               <p>You don't have any diagnoses records yet.</p>
             </div>
           ) : (
-            diagnoses.map((diagnosis) => (
-              <DiagnosisCard
-                key={diagnosis.id}
-                diagnosis={diagnosis}
-                patient={patient!}
-                onSavePDF={savePDFToDevice}
-              />
-            ))
+            <div className="diagnoses-list">
+              {diagnoses.map((diagnosis) => (
+                <DiagnosisCard
+                  key={diagnosis.id}
+                  diagnosis={diagnosis}
+                  patient={patient!}
+                  onSavePDF={savePDFToDevice}
+                />
+              ))}
+            </div>
           )}
         </div>
 

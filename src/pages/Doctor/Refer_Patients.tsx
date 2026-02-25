@@ -247,12 +247,12 @@ const Refer_patient: React.FC = () => {
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [referralDate, setReferralDate] = useState<string>(
-    new Date().toISOString()
+    new Date().toISOString(),
   );
   const [reason, setReason] = useState<string>("");
   const [clinicalNotes, setClinicalNotes] = useState<string>("");
   const [urgency, setUrgency] = useState<"routine" | "urgent" | "emergency">(
-    "routine"
+    "routine",
   );
   const [additionalInstructions, setAdditionalInstructions] =
     useState<string>("");
@@ -275,13 +275,24 @@ const Refer_patient: React.FC = () => {
   const [viewMode, setViewMode] = useState<"list" | "detail" | "refer">("list");
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [selectedReferral, setSelectedReferral] = useState<Referral | null>(
-    null
+    null,
   );
   const [unsubscribeSentReferrals, setUnsubscribeSentReferrals] = useState<
     (() => void) | null
   >(null);
   const [unsubscribeReceivedReferrals, setUnsubscribeReceivedReferrals] =
     useState<(() => void) | null>(null);
+  const [referralStep, setReferralStep] = useState<
+    "patient" | "doctor" | "review"
+  >("patient");
+
+  useEffect(() => {
+    if (activeSegment !== "refer") {
+      setReferralStep("patient");
+      setSelectedPatient(null);
+      setSelectedDoctor(null);
+    }
+  }, [activeSegment]);
 
   // Get current user
   useEffect(() => {
@@ -526,14 +537,14 @@ const Refer_patient: React.FC = () => {
       const sentReferralsQuery = query(
         collection(db, "referrals"),
         where("referringDoctorId", "==", userId),
-        orderBy("createdAt", "desc")
+        orderBy("createdAt", "desc"),
       );
 
       // Query for received referrals (where current user is receiving doctor)
       const receivedReferralsQuery = query(
         collection(db, "referrals"),
         where("receivingDoctorId", "==", userId),
-        orderBy("createdAt", "desc")
+        orderBy("createdAt", "desc"),
       );
 
       // Set up real-time listener for sent referrals
@@ -591,7 +602,7 @@ const Refer_patient: React.FC = () => {
         },
         (error) => {
           console.error("Error in sent referrals listener:", error);
-        }
+        },
       );
 
       // Set up real-time listener for received referrals
@@ -649,7 +660,7 @@ const Refer_patient: React.FC = () => {
         },
         (error) => {
           console.error("Error in received referrals listener:", error);
-        }
+        },
       );
 
       setUnsubscribeSentReferrals(() => sentUnsubscribe);
@@ -895,7 +906,7 @@ const Refer_patient: React.FC = () => {
 
     if (selectedSpecialty) {
       result = result.filter(
-        (doctor) => doctor.specialization === selectedSpecialty
+        (doctor) => doctor.specialization === selectedSpecialty,
       );
     }
 
@@ -905,14 +916,14 @@ const Refer_patient: React.FC = () => {
         (doctor) =>
           doctor.name.toLowerCase().includes(query) ||
           doctor.specialization.toLowerCase().includes(query) ||
-          doctor.city.toLowerCase().includes(query)
+          doctor.city.toLowerCase().includes(query),
       );
     }
 
     // Remove duplicates by ID
     const uniqueDoctors = result.filter(
       (doctor, index, self) =>
-        index === self.findIndex((d) => d.id === doctor.id)
+        index === self.findIndex((d) => d.id === doctor.id),
     );
 
     setFilteredDoctors(uniqueDoctors);
@@ -927,14 +938,14 @@ const Refer_patient: React.FC = () => {
       result = result.filter(
         (patient) =>
           patient.name.toLowerCase().includes(query) ||
-          patient.email.toLowerCase().includes(query)
+          patient.email.toLowerCase().includes(query),
       );
     }
 
     // Remove duplicates by ID
     const uniquePatients = result.filter(
       (patient, index, self) =>
-        index === self.findIndex((p) => p.id === patient.id)
+        index === self.findIndex((p) => p.id === patient.id),
     );
 
     setFilteredPatients(uniquePatients);
@@ -1066,221 +1077,233 @@ const Refer_patient: React.FC = () => {
                   </IonCardHeader>
                   <IonCardContent>
                     {/* Patient Selection */}
-                    <div className="selection-section">
-                      <h3>Select Patient</h3>
-                      <IonSearchbar
-                        value={patientSearchQuery}
-                        onIonInput={(e) =>
-                          setPatientSearchQuery(e.detail.value!)
-                        }
-                        placeholder="Search patients by name or email"
-                        className="patient-search"
-                      />
+                    {referralStep === "patient" && (
+                      <div className="selection-section">
+                        <h3>Select Patient</h3>
+                        <IonSearchbar
+                          value={patientSearchQuery}
+                          onIonInput={(e) =>
+                            setPatientSearchQuery(e.detail.value!)
+                          }
+                          placeholder="Search patients by name or email"
+                          className="doctor-search"
+                        />
 
-                      <div className="patients-list-r">
-                        {filteredPatients.map((patient) => (
-                          <IonCard
-                            key={patient.id}
-                            className={`patient-card-r ${
-                              selectedPatient?.id === patient.id
-                                ? "selected"
-                                : ""
-                            }`}
-                            onClick={() => setSelectedPatient(patient)}
-                          >
-                            <IonCardContent>
-                              <div className="patient-header">
-                                <IonAvatar className="patient-avatar">
-                                  <img
-                                    src="https://ionicframework.com/docs/img/demos/avatar.svg"
-                                    alt={patient.name}
-                                  />
-                                </IonAvatar>
-                                <div className="patient-info-r">
-                                  <IonText>
-                                    <h3 className="patient-name">
-                                      {patient.name}
-                                    </h3>
-                                  </IonText>
-                                  <IonText color="medium">
-                                    <p className="patient-email">
-                                      {patient.email}
-                                    </p>
-                                    {patient.phone && (
-                                      <p className="patient-phone">
-                                        {patient.phone}
-                                      </p>
-                                    )}
-                                  </IonText>
-                                </div>
-                                {selectedPatient?.id === patient.id && (
-                                  <IonIcon
-                                    icon={checkmarkCircle}
-                                    color="success"
-                                  />
-                                )}
-                              </div>
-                            </IonCardContent>
-                          </IonCard>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Doctor Selection */}
-                    <div className="selection-section">
-                      <h3>Select Specialist</h3>
-                      <div className="filters-container">
-                        <IonItem className="filter-item">
-                          <IonIcon icon={location} slot="start" />
-                          <IonLabel>Region</IonLabel>
-                          <IonSelect
-                            value={selectedRegion}
-                            placeholder="All Regions"
-                            onIonChange={(e) =>
-                              setSelectedRegion(e.detail.value)
-                            }
-                            interface="popover"
-                          >
-                            <IonSelectOption value="">
-                              All Regions
-                            </IonSelectOption>
-                            {cameroonRegions.map((region) => (
-                              <IonSelectOption key={region} value={region}>
-                                {region}
-                              </IonSelectOption>
-                            ))}
-                          </IonSelect>
-                        </IonItem>
-
-                        <IonItem className="filter-item">
-                          <IonIcon icon={medical} slot="start" />
-                          <IonLabel>Specialty</IonLabel>
-                          <IonSelect
-                            value={selectedSpecialty}
-                            placeholder="All Specialties"
-                            onIonChange={(e) =>
-                              setSelectedSpecialty(e.detail.value)
-                            }
-                            interface="popover"
-                          >
-                            <IonSelectOption value="">
-                              All Specialties
-                            </IonSelectOption>
-                            {medicalSpecialties.map((specialty) => (
-                              <IonSelectOption
-                                key={specialty}
-                                value={specialty}
-                              >
-                                {specialty}
-                              </IonSelectOption>
-                            ))}
-                          </IonSelect>
-                        </IonItem>
-                      </div>
-
-                      <IonSearchbar
-                        value={searchQuery}
-                        onIonInput={(e) => setSearchQuery(e.detail.value!)}
-                        placeholder="Search doctors by name, specialty, or city"
-                        className="doctor-search"
-                      />
-
-                      <div className="doctors-list-r">
-                        <h4 className="section-title">
-                          Available Specialists ({filteredDoctors.length})
-                        </h4>
-
-                        {filteredDoctors.length === 0 ? (
-                          <IonText color="medium" className="no-results">
-                            <p>No specialists found matching your criteria.</p>
-                            <IonButton
-                              fill="clear"
+                        <div className="patients-list-r">
+                          {filteredPatients.map((patient) => (
+                            <IonCard
+                              key={patient.id}
+                              className={`patient-card-r ${
+                                selectedPatient?.id === patient.id
+                                  ? "selected"
+                                  : ""
+                              }`}
                               onClick={() => {
-                                setSelectedRegion("");
-                                setSelectedSpecialty("");
-                                setSearchQuery("");
+                                setSelectedPatient(patient);
+                                setReferralStep("doctor");
                               }}
                             >
-                              Clear Filters
-                            </IonButton>
-                          </IonText>
-                        ) : (
-                          <div className="doctors-grid-r">
-                            {filteredDoctors.map((doctor) => (
-                              <IonCard
-                                key={doctor.id}
-                                className={`doctor-card-r ${
-                                  selectedDoctor?.id === doctor.id
-                                    ? "selected"
-                                    : ""
-                                }`}
-                                onClick={() => setSelectedDoctor(doctor)}
-                              >
-                                <IonCardContent>
-                                  <div className="doctor-header-r">
-                                    <IonAvatar className="doctor-avatar-r">
-                                      <img
-                                        src={doctor.avatar}
-                                        alt={doctor.name}
-                                      />
-                                    </IonAvatar>
-                                    <div className="doctor-info-r">
-                                      <IonText>
-                                        <h3 className="doctor-name-r">
-                                          {doctor.name}
-                                        </h3>
-                                      </IonText>
-                                      <IonText color="medium">
-                                        <p className="doctor-specialty-r">
-                                          {getSpecialtyIcon(
-                                            doctor.specialization
-                                          )}
-                                          {doctor.specialization}
+                              <IonCardContent>
+                                <div className="patient-header">
+                                  <IonAvatar className="patient-avatar">
+                                    <img
+                                      src="https://ionicframework.com/docs/img/demos/avatar.svg"
+                                      alt={patient.name}
+                                    />
+                                  </IonAvatar>
+                                  <div className="patient-info-r">
+                                    <IonText>
+                                      <h3 className="patient-name">
+                                        {patient.name}
+                                      </h3>
+                                    </IonText>
+                                    <IonText color="medium">
+                                      <p className="patient-email">
+                                        {patient.email}
+                                      </p>
+                                      {patient.phone && (
+                                        <p className="patient-phone">
+                                          {patient.phone}
                                         </p>
-                                      </IonText>
-                                    </div>
-                                    {selectedDoctor?.id === doctor.id && (
-                                      <IonIcon
-                                        icon={checkmarkCircle}
-                                        color="success"
-                                      />
-                                    )}
+                                      )}
+                                    </IonText>
                                   </div>
-
-                                  <div className="doctor-details-r">
-                                    <div className="detail-item-r">
-                                      <IonIcon icon={location} />
-                                      <span>
-                                        {doctor.city}, {doctor.region}
-                                      </span>
-                                    </div>
-                                    <div className="detail-item-r">
-                                      <IonIcon icon={star} color="warning" />
-                                      <span>
-                                        {doctor.rating} ({doctor.reviews}{" "}
-                                        reviews)
-                                      </span>
-                                    </div>
-                                    <div className="detail-item-r">
-                                      <IonIcon
-                                        icon={timeOutline}
-                                        color="primary"
-                                      />
-                                      <span>
-                                        {doctor.experience} years experience
-                                      </span>
-                                    </div>
-                                  </div>
-                                </IonCardContent>
-                              </IonCard>
-                            ))}
-                          </div>
-                        )}
+                                  {selectedPatient?.id === patient.id && (
+                                    <IonIcon
+                                      icon={checkmarkCircle}
+                                      color="success"
+                                    />
+                                  )}
+                                </div>
+                              </IonCardContent>
+                            </IonCard>
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
+
+                    {/* Doctor Selection */}
+                    {referralStep === "doctor" && (
+                      <div className="selection-section">
+                        <h3>Select Specialist</h3>
+                        <div className="filters-container">
+                          <IonItem className="filter-item">
+                            <IonIcon icon={location} slot="start" />
+                            <IonLabel>Region</IonLabel>
+                            <IonSelect
+                              value={selectedRegion}
+                              placeholder="All Regions"
+                              onIonChange={(e) =>
+                                setSelectedRegion(e.detail.value)
+                              }
+                              interface="popover"
+                            >
+                              <IonSelectOption value="">
+                                All Regions
+                              </IonSelectOption>
+                              {cameroonRegions.map((region) => (
+                                <IonSelectOption key={region} value={region}>
+                                  {region}
+                                </IonSelectOption>
+                              ))}
+                            </IonSelect>
+                          </IonItem>
+
+                          <IonItem className="filter-item">
+                            <IonIcon icon={medical} slot="start" />
+                            <IonLabel>Specialty</IonLabel>
+                            <IonSelect
+                              value={selectedSpecialty}
+                              placeholder="All Specialties"
+                              onIonChange={(e) =>
+                                setSelectedSpecialty(e.detail.value)
+                              }
+                              interface="popover"
+                            >
+                              <IonSelectOption value="">
+                                All Specialties
+                              </IonSelectOption>
+                              {medicalSpecialties.map((specialty) => (
+                                <IonSelectOption
+                                  key={specialty}
+                                  value={specialty}
+                                >
+                                  {specialty}
+                                </IonSelectOption>
+                              ))}
+                            </IonSelect>
+                          </IonItem>
+                        </div>
+
+                        <IonSearchbar
+                          value={searchQuery}
+                          onIonInput={(e) => setSearchQuery(e.detail.value!)}
+                          placeholder="Search doctors by name, specialty, or city"
+                          className="doctor-search"
+                        />
+
+                        <div className="doctors-list-r">
+                          <h4 className="section-title">
+                            Available Specialists ({filteredDoctors.length})
+                          </h4>
+
+                          {filteredDoctors.length === 0 ? (
+                            <IonText color="medium" className="no-results">
+                              <p>
+                                No specialists found matching your criteria.
+                              </p>
+                              <IonButton
+                                fill="clear"
+                                onClick={() => {
+                                  setSelectedRegion("");
+                                  setSelectedSpecialty("");
+                                  setSearchQuery("");
+                                }}
+                              >
+                                Clear Filters
+                              </IonButton>
+                            </IonText>
+                          ) : (
+                            <div className="doctors-grid-r">
+                              {filteredDoctors.map((doctor) => (
+                                <IonCard
+                                  key={doctor.id}
+                                  className={`doctor-card-r ${
+                                    selectedDoctor?.id === doctor.id
+                                      ? "selected"
+                                      : ""
+                                  }`}
+                                  onClick={() => {
+                                    setSelectedDoctor(doctor);
+                                    setReferralStep("review");
+                                  }}
+                                >
+                                  <IonCardContent>
+                                    <div className="doctor-header-r">
+                                      <IonAvatar className="doctor-avatar-r">
+                                        <img
+                                          src={doctor.avatar}
+                                          alt={doctor.name}
+                                        />
+                                      </IonAvatar>
+                                      <div className="doctor-info-r">
+                                        <IonText>
+                                          <h3 className="doctor-name-r">
+                                            {doctor.name}
+                                          </h3>
+                                        </IonText>
+                                        <IonText color="medium">
+                                          <p className="doctor-specialty-r">
+                                            {getSpecialtyIcon(
+                                              doctor.specialization,
+                                            )}
+                                            {doctor.specialization}
+                                          </p>
+                                        </IonText>
+                                      </div>
+                                      {selectedDoctor?.id === doctor.id && (
+                                        <IonIcon
+                                          icon={checkmarkCircle}
+                                          color="success"
+                                        />
+                                      )}
+                                    </div>
+
+                                    <div className="doctor-details-r">
+                                      <div className="detail-item-r">
+                                        <IonIcon icon={location} />
+                                        <span>
+                                          {doctor.city}, {doctor.region}
+                                        </span>
+                                      </div>
+                                      <div className="detail-item-r">
+                                        <IonIcon icon={star} color="warning" />
+                                        <span>
+                                          {doctor.rating} ({doctor.reviews}{" "}
+                                          reviews)
+                                        </span>
+                                      </div>
+                                      <div className="detail-item-r">
+                                        <IonIcon
+                                          icon={timeOutline}
+                                          color="primary"
+                                        />
+                                        <span>
+                                          {doctor.experience} years experience
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </IonCardContent>
+                                </IonCard>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Referral Details Button */}
-                    {selectedPatient && selectedDoctor && (
+                    {referralStep === "review" && (
                       <div className="referral-actions">
                         <IonButton
                           expand="block"
@@ -1344,7 +1367,7 @@ const Refer_patient: React.FC = () => {
                                   <IonText color="medium">
                                     <p className="doctor-specialty-r">
                                       {getSpecialtyIcon(
-                                        referral.receivingDoctorSpecialization
+                                        referral.receivingDoctorSpecialization,
                                       )}
                                       {referral.receivingDoctorSpecialization}
                                     </p>
@@ -1468,7 +1491,7 @@ const Refer_patient: React.FC = () => {
                                   <IonText color="medium">
                                     <p className="doctor-specialty-r">
                                       {getSpecialtyIcon(
-                                        referral.receivingDoctorSpecialization
+                                        referral.receivingDoctorSpecialization,
                                       )}
                                       {referral.receivingDoctorSpecialization}
                                     </p>
@@ -1609,7 +1632,7 @@ const Refer_patient: React.FC = () => {
                             <h4>{selectedReferral.referringDoctor.name}</h4>
                             <p>
                               {getSpecialtyIcon(
-                                selectedReferral.receivingDoctorSpecialization
+                                selectedReferral.receivingDoctorSpecialization,
                               )}
                               {selectedReferral.receivingDoctorSpecialization}
                             </p>
@@ -1648,7 +1671,7 @@ const Refer_patient: React.FC = () => {
                             <h4>{selectedReferral.receivingDoctor.name}</h4>
                             <p>
                               {getSpecialtyIcon(
-                                selectedReferral.receivingDoctor.specialization
+                                selectedReferral.receivingDoctor.specialization,
                               )}
                               {selectedReferral.receivingDoctor.specialization}
                             </p>

@@ -812,6 +812,7 @@ const Appointments: React.FC = () => {
             value={searchText}
             onIonInput={(e) => setSearchText(e.detail.value!)}
             placeholder="Search appointments..."
+            className="doctor-search"
           />
         </IonToolbar>
 

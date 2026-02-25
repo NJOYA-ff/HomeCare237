@@ -1,32 +1,129 @@
-// NotificationPage.scss
+.notifications-page {
+  .notifications-toolbar {
+    --background: transparent;
+    --color: #191d38;
+  }
 
-.notification-list {
-  background: transparent;
-  ion-item {
-    --border-radius: 12px;
-    margin-bottom: 8px;
+  .notifications-title {
+    font-weight: 700;
+    color: #191d38;
+  }
 
-    &.unread {
-      --background: rgba(var(--ion-color-primary-rgb), 0.1);
-      --color: var(--ion-color-dark);
-      h2 {
-        color: var(--ion-color-dark);
-        font-weight: bold;
-      }
-      p {
-        color: var(--ion-color-dark);
-      }
+  .read-all-btn {
+    --color: #5f8cef;
+    font-weight: 600;
+    text-transform: none;
+  }
+
+  .notifications-content {
+    --background: linear-gradient(180deg, #edf0ff 0%, #f8f9ff 100%);
+  }
+
+  .patient-surface-list {
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-bottom: 24px;
+  }
+
+  .notification-item,
+  .empty-notification-state {
+    --inner-border-width: 0;
+    --min-height: 88px;
+    --padding-start: 14px;
+    --padding-end: 14px;
+    border: 1px solid #e5e8f9;
+    border-radius: 18px;
+    box-shadow: 0 10px 20px rgba(78, 85, 150, 0.1);
+    margin: 0;
+  }
+
+  .notification-item.unread {
+    --background: #eef0ff;
+    border-color: #d9defc;
+  }
+
+  .notification-item.read {
+    --background: #fefeff;
+  }
+
+  .notification-item h2,
+  .empty-notification-state h2 {
+    margin: 0;
+    color: #141830;
+    font-weight: 700;
+    font-size: 15px;
+  }
+
+  .notification-item p,
+  .empty-notification-state p {
+    margin: 6px 0 0;
+    color: #616887;
+    font-size: 13px;
+  }
+
+  .notification-time {
+    color: #858dab;
+    font-size: 11px;
+    font-weight: 500;
+    margin-left: 10px;
+  }
+
+  .notification-data {
+    margin-top: 8px;
+    color: #8f96b2;
+    font-size: 11px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .notifications-page {
+    .notifications-content {
+      --background: var(--background);
     }
-    &.read {
-      --background: var(--ion-color-light-shade);
-      --color: var(--ion-color-dark);
-      h2 {
-        color: var(--ion-color-dark);
-        font-weight: bold;
-      }
-      p {
-        color: var(--ion-color-dark);
-      }
+
+    .notifications-toolbar {
+      --color: #f0f2ff;
+    }
+
+    .notifications-title {
+      color: #f0f2ff;
+    }
+
+    .read-all-btn {
+      --color: #aeb5ff;
+    }
+
+    .notification-item,
+    .empty-notification-state {
+      border: 1px solid #2a2f57;
+      box-shadow: 0 12px 26px rgba(5, 7, 20, 0.55);
+    }
+
+    .notification-item.unread {
+      --background: #252b4f;
+      border-color: #313968;
+    }
+
+    .notification-item.read,
+    .empty-notification-state {
+      --background: var(--background);
+    }
+
+    .notification-item h2,
+    .empty-notification-state h2 {
+      color: #eef0ff;
+    }
+
+    .notification-item p,
+    .empty-notification-state p {
+      color: #b1b6d5;
+    }
+
+    .notification-time,
+    .notification-data {
+      color: #a1a7c4;
     }
   }
 }

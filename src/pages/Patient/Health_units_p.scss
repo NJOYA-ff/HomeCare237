@@ -1,0 +1,253 @@
+.health-units-page {
+  .health-units-toolbar {
+    --background: transparent;
+    --color: #191d38;
+  }
+
+  .health-units-content {
+    --background: linear-gradient(180deg, #edf0ff 0%, #f8f9ff 100%);
+  }
+
+  .search-section,
+  .filters-section,
+  .results-summary {
+    background: transparent;
+    box-shadow: none;
+    border: 0;
+  }
+
+  .search-section {
+    padding: 14px 12px 8px;
+  }
+
+  .health-searchbar {
+    --background: #f3f4fb;
+    --border-radius: 999px;
+    --box-shadow: none;
+    --color: #3a4261;
+    --placeholder-color: #9ca2bb;
+    border: 1px solid #e7eafb;
+  }
+
+  .filters-section {
+    margin: 0 12px 8px;
+    border: 1px solid #e5e8f9;
+    border-radius: 20px;
+    background: #fefeff;
+    box-shadow: 0 10px 20px rgba(78, 85, 150, 0.1);
+  }
+
+  .filter-item {
+    --background: #f7f8ff;
+    border: 1px solid #e8ebfc;
+    border-radius: 12px;
+    --padding-start: 10px;
+    --inner-padding-end: 10px;
+  }
+
+  .clear-filters {
+    --color: #5f8aef;
+    font-weight: 600;
+  }
+
+  .results-summary {
+    padding: 6px 12px 10px;
+    gap: 8px;
+  }
+
+  .results-chip {
+    --background: #eef0ff;
+    --color: #4b65e5;
+    border: 1px solid #dce1fb;
+    font-weight: 700;
+  }
+
+  .filter-chip {
+    --background: #ffffff;
+    --color: #6e7696;
+    border: 1px solid #e6e9fb;
+  }
+
+  .map-section-full {
+    margin: 0 12px 10px;
+    border: 1px solid #e5e8f9;
+    border-radius: 24px;
+    background: #fefeff;
+    box-shadow: 0 12px 26px rgba(78, 85, 150, 0.14);
+    overflow: hidden;
+  }
+
+  .map-container-full {
+    height: 370px;
+  }
+
+  .health-units-list {
+    padding: 0 12px calc(92px + env(safe-area-inset-bottom, 0px));
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .health-unit-card {
+    margin: 0;
+    border-radius: 24px;
+    border: 1px solid #e5e8f9;
+    background: #fefeff;
+    box-shadow: 0 12px 26px rgba(78, 85, 150, 0.14);
+  }
+
+  .health-unit-card.expanded {
+    box-shadow: 0 16px 28px rgba(78, 85, 150, 0.18);
+  }
+
+  .card-image-container {
+    border-radius: 24px 24px 0 0;
+  }
+
+  .type-badge {
+    border-radius: 999px;
+    font-weight: 600;
+  }
+
+  .emergency-badge {
+    border-radius: 999px;
+  }
+
+  .card-header ion-card-title {
+    color: #101428;
+  }
+
+  .card-header ion-card-subtitle,
+  .description,
+  .info-item ion-label {
+    color: #66708d;
+  }
+
+  .rating-text {
+    color: #4b67e5;
+  }
+
+  .expanded-content {
+    border-top: 1px solid #e8ebfc;
+  }
+
+  .service-chip {
+    --background: #eef0ff;
+    --color: #4f6be9;
+    border: 1px solid #dde2fc;
+  }
+
+  .action-button {
+    --background: linear-gradient(140deg, #6b86ff 0%, #4b77e5 100%);
+    --border-radius: 999px;
+    height: 40px;
+    text-transform: none;
+    font-weight: 600;
+  }
+
+  .expand-button {
+    --color: #5f7eef;
+    text-transform: none;
+    font-weight: 600;
+  }
+
+  .empty-state-card {
+    margin: 14px 12px;
+    border-radius: 20px;
+    border: 1px solid #e5e8f9;
+    background: #fefeff;
+    box-shadow: 0 10px 22px rgba(78, 85, 150, 0.12);
+  }
+
+  .map-controls ion-fab-button {
+    --background: #ffffff;
+    --color: #4b55e5;
+    --box-shadow: 0 8px 16px rgba(78, 85, 150, 0.2);
+  }
+}
+
+@media (min-width: 768px) {
+  .health-units-page .health-units-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .health-units-page {
+    .health-units-content {
+      --background: var(--background);
+    }
+
+    .health-units-toolbar {
+      --color: #f0f2ff;
+    }
+
+    .health-searchbar {
+      --background: #202448;
+      --color: #e3e6ff;
+      --placeholder-color: #8e93b5;
+      border: 1px solid #2a2f57;
+    }
+
+    .filters-section,
+    .map-section-full,
+    .health-unit-card,
+    .empty-state-card {
+      background: var(--background);
+      border: 1px solid #2a2f57;
+      box-shadow: 0 12px 26px rgba(5, 7, 20, 0.55);
+    }
+
+    .filter-item {
+      --background: #202448;
+      border: 1px solid #2a2f57;
+    }
+
+    .results-chip {
+      --background: #252b4f;
+      --color: #aeb5ff;
+      border: 1px solid #313968;
+    }
+
+    .filter-chip {
+      --background: #1e2241;
+      --color: #b1b6d5;
+      border: 1px solid #2a2f57;
+    }
+
+    .card-header ion-card-title {
+      color: #eef0ff;
+    }
+
+    .card-header ion-card-subtitle,
+    .description,
+    .info-item ion-label,
+    .empty-state-content p {
+      color: #b1b6d5;
+    }
+
+    .rating-text,
+    .expand-button,
+    .clear-filters {
+      color: #aeb5ff;
+    }
+
+    .expanded-content {
+      border-top: 1px solid #2a2f57;
+    }
+
+    .service-chip {
+      --background: #252b4f;
+      --color: #aeb5ff;
+      border: 1px solid #313968;
+    }
+
+    .map-controls ion-fab-button {
+      --background: #1e2241;
+      --color: #aeb5ff;
+      --box-shadow: 0 12px 24px rgba(5, 7, 20, 0.55);
+    }
+  }
+}

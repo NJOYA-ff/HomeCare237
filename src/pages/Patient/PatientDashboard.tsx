@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { useHistory } from "react-router";
 import {
   IonContent,
   IonHeader,
@@ -137,7 +136,9 @@ import {
   locationOutline,
   arrowDownCircle,
   heartOutline,
+  searchOutline,
   star,
+  timeOutline,
   callOutline,
   chevronForward,
   fitness,
@@ -158,6 +159,11 @@ import "./Dashboard.scss";
 
 import VoiceflowChat from "./Chat-interface";
 import { motion } from "framer-motion";
+declare global {
+  interface Window {
+    voiceflow?: any;
+  }
+}
 import { FiMenu } from "react-icons/fi";
 import Menu from "@material-design-icons/svg/round/menu_open.svg";
 import { useNotifications } from "../../context/NotificationContext";
@@ -205,6 +211,11 @@ interface Doctor {
   phone?: string;
 }
 
+interface CategoryColor {
+  bg: string;
+  fg: string;
+}
+
 const PatientDashboard: React.FC = () => {
   const [currentState, setCurrentState] = useState<string>("healthy");
   const [loading, setLoading] = useState(true);
@@ -214,6 +225,11 @@ const PatientDashboard: React.FC = () => {
   const [alertMessage, setAlertMessage] = useState("");
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  const handleOpenChat = () => {
+    if (window.voiceflow?.chat?.open) {
+      window.voiceflow.chat.open();
+    }
+  };
   const {
     notifications,
     unreadCount,
@@ -232,6 +248,17 @@ const PatientDashboard: React.FC = () => {
     email: "",
   });
   const [availableDoctors, setAvailableDoctors] = useState<Doctor[]>([]);
+  const [doctorQuery, setDoctorQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [showCategoryPopover, setShowCategoryPopover] = useState(false);
+  const [categoryPopoverEvent, setCategoryPopoverEvent] = useState<any>(null);
+  const [showUpcomingPopover, setShowUpcomingPopover] = useState(false);
+  const [upcomingPopoverEvent, setUpcomingPopoverEvent] = useState<any>(null);
+  const [upcomingAppointmentPopover, setUpcomingAppointmentPopover] = useState<{
+    show: boolean;
+    event: Event | undefined;
+    appointment: Appointment | null;
+  }>({ show: false, event: undefined, appointment: null });
 
   // Firebase initialization and auth state
   useEffect(() => {
@@ -248,6 +275,18 @@ const PatientDashboard: React.FC = () => {
 
     return () => unsubscribe();
   }, []);
+
+  const handleUpcomingAppointmentMore = (
+    e: React.MouseEvent,
+    appointment: Appointment,
+  ) => {
+    e.persist();
+    setUpcomingAppointmentPopover({
+      show: true,
+      event: e.nativeEvent,
+      appointment,
+    });
+  };
 
   // Real-time listeners
   useEffect(() => {
@@ -606,11 +645,6 @@ const PatientDashboard: React.FC = () => {
     Physiotherapist: <FaStethoscope />,
   };
 
-  // Popover state for extra specialties
-  const [showSpecialtyPopover, setShowSpecialtyPopover] = useState(false);
-  const [popoverEvent, setPopoverEvent] = useState<any>(null);
-  const history = useHistory();
-
   // Determine the next appointment to show: prefer the soonest future appointment (>= now).
   const nextAppointment = useMemo(() => {
     if (!upcomingAppointments || upcomingAppointments.length === 0) return null;
@@ -644,6 +678,33 @@ const PatientDashboard: React.FC = () => {
       return upcomingAppointments[0] || null;
     }
   }, [upcomingAppointments]);
+
+  const filteredCategoryResults = useMemo(() => {
+    const queryText = doctorQuery.trim().toLowerCase();
+    if (!queryText) return medicalSpecialties;
+    return medicalSpecialties.filter((specialty) =>
+      specialty.toLowerCase().includes(queryText),
+    );
+  }, [doctorQuery]);
+
+  const visibleCategories = useMemo(() => {
+    const baseList = filteredCategoryResults;
+    return baseList.slice(0, 4);
+  }, [filteredCategoryResults]);
+
+  const featuredDoctors = useMemo(() => {
+    const queryText = doctorQuery.trim().toLowerCase();
+    return availableDoctors
+      .filter((doctor) => {
+        const specialtyText = (doctor.specialty || "").toLowerCase();
+        const matchesQuery = !queryText || specialtyText.includes(queryText);
+        const matchesSelectedCategory =
+          !selectedCategory ||
+          specialtyText.includes(selectedCategory.toLowerCase());
+        return matchesQuery && matchesSelectedCategory;
+      })
+      .slice(0, 4);
+  }, [availableDoctors, doctorQuery, selectedCategory]);
 
   // Animation effects
   useEffect(() => {
@@ -730,440 +791,261 @@ const PatientDashboard: React.FC = () => {
           </div>
         ) : (
           <>
-            {/* Welcome Section */}
-            <IonCard className="welcome-card">
-              <IonCardContent>
-                <IonGrid>
-                  <IonRow className="ion-align-items-center">
-                    <IonCol size="3">
-                      <IonAvatar className="p-avatar">
-                        <IonImg
-                          src={
-                            userData.profileImage ||
-                            "https://ionicframework.com/docs/img/demos/avatar.svg"
-                          }
-                        />
-                      </IonAvatar>
-                    </IonCol>
-                    <IonCol size="6">
-                      <h2>Hello, {userData.name}!</h2>
-                      <p>How are you feeling today?</p>
-                    </IonCol>
-                    <IonCol size="3" className="ion-text-end">
-                      <IonItem lines="none" className="status-selector">
-                        <IonSelect
-                          value={currentState}
-                          placeholder="Select state"
-                          onIonChange={(e) =>
-                            handleStateChange(e.detail.value!)
-                          }
-                          interface="popover"
-                        >
-                          <IonSelectOption value="healthy">
-                            Healthy
-                          </IonSelectOption>
-                          <IonSelectOption value="mild">
-                            Mild Symptoms
-                          </IonSelectOption>
-                          <IonSelectOption value="moderate">
-                            Moderate Symptoms
-                          </IonSelectOption>
-                          <IonSelectOption value="severe">
-                            Severe Symptoms
-                          </IonSelectOption>
-                          <IonSelectOption value="emergency">
-                            Emergency
-                          </IonSelectOption>
-                        </IonSelect>
-                      </IonItem>
-                    </IonCol>
-                  </IonRow>
-                </IonGrid>
-              </IonCardContent>
-            </IonCard>
+            <div className="patient-home-shell">
+              <IonCard className="patient-home-intro">
+                <IonCardContent>
+                  <p className="tiny-greeting">Hello {userData.name || ""}!</p>
+                  <h2 className="home-title">Find your Specialist</h2>
+                  <br />
+                  <div className="home-search-wrap">
+                    <IonIcon icon={searchOutline} />
+                    <input
+                      value={doctorQuery}
+                      onChange={(e) => setDoctorQuery(e.target.value)}
+                      placeholder="Search specialist category"
+                    />
+                    <IonButton fill="clear" size="small">
+                      <IonIcon icon={chatbubbleEllipsesOutline} />
+                    </IonButton>
+                  </div>
 
-            {/* Current Status Indicator */}
-            <IonCard className="status-card">
-              <IonCardContent>
-                <IonItem lines="none">
-                  <IonIcon
-                    icon={locationOutline}
-                    slot="start"
-                    color="primary"
-                  />
-                  <IonLabel>
-                    <h3>Current Status</h3>
-                    <p>
-                      Your health status is set to:{" "}
-                      <strong>{currentState}</strong>
-                    </p>
-                  </IonLabel>
-                </IonItem>
-                <IonProgressBar
-                  value={
-                    currentState === "healthy"
-                      ? 0.2
-                      : currentState === "mild"
-                      ? 0.4
-                      : currentState === "moderate"
-                      ? 0.6
-                      : currentState === "severe"
-                      ? 0.8
-                      : 1
-                  }
-                  color={
-                    currentState === "healthy"
-                      ? "success"
-                      : currentState === "mild"
-                      ? "warning"
-                      : currentState === "moderate"
-                      ? "warning"
-                      : currentState === "severe"
-                      ? "danger"
-                      : "danger"
-                  }
-                />
-                {/* Specialties quick links */}
-              </IonCardContent>
-            </IonCard>
-            <IonCard className="specialties-section">
-              <IonCardHeader>
-                <IonCardTitle>Find a Specialist </IonCardTitle>
-              </IonCardHeader>
+                  <div className="home-section-head">
+                    <h3>Categories</h3>
+                    <IonButton
+                      fill="clear"
+                      size="small"
+                      onClick={(e) => {
+                        setCategoryPopoverEvent(e.nativeEvent);
+                        setShowCategoryPopover(true);
+                      }}
+                    >
+                      See all
+                    </IonButton>
+                  </div>
 
-              <IonCardContent className="specialties-grid-container">
-                <IonGrid className="specialties-grid">
-                  <IonRow className="specialty-row">
-                    {medicalSpecialties.slice(0, 4).map((specialty, index) => (
-                      <IonCol
-                        size="3"
-                        key={specialty}
-                        className="specialty-col"
-                      >
-                        <IonGrid className="specialty-card">
-                          <IonButton
-                            className={`specialty-btn specialty-btn-${
-                              index + 1
-                            }`}
-                            expand="block"
-                            fill="clear"
-                            routerLink={`/patient/specialties?specialty=${encodeURIComponent(
-                              specialty,
-                            )}`}
+                  <div className="home-categories">
+                    {visibleCategories.length > 0 ? (
+                      visibleCategories.map((specialty, index) => {
+                        return (
+                          <div
+                            key={specialty}
+                            className="home-category-wrapper"
                           >
-                            <div className="specialty-icon-wrapper">
-                              <span className="specialty-icon">
-                                {specialtyIcons[specialty] || (
-                                  <IonIcon icon={medical} />
-                                )}
-                              </span>
-                            </div>
-                          </IonButton>
-                          <IonLabel className="specialty-label">
-                            <span className="specialty-name">
-                              {specialty.split(" ")[0]}
-                            </span>
-                            {specialty.includes(" ") && (
-                              <span className="specialty-fullname">
-                                {specialty}
-                              </span>
-                            )}
-                          </IonLabel>{" "}
-                        </IonGrid>
-                      </IonCol>
-                    ))}
-
-                    {/* More Button */}
-                  </IonRow>
-                </IonGrid>
-                <IonItem lines="none" className="more-item">
-                  {" "}
-                  <IonButton
-                    fill="clear"
-                    slot="end"
-                    onClick={(e) => {
-                      setPopoverEvent(e.nativeEvent);
-                      setShowSpecialtyPopover(true);
-                    }}
-                  >
-                    <IonGrid className="specialty-icon-wrapper">
-                      <IonIcon icon={ellipsisHorizontal} />
-                    </IonGrid>
-                  </IonButton>
-                </IonItem>
-
-                <IonPopover
-                  isOpen={showSpecialtyPopover}
-                  event={popoverEvent}
-                  onDidDismiss={() => setShowSpecialtyPopover(false)}
-                  className="specialty-popover"
-                >
-                  <IonList className="specialty-popover-list">
-                    <div className="popover-header">
-                      <h3>All Specialties</h3>
-                    </div>
-                    {medicalSpecialties.slice(4).map((spec) => (
-                      <IonListItem
-                        key={spec}
-                        button
-                        detail={false}
-                        className="specialty-popover-item"
-                        onClick={() => {
-                          setShowSpecialtyPopover(false);
-                          history.push(
-                            `/patient/specialties?specialty=${encodeURIComponent(
-                              spec,
-                            )}`,
-                          );
-                        }}
-                      >
-                        <div className="popover-item-content">
-                          <div className="popover-icon-wrapper">
-                            <span className="popover-icon">
-                              {specialtyIcons[spec] || (
+                            <IonButton
+                              className="home-category-btn"
+                              routerLink={`/patient/specialties?specialty=${encodeURIComponent(
+                                specialty,
+                              )}`}
+                            >
+                              {specialtyIcons[specialty] || (
                                 <IonIcon icon={medical} />
                               )}
-                            </span>
-                          </div>
-                          <div className="popover-text">
-                            <span className="popover-specialty-name">
-                              {spec}
-                            </span>
-                            <span className="popover-description">
-                              Find {spec.toLowerCase()} specialists
-                            </span>
-                          </div>
-                        </div>
-                      </IonListItem>
-                    ))}
-                  </IonList>
-                </IonPopover>
-              </IonCardContent>
-            </IonCard>
-
-            {/* Health Metrics */}
-            <IonCard className="health-metrics">
-              <IonCardHeader>
-                <IonCardTitle>Health Metrics</IonCardTitle>
-              </IonCardHeader>
-              <IonCardContent>
-                <IonGrid>
-                  <IonRow>
-                    {healthMetrics.length > 0 ? (
-                      healthMetrics.map((metric) => (
-                        <IonCol size="6" key={metric.id}>
-                          <IonCard className="metric-card" button>
-                            <IonCardContent>
-                              <IonIcon
-                                icon={getMetricIcon(metric.name)}
-                                color="primary"
-                              />
-                              <h3>{metric.name}</h3>
-                              <p>{formatMetricValue(metric)}</p>
-                              <IonChip
-                                color={
-                                  metric.status === "normal"
-                                    ? "success"
-                                    : metric.status === "warning"
-                                    ? "warning"
-                                    : metric.status === "critical"
-                                    ? "danger"
-                                    : "primary"
-                                }
-                              >
-                                {metric.status}
-                              </IonChip>
-                            </IonCardContent>
-                          </IonCard>
-                        </IonCol>
-                      ))
-                    ) : (
-                      <IonCol size="12">
-                        <IonText color="medium">
-                          <p className="ion-text-center">
-                            No recent health metrics available
-                          </p>
-                        </IonText>{" "}
-                      </IonCol>
-                    )}
-                    <IonCol size="6">
-                      <IonCard
-                        className="metric-card"
-                        button
-                        routerLink={
-                          nextAppointment
-                            ? `/patient/book_appointment?appointmentId=${nextAppointment.id}`
-                            : "/patient/book_appointment"
-                        }
-                      >
-                        <IonCardContent>
-                          <IonIcon icon={calendarOutline} color="primary" />
-                          <h3>Next Appointment</h3>
-                          <p>
-                            {nextAppointment
-                              ? formatAppointmentDate(nextAppointment.date)
-                              : "No appointments"}
-                          </p>
-                          <h2>
-                            with Dr.
-                            {nextAppointment
-                              ? nextAppointment.doctorName ||
-                                nextAppointment.userName
-                              : "N/A"}
-                          </h2>
-                          <IonChip color="primary">
-                            {nextAppointment?.status}
-                          </IonChip>
-                        </IonCardContent>
-                      </IonCard>
-                    </IonCol>
-                  </IonRow>
-                </IonGrid>
-              </IonCardContent>
-            </IonCard>
-
-            {/* Available Doctors Section */}
-            <IonCard className="available-doctor">
-              <IonCardHeader>
-                <IonCardTitle>Available Doctors</IonCardTitle>
-              </IonCardHeader>
-              <IonCardContent>
-                <IonGrid>
-                  <IonRow>
-                    {availableDoctors.map((doctor) => (
-                      <IonCol size="6" key={doctor.id}>
-                        <IonCard className="doctor-card">
-                          <IonCardContent>
-                            <div className="doctor-header">
-                              <IonAvatar className="doctor-avatar">
-                                <img src={doctor.image} alt={doctor.name} />
-                              </IonAvatar>
-                              <div className="doctor-info">
-                                <h4>Dr.{doctor.userName}</h4> <br />
-                                <p>{doctor.specialty}</p>
-                              </div>
-                            </div>
-
-                            <div className="doctor-rating">
-                              <IonIcon icon={star} color="warning" />
-                              <span>{doctor.rating}</span>
-                              <span className="experience">
-                                • {doctor.experience}
-                              </span>
-                            </div>
-
-                            <div className="doctor-availability">
-                              <IonChip
-                                color={doctor.available ? "success" : "medium"}
-                                outline={!doctor.available}
-                              >
-                                {doctor.available
-                                  ? "Available"
-                                  : "Not Available"}
-                              </IonChip>
-                              <p className="next-available">
-                                {doctor.available
-                                  ? "Now"
-                                  : doctor.nextAvailable}
-                              </p>
-                            </div>
-
-                            <IonButton
-                              className="book-now-btn"
-                              expand="block"
-                              size="small"
-                              color={doctor.available ? "primary" : "medium"}
-                              disabled={!doctor.available}
-                              routerLink={
-                                doctor.available
-                                  ? `/patient/book_appointment?doctorId=${doctor.id}`
-                                  : undefined
-                              }
-                            >
-                              {doctor.available ? "Book Now" : "Unavailable"}
                             </IonButton>
-                          </IonCardContent>
-                        </IonCard>
-                      </IonCol>
-                    ))}
-                  </IonRow>
-                </IonGrid>
-              </IonCardContent>
-            </IonCard>
+                            <IonLabel>{specialty}</IonLabel>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <p className="empty-state-text">No category found.</p>
+                    )}
+                  </div>
+                  {selectedCategory && (
+                    <p className="selected-category-tag">
+                      Selected: {selectedCategory}
+                    </p>
+                  )}
+                  <IonPopover
+                    isOpen={showCategoryPopover}
+                    event={categoryPopoverEvent}
+                    onDidDismiss={() => setShowCategoryPopover(false)}
+                    className="category-dropdown-popover"
+                  >
+                    <IonList className="category-dropdown-list">
+                      {medicalSpecialties.map((specialty) => (
+                        <IonListItem
+                          key={specialty}
+                          button
+                          detail={false}
+                          routerLink={`/patient/specialties?specialty=${encodeURIComponent(
+                            specialty,
+                          )}`}
+                          onClick={() => setShowCategoryPopover(false)}
+                        >
+                          <IonLabel>{specialty}</IonLabel>
+                        </IonListItem>
+                      ))}
+                    </IonList>
+                  </IonPopover>
+                </IonCardContent>
+              </IonCard>
 
-            {/* Upcoming Appointments */}
-            <IonCard className="upcoming-app">
-              <IonCardHeader>
-                <IonCardTitle>Upcoming Appointments</IonCardTitle>
-              </IonCardHeader>
-              <IonCardContent>
-                {upcomingAppointments.length > 0 ? (
-                  upcomingAppointments.slice(0, 3).map((appointment) => (
-                    <IonItem
-                      key={appointment.id}
-                      className="appointment-item"
-                      button
-                    >
-                      <IonAvatar slot="start">
+              <IonCard className="home-upcoming-card">
+                <IonCardContent>
+                  <div className="home-section-head">
+                    <h3>Upcoming Appointment</h3>
+                    <IonButton fill="clear" size="small">
+                      See all
+                    </IonButton>
+                  </div>
+
+                  {nextAppointment ? (
+                    <div className="upcoming-highlight">
+                      <IonAvatar>
                         <img
-                          src={
-                            "https://ionicframework.com/docs/img/demos/avatar.svg"
-                          }
-                          alt={appointment.doctorName}
+                          src="https://ionicframework.com/docs/img/demos/avatar.svg"
+                          alt={nextAppointment.doctorName}
                         />
                       </IonAvatar>
-                      <IonLabel>
-                        <h3>{appointment.doctorName}</h3>
-                        <p>{appointment.doctorSpecialization}</p>
-                        <p>{formatAppointmentDate(appointment.date)}</p>
-                      </IonLabel>
+                      <div className="upcoming-meta">
+                        <p className="appointment-time">
+                          <IonIcon icon={timeOutline} />
+                          {formatAppointmentDate(nextAppointment.date)}
+                        </p>
+                        <h4>{nextAppointment.doctorName}</h4>
+                        <p>{nextAppointment.doctorSpecialization}</p>
+                      </div>
                       <IonButton
-                        fill="outline"
-                        slot="end"
-                        routerLink={`/patient/book_appointment?appointmentId=${appointment.id}`}
+                        fill="clear"
+                        onClick={(e) =>
+                          handleUpcomingAppointmentMore(e, nextAppointment)
+                        }
                       >
-                        View
+                        <IonIcon
+                          icon={ellipsisHorizontal}
+                          slot="icon-only"
+                          color="light"
+                        />
                       </IonButton>
-                    </IonItem>
-                  ))
-                ) : (
-                  <IonText color="medium">
-                    <p className="ion-text-center">No upcoming appointments</p>
-                  </IonText>
-                )}
-              </IonCardContent>
-            </IonCard>
-
-            {/* Quick Actions */}
-            <IonCard className="quick-actions">
-              <IonCardHeader>
-                <IonCardTitle>Quick Actions</IonCardTitle>
-              </IonCardHeader>
-              <IonCardContent>
-                <IonGrid>
-                  <IonButton
-                    routerLink="/patient/book_appointment"
-                    fill="solid"
-                    className="book-btn"
+                    </div>
+                  ) : (
+                    <p className="empty-state-text">No upcoming appointments</p>
+                  )}
+                  <IonPopover
+                    isOpen={upcomingAppointmentPopover.show}
+                    event={upcomingAppointmentPopover.event}
+                    onDidDismiss={() =>
+                      setUpcomingAppointmentPopover({
+                        show: false,
+                        event: undefined,
+                        appointment: null,
+                      })
+                    }
                   >
-                    <IonIcon icon={calendarOutline} slot="start" />
-                    Book Appointment
-                  </IonButton>
+                    <IonList>
+                      <IonListItem
+                        button
+                        onClick={() => {
+                          // For now, just log it. A modal would be better.
+                          console.log(
+                            "View Details for",
+                            upcomingAppointmentPopover.appointment,
+                          );
+                          setUpcomingAppointmentPopover({
+                            show: false,
+                            event: undefined,
+                            appointment: null,
+                          });
+                        }}
+                      >
+                        <IonLabel>View Details</IonLabel>
+                      </IonListItem>
+                      <IonListItem
+                        button
+                        routerLink={`/patient/book_appointment?appointmentId=${upcomingAppointmentPopover.appointment?.id}`}
+                        onClick={() =>
+                          setUpcomingAppointmentPopover({
+                            show: false,
+                            event: undefined,
+                            appointment: null,
+                          })
+                        }
+                      >
+                        <IonLabel>Reschedule</IonLabel>
+                      </IonListItem>
+                      <IonListItem
+                        button
+                        lines="none"
+                        onClick={() => {
+                          console.log("Cancel appointment");
+                          setUpcomingAppointmentPopover({
+                            show: false,
+                            event: undefined,
+                            appointment: null,
+                          });
+                        }}
+                      >
+                        <IonLabel color="danger">Cancel Appointment</IonLabel>
+                      </IonListItem>
+                    </IonList>
+                  </IonPopover>
+                </IonCardContent>
+              </IonCard>
 
-                  <IonButton
-                    className="medical-r-btn"
-                    fill="outline"
-                    routerLink="/patient/medical-records"
-                  >
-                    <IonIcon icon={documentTextOutline} slot="start" />
-                    Medical Records
-                  </IonButton>
-                </IonGrid>
-              </IonCardContent>
-            </IonCard>
+              <IonCard className="home-top-doctors-card">
+                <IonCardContent>
+                  <div className="home-section-head">
+                    <h3>Top Doctor&apos;s For You</h3>
+                    <IonButton
+                      fill="clear"
+                      size="small"
+                      routerLink="/patient/specialties"
+                    >
+                      See all
+                    </IonButton>
+                  </div>
+
+                  <div className="home-doctor-list">
+                    {featuredDoctors.length > 0 ? (
+                      featuredDoctors.map((doctor) => (
+                        <div className="home-doctor-item" key={doctor.id}>
+                          <IonAvatar>
+                            <img src={doctor.image} alt={doctor.name} />
+                          </IonAvatar>
+                          <div className="doctor-item-meta">
+                            <p className="doctor-role">
+                              {doctor.specialty || "Specialist"}
+                            </p>
+                            <h4>Dr. {doctor.name || doctor.userName}</h4>
+                            <p className="doctor-rating-line">
+                              <IonIcon icon={star} />
+                              {doctor.rating} · {doctor.experience}
+                            </p>
+                          </div>
+                          <IonButton
+                            size="small"
+                            className="doctor-book-mini-btn"
+                            disabled={!doctor.available}
+                            routerLink={
+                              doctor.available
+                                ? `/patient/book_appointment?doctorId=${doctor.id}`
+                                : undefined
+                            }
+                          >
+                            Book Now
+                          </IonButton>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="empty-state-text">
+                        No doctors match this search right now.
+                      </p>
+                    )}
+                  </div>
+                </IonCardContent>
+              </IonCard>
+            </div>
 
             {/* Chatbot */}
             <VoiceflowChat />
+            <IonFab vertical="bottom" horizontal="end" slot="fixed">
+              <IonFabButton
+                className="chatbot"
+                aria-label="Open chat"
+                onClick={handleOpenChat}
+              >
+                <IonIcon icon={chatbubbleEllipsesOutline} />
+              </IonFabButton>
+            </IonFab>
           </>
         )}
       </IonContent>

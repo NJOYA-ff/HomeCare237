@@ -16,7 +16,7 @@ vi.mock("firebase/firestore", () => {
 
 describe("SpecialtiesPage", () => {
   it("renders no doctors message when none exist", async () => {
-    render(
+    const { container } = render(
       <MemoryRouter
         initialEntries={["/patient/specialties?specialty=Cardiologist"]}
       >
@@ -29,5 +29,9 @@ describe("SpecialtiesPage", () => {
         screen.getByText(/No doctors found for this specialty/i)
       ).toBeInTheDocument();
     });
+
+    expect(
+      container.querySelector(".specialties-dashboard-page")
+    ).toBeInTheDocument();
   });
 });

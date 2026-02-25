@@ -17,6 +17,8 @@ import {
   IonIcon,
   IonTextarea,
   IonToast,
+  IonHeader,
+  IonToolbar,
 } from "@ionic/react";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
@@ -53,6 +55,7 @@ type FormData = {
   age: number;
   sex: string;
   password: string;
+  confirmPassword: string;
   contact: string;
   town: string;
   street: string;
@@ -83,6 +86,7 @@ const DoctorSignup: React.FC = () => {
     formState: { errors },
     setValue,
     trigger,
+    watch,
   } = useForm<FormData>({
     defaultValues: {
       profilePhoto: null,
@@ -162,6 +166,10 @@ const DoctorSignup: React.FC = () => {
   };
 
   const onSubmit = async (data: FormData) => {
+    if (data.password !== data.confirmPassword) {
+      showToast("Passwords do not match. Please try again.", "danger");
+      return;
+    }
     setIsLoading(true);
 
     try {
@@ -321,6 +329,17 @@ const DoctorSignup: React.FC = () => {
 
   return (
     <IonPage>
+      <IonHeader class="ion-no-border">
+        <IonToolbar className="signuptoolbar">
+          {" "}
+          <IonButtons>
+            <IonButton onClick={goBack} className="signupback">
+              <IonIcon icon={chevronBackOutline} />
+              Back
+            </IonButton>
+          </IonButtons>
+        </IonToolbar>
+      </IonHeader>
       <IonContent fullscreen className="signup-content">
         {/* Toast for notifications */}
         <IonToast
@@ -360,13 +379,6 @@ const DoctorSignup: React.FC = () => {
             />
           ))}
         </div>
-
-        <IonButtons>
-          <IonButton onClick={goBack} className="signupback">
-            <IonIcon icon={chevronBackOutline} />
-            Back
-          </IonButton>
-        </IonButtons>
 
         <motion.div
           className="form-container"
@@ -598,6 +610,32 @@ const DoctorSignup: React.FC = () => {
                       {errors.password && (
                         <span className="error-message">
                           {errors.password.message}
+                        </span>
+                      )}
+                    </motion.div>
+
+                    {/* Confirm Password */}
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3 }}
+                    >
+                      <IonItem className="form-item">
+                        <FiLock className="input-icon" />
+                        <IonInput
+                          type="password"
+                          placeholder="Confirm Password"
+                          {...register("confirmPassword", {
+                            required: "Please confirm your password",
+                            validate: (value) =>
+                              value === watch("password") ||
+                              "Passwords do not match",
+                          })}
+                        />
+                      </IonItem>
+                      {errors.confirmPassword && (
+                        <span className="error-message">
+                          {errors.confirmPassword.message}
                         </span>
                       )}
                     </motion.div>

@@ -779,3 +779,390 @@ ion-card:active {
     margin-top: 8px;
   }
 }
+
+/* Patient homepage style inspired by reference mockup */
+.dashboard-patient {
+  --background: linear-gradient(180deg, #edf0ff 0%, #f8f9ff 100%);
+}
+
+.patient-home-shell {
+  padding: 14px 12px calc(92px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.patient-home-intro,
+.home-upcoming-card,
+.home-top-doctors-card {
+  margin: 0;
+  border-radius: 26px;
+  box-shadow: 0 12px 26px rgba(78, 85, 150, 0.14);
+  border: 1px solid #e5e8f9;
+  --background: #fefeff;
+}
+
+.patient-home-intro ion-card-content,
+.home-top-doctors-card ion-card-content {
+  padding: 16px;
+}
+
+.tiny-greeting {
+  margin: 0 0 6px;
+  color: #6870d9;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.home-title {
+  margin: 0 0 14px;
+  font-size: 28px;
+  line-height: 1.15;
+  font-weight: bolder;
+  letter-spacing: -0.02em;
+  color: #191d38;
+}
+
+.home-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  border-radius: 999px;
+  padding: 0 10px 0 12px;
+  background: #f3f4fb;
+  border: 1px solid #ebedfa;
+}
+
+.home-search-wrap ion-icon {
+  color: #a7acc3;
+  font-size: 17px;
+}
+
+.home-search-wrap input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #404559;
+  font-size: 14px;
+}
+
+.home-search-wrap ion-button {
+  --padding-start: 6px;
+  --padding-end: 6px;
+  --color: #5f69ef;
+}
+
+.home-section-head {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.home-section-head h3 {
+  margin: 0;
+  color: #141830;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.home-section-head ion-button {
+  --color: #8b91a8;
+  font-size: 12px;
+  text-transform: none;
+}
+
+.home-categories {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.home-category-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+
+  ion-label {
+    margin-top: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #404559;
+  }
+}
+
+.home-category-btn {
+  width: 60px;
+  height: 60px;
+  --border-radius: 50%;
+  --padding-start: 0;
+  --padding-end: 0;
+  margin: 0;
+  background: var(--cat-bg);
+  --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  --ripple-color: var(--cat-fg);
+  --background: linear-gradient(140deg, #6b86ff 0%, #4b77e5 100%);
+  color: #ffffff;
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  }
+
+  svg,
+  ion-icon {
+    font-size: 28px;
+    color: var(--cat-fg);
+  }
+}
+.chatbot {
+  --background: linear-gradient(140deg, #6b86ff 0%, #4b77e5 100%);
+}
+.home-category-btn svg,
+.home-category-btn ion-icon {
+  font-size: 18px;
+
+  color: #ffffff;
+}
+
+.home-category-1 {
+  --background: linear-gradient(140deg, #6b86ff 0%, #4b77e5 100%);
+  color: #ffffff;
+}
+
+.home-category-2 {
+  --background: linear-gradient(140deg, #6b86ff 0%, #4b77e5 100%);
+  color: #ffffff;
+}
+
+.home-category-3 {
+  --background: linear-gradient(140deg, #6b86ff 0%, #4b77e5 100%);
+  color: #ffffff;
+}
+
+.home-category-4 {
+  --background: linear-gradient(140deg, #6b86ff 0%, #4b77e5 100%);
+  color: #ffffff;
+}
+
+.upcoming-highlight {
+  margin-top: 10px;
+  border-radius: 18px;
+  padding: 12px;
+  background: linear-gradient(140deg, #6b86ff 0%, #4b77e5 100%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff;
+}
+
+.upcoming-highlight ion-avatar {
+  width: 40px;
+  height: 40px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+}
+
+.upcoming-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.appointment-time {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 4px;
+  font-size: 11px;
+  opacity: 0.9;
+}
+
+.upcoming-meta h4 {
+  margin: 0 0 2px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.upcoming-meta p {
+  margin: 0;
+  font-size: 11px;
+  opacity: 0.9;
+}
+
+.upcoming-book-btn {
+  --color: #fff;
+  --background: rgba(255, 255, 255, 0.15);
+  --border-radius: 999px;
+  height: 32px;
+  font-size: 11px;
+  text-transform: none;
+}
+
+.home-doctor-list {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.home-doctor-item {
+  border-radius: 14px;
+  border: 1px solid #eceef9;
+  background: #fff;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.home-doctor-item ion-avatar {
+  width: 42px;
+  height: 42px;
+}
+
+.doctor-item-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.doctor-role {
+  margin: 0 0 3px;
+  color: #9197ad;
+  font-size: 10px;
+}
+
+.doctor-item-meta h4 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  color: #101428;
+}
+
+.doctor-rating-line {
+  margin: 0;
+  font-size: 11px;
+  color: #69718c;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.doctor-rating-line ion-icon {
+  color: #ffb649;
+}
+
+.doctor-book-mini-btn {
+  --background: linear-gradient(140deg, #6b86ff 0%, #4b77e5 100%);
+  --border-radius: 999px;
+  height: 30px;
+  font-size: 10px;
+  text-transform: none;
+}
+
+.empty-state-text {
+  margin: 10px 0 0;
+  color: #9399ae;
+  font-size: 13px;
+}
+
+.home-upcoming-card {
+  position: relative;
+}
+
+.home-upcoming-card::after {
+  content: "";
+  position: absolute;
+  bottom: -0.5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 87%;
+  height: 50%;
+  background: #bfbff5;
+  border-radius: 26px;
+  box-shadow: 0 12px 26px rgba(78, 85, 150, 0.14);
+  z-index: -1;
+}
+
+@media (prefers-color-scheme: dark) {
+  .dashboard-patient {
+    --background: var(--background);
+  }
+
+  .patient-home-intro,
+  .home-upcoming-card,
+  .home-top-doctors-card {
+    --background: var(--background);
+    border: 1px solid #2a2f57;
+    box-shadow: 0 12px 26px rgba(5, 7, 20, 0.55);
+  }
+
+  .tiny-greeting {
+    color: #aeb5ff;
+  }
+
+  .home-title {
+    color: #f3f4ff;
+  }
+
+  .home-search-wrap {
+    background: #202448;
+    border: 1px solid #2a2f57;
+  }
+
+  .home-search-wrap ion-icon {
+    color: #8e93b5;
+  }
+
+  .home-search-wrap input {
+    color: #e3e6ff;
+  }
+
+  .home-search-wrap ion-button {
+    --color: #aeb5ff;
+  }
+
+  .home-section-head h3 {
+    color: #f0f2ff;
+  }
+
+  .home-section-head ion-button {
+    --color: #a1a7c4;
+  }
+
+  .home-category-wrapper ion-label {
+    color: #d3d7f0;
+  }
+
+  .upcoming-highlight {
+    box-shadow: 0 10px 22px rgba(6, 9, 26, 0.45);
+  }
+
+  .home-doctor-item {
+    background: #1e2241;
+    border: 1px solid #2a2f57;
+  }
+
+  .doctor-role {
+    color: #9aa2c7;
+  }
+
+  .doctor-item-meta h4 {
+    color: #eef0ff;
+  }
+
+  .doctor-rating-line {
+    color: #b1b6d5;
+  }
+
+  .empty-state-text {
+    color: #b0b6d6;
+  }
+
+  .home-upcoming-card::after {
+    background: #2b3163;
+    box-shadow: 0 12px 26px rgba(5, 7, 20, 0.55);
+  }
+}

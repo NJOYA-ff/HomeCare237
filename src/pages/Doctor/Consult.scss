@@ -61,103 +61,100 @@
   --padding-bottom: 80px;
 }
 
-// Patients List Styles
-.patients-list-c {
+// Patients List Styles (match Recent Patients without container card)
+.patient-list-c {
   padding: 16px;
   background: transparent;
 }
 
-.patient-card-c {
-  --background: #ffffff;
-  --border-radius: 16px;
-  margin-bottom: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-
-  ion-grid {
-    padding: 16px;
-  }
+.patient-item-c {
+  --padding-start: 0;
+  --inner-padding-end: 0;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.patient-grid-c {
-  width: 100%;
+.avatar-container-c {
+  position: relative;
+  display: inline-block;
+  margin: 12px 16px;
+}
 
-  .avatar-container-c {
-    position: relative;
-    display: inline-block;
-    margin-bottom: 12px;
+.avatar-container-c .patient-avatar {
+  width: 48px;
+  height: 48px;
+}
 
-    .patient-avatar {
-      width: 60px;
-      height: 60px;
-    }
+.avatar-container-c .online-indicator {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
 
-    .online-indicator {
-      position: absolute;
-      bottom: 2px;
-      right: 2px;
-      width: 14px;
-      height: 14px;
+.avatar-container-c .online-indicator.online {
+  background: var(--ion-color-success);
+}
 
-      border-radius: 50%;
+.avatar-container-c .online-indicator.offline {
+  background: var(--ion-color-medium);
+}
 
-      &.online {
-        background: var(--ion-color-success);
-      }
+.patient-item-c ion-label {
+  margin: 12px 0;
+}
 
-      &.offline {
-        background: var(--ion-color-medium);
-      }
-    }
-  }
+.patient-item-c ion-label h2 {
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--ion-color-dark);
+}
 
-  .patient-name-c {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--ion-color-dark);
-    margin-bottom: 4px;
-  }
+.patient-item-c ion-label p {
+  color: var(--ion-color-medium);
+  font-size: 0.9rem;
+  margin-bottom: 6px;
+}
 
-  .patient-condition-c {
-    font-size: 14px;
-    color: var(--ion-color-medium);
-    margin-bottom: 12px;
-  }
+.patient-details-c {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 
-  .patient-details-c {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 12px;
-    flex-wrap: wrap;
+.patient-details-c ion-chip {
+  margin: 0;
+  height: 24px;
+  font-size: 12px;
+}
 
-    ion-chip {
-      margin: 0;
-      height: 24px;
-      font-size: 12px;
+.patient-details-c ion-chip.age-chip {
+  --background: var(--ion-color-primary);
+}
 
-      &.age-chip {
-        --background: var(--ion-color-primary);
-      }
-    }
-  }
+.patient-status-c {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-right: 16px;
+  gap: 6px;
+}
 
-  .patient-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.patient-status-c .blood-type-text,
+.patient-status-c .last-consult-text {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  color: var(--ion-color-medium);
+}
 
-    .blood-type-text,
-    .last-consult-text {
-      display: flex;
-      align-items: center;
-      font-size: 12px;
-      color: var(--ion-color-medium);
-
-      ion-icon {
-        font-size: 14px;
-        margin-right: 4px;
-      }
-    }
-  }
+.patient-status-c .blood-type-text ion-icon,
+.patient-status-c .last-consult-text ion-icon {
+  font-size: 14px;
+  margin-right: 4px;
 }
 
 // Medical Info Bar

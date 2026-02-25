@@ -888,13 +888,12 @@ const DoctorDashboard: React.FC = () => {
                 </div>
               </div>
 
-              <div slot="header">
-                <IonSearchbar
-                  placeholder="Search appointments..."
-                  value={searchText}
-                  onIonInput={(e) => setSearchText(e.detail.value!)}
-                />
-              </div>
+              <IonSearchbar
+                placeholder="Search appointments..."
+                value={searchText}
+                onIonInput={(e) => setSearchText(e.detail.value!)}
+                className="doctor-search"
+              />
 
               <div className="ion-padding" slot="content">
                 <IonText>

@@ -2,17 +2,20 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   IonModal,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
   IonContent,
   IonButton,
   IonIcon,
-  IonButtons,
   IonSpinner,
   IonAlert,
 } from "@ionic/react";
-import { call, mic, micOff, videocam, videocamOff } from "ionicons/icons";
+import {
+  call,
+  mic,
+  micOff,
+  videocam,
+  videocamOff,
+  closeOutline,
+} from "ionicons/icons";
 import { connect, Room, LocalVideoTrack, LocalAudioTrack } from "twilio-video";
 import "./Videochat.scss";
 interface VideoChatModalProps {
@@ -204,15 +207,6 @@ const VideoChatModal: React.FC<VideoChatModalProps> = ({
         onDidDismiss={onClose}
         className="video-chat-modal"
       >
-        <IonHeader>
-          <IonToolbar>
-            <IonTitle>Video Call - {roomName}</IonTitle>
-            <IonButtons slot="end">
-              <IonButton onClick={onClose}>Close</IonButton>
-            </IonButtons>
-          </IonToolbar>
-        </IonHeader>
-
         <IonContent className="video-content">
           {isConnecting && (
             <div className="connecting-overlay">
@@ -220,85 +214,85 @@ const VideoChatModal: React.FC<VideoChatModalProps> = ({
               <p>Connecting to video call...</p>
             </div>
           )}
-
-          <div className="video-container">
-            {/* Remote Videos */}
-            <div className="remote-videos-container">
-              {remoteParticipants.map((participant) => (
-                <div key={participant.sid} className="remote-video-wrapper">
-                  <video
-                    ref={(node) => setRemoteVideoRef(node, participant.sid)}
-                    autoPlay
-                    playsInline
-                    className="remote-video"
-                  />
-                  <div className="participant-info">{participant.identity}</div>
-                </div>
-              ))}
-
-              {remoteParticipants.length === 0 && !isConnecting && room && (
-                <div className="waiting-overlay">
-                  <IonSpinner name="crescent" />
-                  <p>Waiting for others to join...</p>
-                </div>
-              )}
+          <div className="video-phone-shell">
+            <div className="video-topbar">
+              <div className="session-pill">Live Consultation</div>
+              <IonButton fill="clear" className="close-video-btn" onClick={endCall}>
+                <IonIcon icon={closeOutline} />
+              </IonButton>
             </div>
 
-            {/* Local Video */}
-            <div className="local-video-container">
-              <video
-                ref={localVideoRef}
-                autoPlay
-                playsInline
-                muted
-                className={`local-video ${isVideoOff ? "video-off" : ""}`}
-              />
-              {isVideoOff && (
-                <div className="video-off-overlay">
-                  <IonIcon icon={videocamOff} size="large" />
-                </div>
-              )}
-              <div className="local-video-controls">
-                <IonButton
-                  size="small"
-                  fill="clear"
-                  color={isMuted ? "danger" : "light"}
-                  onClick={toggleMute}
-                >
-                  <IonIcon icon={isMuted ? micOff : mic} />
-                </IonButton>
+            <div className="video-container">
+              <div className="remote-videos-container">
+                {remoteParticipants.map((participant) => (
+                  <div key={participant.sid} className="remote-video-wrapper">
+                    <video
+                      ref={(node) => setRemoteVideoRef(node, participant.sid)}
+                      autoPlay
+                      playsInline
+                      className="remote-video"
+                    />
+                    <div className="participant-info">{participant.identity}</div>
+                  </div>
+                ))}
+
+                {remoteParticipants.length === 0 && !isConnecting && room && (
+                  <div className="waiting-overlay">
+                    <IonSpinner name="crescent" />
+                    <p>Waiting for doctor to join...</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="local-video-container">
+                <video
+                  ref={localVideoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className={`local-video ${isVideoOff ? "video-off" : ""}`}
+                />
+                {isVideoOff && (
+                  <div className="video-off-overlay">
+                    <IonIcon icon={videocamOff} size="large" />
+                  </div>
+                )}
+              </div>
+
+              <div className="video-info-overlay">
+                <p className="video-time">{room ? "In call" : "Connecting"}</p>
+                <h3>{remoteParticipants[0]?.identity || roomName}</h3>
               </div>
             </div>
-          </div>
 
-          {/* Call Controls */}
-          <div className="call-controls">
-            <IonButton
-              shape="round"
-              fill={"outline"}
-              color={isMuted ? "danger" : "secondary"}
-              onClick={toggleMute}
-            >
-              <IonIcon icon={isMuted ? micOff : mic} />
-            </IonButton>
+            <div className="call-controls">
+              <IonButton
+                shape="round"
+                fill="clear"
+                className={`control-btn ${isMuted ? "active-danger" : ""}`}
+                onClick={toggleMute}
+              >
+                <IonIcon icon={isMuted ? micOff : mic} />
+              </IonButton>
 
-            <IonButton
-              shape="round"
-              fill={"outline"}
-              color={isVideoOff ? "danger" : "secondary"}
-              onClick={toggleVideo}
-            >
-              <IonIcon icon={isVideoOff ? videocamOff : videocam} />
-            </IonButton>
+              <IonButton
+                shape="round"
+                fill="clear"
+                className={`control-btn ${isVideoOff ? "active-danger" : ""}`}
+                onClick={toggleVideo}
+              >
+                <IonIcon icon={isVideoOff ? videocamOff : videocam} />
+              </IonButton>
 
-            <IonButton
-              shape="round"
-              fill="outline"
-              color="danger"
-              onClick={endCall}
-            >
-              <IonIcon icon={call} />
-            </IonButton>
+              <IonButton
+                shape="round"
+                fill="clear"
+                className="control-btn end-call"
+                onClick={endCall}
+              >
+                <IonIcon icon={call} />
+              </IonButton>
+            </div>
           </div>
         </IonContent>
       </IonModal>

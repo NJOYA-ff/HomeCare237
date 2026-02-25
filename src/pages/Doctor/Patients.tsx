@@ -9,14 +9,13 @@ import {
   IonCard,
   IonCardHeader,
   IonCardTitle,
+  IonCardSubtitle,
   IonCardContent,
   IonChip,
   IonIcon,
   IonButtons,
   IonButton,
   IonModal,
-  IonSegment,
-  IonSegmentButton,
   IonLabel,
   IonAvatar,
   IonSkeletonText,
@@ -26,7 +25,7 @@ import {
   IonList,
   IonBackButton,
 } from "@ionic/react";
-import { db, auth, storage } from "../../firebaseconfig";
+import { db, auth } from "../../firebaseconfig";
 import {
   call,
   location,
@@ -42,7 +41,6 @@ import {
   collection,
   getDocs,
   doc,
-  getDoc,
   addDoc,
   updateDoc,
   deleteDoc,
@@ -50,7 +48,9 @@ import {
   where,
   orderBy,
   onSnapshot,
+  documentId,
 } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
 import "./Patients.scss";
 
 // Define patient interface
@@ -88,94 +88,143 @@ const Patients: React.FC = () => {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [segment, setSegment] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [medicalHistory, setMedicalHistory] = useState<MedicalHistory[]>([]);
+  const [doctorId, setDoctorId] = useState<string | null>(null);
+  const [relatedPatientIds, setRelatedPatientIds] = useState<string[]>([]);
 
-  // Fetch patients from Firestore
+  // Track current doctor
   useEffect(() => {
-    const fetchPatients = async () => {
-      try {
-        setLoading(true);
-        const patientsCollection = collection(db, "patients");
-        const patientsQuery = query(patientsCollection, orderBy("name"));
-        const querySnapshot = await getDocs(patientsQuery);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setDoctorId(user?.uid || null);
+    });
+    return () => unsubscribe();
+  }, []);
 
-        const patientsData: Patient[] = [];
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          patientsData.push({
-            id: doc.id,
-            name: data.name,
-            age: data.age,
-            sex: data.sex,
-            contact: data.contact,
-            photo:
-              data.photo ||
-              "https://ionicframework.com/docs/img/demos/avatar.svg",
+  // Track patient ids with appointments or chats for current doctor
+  useEffect(() => {
+    if (!doctorId) {
+      setRelatedPatientIds([]);
+      setPatients([]);
+      setLoading(false);
+      return;
+    }
 
-            town: data.town,
-            street: data.street,
-            lastVisit: data.lastVisit,
-            status: data.status,
-            bloodType: data.bloodType,
-            conditions: data.conditions || [],
-            createdAt: data.createdAt,
-            updatedAt: data.updatedAt,
-          });
-        });
+    setLoading(true);
+    let appointmentIds = new Set<string>();
+    let chatIds = new Set<string>();
 
-        setPatients(patientsData);
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching patients:", error);
-        setLoading(false);
-      }
+    const updateCombined = () => {
+      const combined = new Set<string>([...appointmentIds, ...chatIds]);
+      setRelatedPatientIds(Array.from(combined));
     };
 
-    // Real-time listener version
+    const appointmentsRef = collection(db, "appointments");
+    const appointmentsQuery = query(
+      appointmentsRef,
+      where("doctorId", "==", doctorId),
+    );
 
-    const patientsCollection = collection(db, "patients");
-    const patientsQuery = query(patientsCollection, orderBy("name"));
+    const chatsRef = collection(db, "chats");
+    const chatsQuery = query(chatsRef, where("doctorId", "==", doctorId));
 
-    const unsubscribe = onSnapshot(
-      patientsQuery,
-      (querySnapshot) => {
-        const patientsData: Patient[] = [];
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          patientsData.push({
-            id: doc.id,
-            name: data.name,
-            age: data.age,
-            sex: data.sex,
-            photo:
-              data.photo ||
-              "https://ionicframework.com/docs/img/demos/avatar.svg",
-            contact: data.contact,
-            town: data.town,
-            street: data.street,
-            lastVisit: data.lastVisit,
-            status: data.status,
-            bloodType: data.bloodType,
-            conditions: data.conditions || [],
-            createdAt: data.createdAt,
-            updatedAt: data.updatedAt,
-          });
+    const unsubscribeAppointments = onSnapshot(
+      appointmentsQuery,
+      (snapshot) => {
+        appointmentIds = new Set();
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data() as any;
+          if (data.patientId) {
+            appointmentIds.add(String(data.patientId));
+          }
         });
-        setPatients(patientsData);
-        setLoading(false);
+        updateCombined();
       },
       (error) => {
-        console.error("Error listening to patients:", error);
+        console.error("Error listening to appointments:", error);
         setLoading(false);
       },
     );
 
-    return () => unsubscribe();
+    const unsubscribeChats = onSnapshot(
+      chatsQuery,
+      (snapshot) => {
+        chatIds = new Set();
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data() as any;
+          if (data.patientId) {
+            chatIds.add(String(data.patientId));
+          }
+        });
+        updateCombined();
+      },
+      (error) => {
+        console.error("Error listening to chats:", error);
+        setLoading(false);
+      },
+    );
 
-    fetchPatients();
-  }, []);
+    return () => {
+      unsubscribeAppointments();
+      unsubscribeChats();
+    };
+  }, [doctorId]);
+
+  // Load patient records by ids
+  useEffect(() => {
+    const loadPatientsByIds = async () => {
+      if (!doctorId) return;
+      if (relatedPatientIds.length === 0) {
+        setPatients([]);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const patientsData: Patient[] = [];
+        const batchSize = 10;
+        for (let i = 0; i < relatedPatientIds.length; i += batchSize) {
+          const batch = relatedPatientIds.slice(i, i + batchSize);
+          const q = query(
+            collection(db, "patients"),
+            where(documentId(), "in", batch),
+          );
+          const snapshot = await getDocs(q);
+          snapshot.forEach((docSnap) => {
+            const data = docSnap.data() as any;
+            patientsData.push({
+              id: docSnap.id,
+              name: data.name,
+              age: data.age,
+              sex: data.sex,
+              contact: data.contact,
+              photo:
+                data.photo ||
+                "https://ionicframework.com/docs/img/demos/avatar.svg",
+              town: data.town,
+              street: data.street,
+              lastVisit: data.lastVisit,
+              status: data.status,
+              bloodType: data.bloodType,
+              conditions: data.conditions || [],
+              createdAt: data.createdAt,
+              updatedAt: data.updatedAt,
+            });
+          });
+        }
+
+        patientsData.sort((a, b) => a.name.localeCompare(b.name));
+        setPatients(patientsData);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error loading related patients:", error);
+        setLoading(false);
+      }
+    };
+
+    loadPatientsByIds();
+  }, [doctorId, relatedPatientIds]);
 
   // Fetch medical history for selected patient
   const fetchMedicalHistory = async (patientId: string) => {
@@ -209,7 +258,7 @@ const Patients: React.FC = () => {
     }
   };
 
-  // Filter patients based on search and segment
+  // Filter patients based on search
   const filteredPatients = patients.filter((patient) => {
     const matchesSearch =
       patient.name.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -217,8 +266,7 @@ const Patients: React.FC = () => {
         condition.toLowerCase().includes(searchText.toLowerCase()),
       );
 
-    if (segment === "all") return matchesSearch;
-    return matchesSearch && patient.status === segment;
+    return matchesSearch;
   });
 
   // Open patient detail modal
@@ -226,11 +274,6 @@ const Patients: React.FC = () => {
     setSelectedPatient(patient);
     await fetchMedicalHistory(patient.id);
     setShowModal(true);
-  };
-
-  // Handle segment change
-  const handleSegmentChange = (e: any) => {
-    setSegment(e.detail.value as string);
   };
 
   // Add a new patient (example function)
@@ -280,6 +323,25 @@ const Patients: React.FC = () => {
     }
   };
 
+  const formatLastVisit = (dateString: string): string => {
+    if (!dateString || dateString === "Never") {
+      return "Never";
+    }
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return dateString;
+      }
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    } catch (error) {
+      return dateString;
+    }
+  };
+
   return (
     <IonPage>
       <IonHeader>
@@ -288,11 +350,6 @@ const Patients: React.FC = () => {
             <IonBackButton defaultHref="/doc/dashboard" />
           </IonButtons>
           <IonTitle>Patients</IonTitle>
-          <IonButtons slot="end">
-            <IonButton>
-              <IonIcon icon={filter} />
-            </IonButton>
-          </IonButtons>
         </IonToolbar>
         <IonToolbar>
           <IonSearchbar
@@ -300,130 +357,120 @@ const Patients: React.FC = () => {
             onIonInput={(e) => setSearchText(e.detail.value!)}
             placeholder="Search patients or conditions"
             animated
+            className="doctor-search"
           />
-        </IonToolbar>
-        <IonToolbar>
-          <IonSegment value={segment} onIonChange={handleSegmentChange}>
-            <IonSegmentButton value="all">
-              <IonLabel>All</IonLabel>
-            </IonSegmentButton>
-            <IonSegmentButton value="stable">
-              <IonLabel>Stable</IonLabel>
-            </IonSegmentButton>
-            <IonSegmentButton value="recovering">
-              <IonLabel>Recovering</IonLabel>
-            </IonSegmentButton>
-            <IonSegmentButton value="critical">
-              <IonLabel>Critical</IonLabel>
-            </IonSegmentButton>
-          </IonSegment>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
         {loading ? (
-          // Show skeleton loaders while loading
-          Array.from({ length: 5 }).map((_, index) => (
-            <IonCard key={index} className="patient-card">
-              <IonCardHeader>
-                <div className="patient-header">
-                  <IonSkeletonText
-                    animated
-                    style={{
-                      width: "50px",
-                      height: "50px",
-                      borderRadius: "50%",
-                    }}
-                  />
-                  <div className="patient-info">
-                    <IonSkeletonText
-                      animated
-                      style={{ width: "60%", height: "16px" }}
-                    />
-                    <IonSkeletonText
-                      animated
-                      style={{ width: "40%", height: "14px", marginTop: "8px" }}
-                    />
-                  </div>
-                </div>
-              </IonCardHeader>
-              <IonCardContent>
-                <IonSkeletonText
-                  animated
-                  style={{ width: "80%", height: "14px" }}
-                />
-                <IonSkeletonText
-                  animated
-                  style={{ width: "70%", height: "14px", marginTop: "8px" }}
-                />
-              </IonCardContent>
-            </IonCard>
-          ))
+          <IonCard className="activity-card">
+            <IonCardHeader>
+              <IonCardTitle>
+                <IonSkeletonText animated style={{ width: "120px" }} />
+              </IonCardTitle>
+              <IonCardSubtitle>
+                <IonSkeletonText animated style={{ width: "90px" }} />
+              </IonCardSubtitle>
+            </IonCardHeader>
+            <IonCardContent>
+              <IonList lines="none" className="patient-list">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <IonItem key={index} className="patient-item">
+                    <div
+                      style={{
+                        width: "48px",
+                        height: "48px",
+                        borderRadius: "50%",
+                        margin: "12px 16px",
+                        flexShrink: 0,
+                      }}
+                    >
+                      <IonSkeletonText
+                        animated
+                        style={{
+                          width: "48px",
+                          height: "48px",
+                          borderRadius: "50%",
+                        }}
+                      />
+                    </div>
+                    <IonLabel>
+                      <IonSkeletonText
+                        animated
+                        style={{ width: "60%", height: "16px" }}
+                      />
+                      <IonSkeletonText
+                        animated
+                        style={{ width: "40%", height: "14px", marginTop: "6px" }}
+                      />
+                    </IonLabel>
+                    <div className="patient-status">
+                      <IonSkeletonText
+                        animated
+                        style={{ width: "70px", height: "24px" }}
+                      />
+                      <IonSkeletonText
+                        animated
+                        style={{ width: "80px", height: "12px", marginTop: "6px" }}
+                      />
+                    </div>
+                  </IonItem>
+                ))}
+              </IonList>
+            </IonCardContent>
+          </IonCard>
         ) : (
           // Show patient list
           <>
             {filteredPatients.length > 0 ? (
-              filteredPatients.map((patient) => (
-                <IonCard
-                  key={patient.id}
-                  className="patient-card"
-                  onClick={() => openPatientDetail(patient)}
-                >
-                  <div className="patient-header">
-                    <IonAvatar className="patient-avatar">
-                      <img src={patient.photo} alt={patient.name} />
-                    </IonAvatar>
-                    <div className="patient-info-p">
-                      <h2>{patient.name}</h2>
-                      <p>
-                        {patient.age} yrs •{" "}
-                        {patient.sex === "male" ? "Male" : "Female"} •{" "}
-                        {patient.bloodType}
-                      </p>
-                    </div>
-                    <IonChip
-                      className="status-chip"
-                      color={
-                        patient.status === "stable"
-                          ? "success"
-                          : patient.status === "recovering"
-                          ? "warning"
-                          : "danger"
-                      }
-                    >
-                      {patient.status}
-                    </IonChip>
-                  </div>
-
-                  <IonCardContent>
-                    <div className="patient-details-p">
-                      <div className="detail-item-p">
-                        <IonIcon icon={call} />
-                        <span>{patient.contact}</span>
-                      </div>
-                      <div className="detail-item-p">
-                        <IonIcon icon={location} />
-                        <span>
-                          {patient.town} - {patient.street}
-                        </span>
-                      </div>
-                      <div className="detail-item-p">
-                        <IonIcon icon={calendar} />
-                        <span>Last visit: {patient.lastVisit}</span>
-                      </div>
-                    </div>
-
-                    {patient.conditions.length > 0 && (
-                      <div className="conditions patient-conditions">
-                        {patient.conditions.map((condition, index) => (
-                          <IonChip key={index} color="primary" outline>
-                            {condition}
+              <IonCard className="activity-card">
+                <IonCardHeader>
+                  <IonCardTitle>Patients</IonCardTitle>
+                  <IonCardSubtitle>
+                    {filteredPatients.length} patients
+                  </IonCardSubtitle>
+                </IonCardHeader>
+                <IonCardContent>
+                  <IonList lines="none" className="patient-list">
+                    {filteredPatients.map((patient) => (
+                      <IonItem
+                        key={patient.id}
+                        className="patient-item"
+                        button
+                        detail
+                        onClick={() => openPatientDetail(patient)}
+                      >
+                        <IonAvatar slot="start">
+                          <img src={patient.photo} alt={patient.name} />
+                        </IonAvatar>
+                        <IonLabel>
+                          <h2>{patient.name}</h2>
+                          <p>
+                            {patient.conditions[0] || "No condition listed"}
+                          </p>
+                        </IonLabel>
+                        <div className="patient-status">
+                          <IonChip
+                            color={
+                              patient.status === "stable"
+                                ? "success"
+                                : patient.status === "recovering"
+                                ? "warning"
+                                : "danger"
+                            }
+                          >
+                            {patient.status}
                           </IonChip>
-                        ))}
-                      </div>
-                    )}
-                  </IonCardContent>
-                </IonCard>
-              ))
+                          <p className="last-checkup">
+                            <IonIcon icon={calendar} />
+                            {formatLastVisit(patient.lastVisit)}
+                          </p>
+                        </div>
+                      </IonItem>
+                    ))}
+                  </IonList>
+                </IonCardContent>
+              </IonCard>
             ) : (
               <div className="no-results">
                 <IonIcon icon={alertCircle} size="large" />

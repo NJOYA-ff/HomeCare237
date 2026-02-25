@@ -694,9 +694,9 @@ const Profile: React.FC = () => {
   }
 
   return (
-    <IonPage>
+    <IonPage className="profile-page">
       <IonHeader class="ion-no-border">
-        <IonToolbar className="toolbar-profile">
+        <IonToolbar className="patient-dashboard-toolbar toolbar-profile">
           <IonButtons slot="start">
             <IonBackButton defaultHref="/patient/dashboard" />
           </IonButtons>
@@ -715,7 +715,8 @@ const Profile: React.FC = () => {
         </IonToolbar>
       </IonHeader>
 
-      <IonContent className="ion-padding profile-content">
+      <IonContent className="dashboard-patient ion-padding profile-content">
+        <div className="profile-shell">
         {/* Hidden file input */}
         <input
           type="file"
@@ -1270,7 +1271,7 @@ const Profile: React.FC = () => {
               transition={{ duration: 0.3 }}
               className="edit-actions"
             >
-              <IonButton color="primary" onClick={saveChanges}>
+              <IonButton color="primary" className="profile-save-btn" onClick={saveChanges}>
                 Save Changes
               </IonButton>
             </motion.div>
@@ -1286,12 +1287,14 @@ const Profile: React.FC = () => {
           <IonButton
             color="danger"
             fill="outline"
+            className="profile-logout-btn"
             onClick={() => setShowLogOutAlert(true)}
           >
             <IonIcon slot="start" icon={logOutOutline} />
             Log Out
           </IonButton>
         </motion.div>
+        </div>
       </IonContent>
       <IonAlert
         isOpen={showLogOutAlert}

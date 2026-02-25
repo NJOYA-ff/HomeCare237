@@ -122,9 +122,9 @@ const SpecialtiesPage: React.FC = () => {
   }, [specialty]);
 
   return (
-    <IonPage>
+    <IonPage className="specialties-dashboard-page">
       <IonHeader class="ion-no-border">
-        <IonToolbar className="patient-dashboard-toolbar">
+        <IonToolbar className="patient-dashboard-toolbar specialties-toolbar">
           <IonTitle>{specialty || "Specialty"}</IonTitle>
           <IonButton
             slot="end"
@@ -136,12 +136,12 @@ const SpecialtiesPage: React.FC = () => {
           </IonButton>
         </IonToolbar>
       </IonHeader>
-      <IonContent>
-        <div className="specialties-page">
+      <IonContent className="dashboard-patient specialties-content">
+        <div className="specialties-page specialties-shell">
           <IonCard className="specialties-card">
             <IonCardHeader>
               <IonCardTitle className="specialties-title">
-                Doctors — {specialty}
+                Doctors - {specialty}
               </IonCardTitle>
             </IonCardHeader>
             <IonCardContent>

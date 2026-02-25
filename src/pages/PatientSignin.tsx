@@ -12,6 +12,8 @@ import {
   IonSpinner,
   IonButtons,
   IonIcon,
+  IonHeader,
+  IonToolbar,
 } from "@ionic/react";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
@@ -68,6 +70,16 @@ const PatientSignin: React.FC = () => {
 
   return (
     <IonPage>
+      <IonHeader class="ion-no-border">
+        <IonToolbar className="signintoolbar">
+          <IonButtons>
+            <IonButton routerLink="/roleselect" className="signupback">
+              <IonIcon icon={chevronBackOutline} />
+              Back
+            </IonButton>
+          </IonButtons>
+        </IonToolbar>
+      </IonHeader>
       <IonContent fullscreen className="signin-content">
         {/* Background elements */}
         <div className="background-elements">
@@ -98,13 +110,6 @@ const PatientSignin: React.FC = () => {
             />
           ))}
         </div>
-
-        <IonButtons>
-          <IonButton routerLink="/roleselect" className="signupback">
-            <IonIcon icon={chevronBackOutline} />
-            Back
-          </IonButton>
-        </IonButtons>
 
         <motion.div
           className="form-container"

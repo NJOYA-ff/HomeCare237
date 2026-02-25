@@ -182,63 +182,120 @@ ion-tab-button.tab-selected {
   }
 }
 .custom-tab-bar {
-  padding: 12px 8px;
-  height: 80px;
-  background: var(--ion-background-color);
-  border-top: 1px solid var(--ion-border-color);
+  width: calc(100% - 24px);
+  max-width: 360px;
+  margin: 0 auto calc(12px + env(safe-area-inset-bottom, 0px));
+  height: 66px;
+  padding: 0 10px;
+  border: 1px solid #dfe4fb;
+  border-radius: 24px;
+  background: linear-gradient(180deg, #fefeff 0%, #eef1ff 100%);
+  box-shadow: 0 10px 24px rgba(67, 76, 146, 0.2);
 }
 
 .custom-tab-button {
   --background: transparent;
   --background-activated: transparent;
   --background-focused: transparent;
-  --color: var(--ion-color-medium);
-  --color-selected: var(--ion-color-primary);
+  --color: #8d93a8;
+  --color-selected: #5881ea;
+  --ripple-color: transparent;
+  --padding-start: 0;
+  --padding-end: 0;
+  min-height: 64px;
+}
+
+.custom-tab-button::part(native) {
+  padding: 0;
+}
+
+.tab-content {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.custom-tab-bar .icon-container {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8d93a8;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease,
+    color 0.2s ease;
+}
+
+.custom-tab-bar .icon-inactive {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.custom-tab-bar .icon-container.is-active {
+  transform: translateY(-12px);
+  color: #ffffff;
+  background: linear-gradient(140deg, #6b86ff 0%, #4b77e5 100%);
+  box-shadow: 0 10px 24px rgba(77, 86, 228, 0.45);
+}
+
+.custom-tab-bar .icon-container.is-active .icon-inactive {
+  color: #ffffff;
 }
 
 .tab-label {
-  font-size: 12px;
-  font-weight: 500;
-  margin: 0;
-  text-align: center;
+  display: none;
 }
 
 /* Responsive design */
 @media (max-width: 360px) {
   .custom-tab-bar {
-    padding: 10px 4px;
-    height: 72px;
+    width: calc(100% - 16px);
+    height: 62px;
+    padding: 0 8px;
+    border-radius: 22px;
   }
 
-  .icon-container {
-    width: 36px;
-    height: 36px;
-  }
-
-  .icon-container ion-icon {
-    font-size: 20px;
-    font-weight: bolder;
-  }
-
-  .tab-label {
-    font-size: 11px;
+  .custom-tab-bar .icon-container {
+    width: 38px;
+    height: 38px;
   }
 }
 
 @media (max-width: 320px) {
   .custom-tab-bar {
-    padding: 8px 2px;
+    width: calc(100% - 12px);
+    padding: 0 6px;
   }
 
-  .icon-container {
-    width: 32px;
-    height: 32px;
-  }
-
-  .tab-label {
-    font-size: 10px;
+  .custom-tab-bar .icon-container {
+    width: 36px;
+    height: 36px;
   }
 }
 .tab-icons {
   margin-right: 5px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .custom-tab-bar {
+    border: 1px solid #2a2f57;
+    background: var(--background);
+    box-shadow: 0 10px 24px rgba(5, 7, 20, 0.6);
+  }
+
+  .custom-tab-button {
+    --color: #9aa0bc;
+    --color-selected: #aeb5ff;
+  }
+
+  .custom-tab-bar .icon-container {
+    color: #9aa0bc;
+  }
+
+  .custom-tab-bar .icon-container.is-active {
+    background: linear-gradient(140deg, #6b86ff 0%, #4b77e5 100%);
+    box-shadow: 0 10px 24px rgba(13, 18, 52, 0.7);
+  }
 }

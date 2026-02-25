@@ -67,6 +67,68 @@
   }
 }
 
+// Compact patient list items
+.patients-list-r {
+  margin-top: 1rem;
+}
+
+.patient-item-r {
+  --padding-start: 0;
+  --inner-padding-end: 0;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.patient-item-r.selected {
+  border: 2px solid var(--ion-color-primary);
+  background-color: rgba(var(--ion-color-primary-rgb), 0.05);
+}
+
+.patient-item-r .patient-avatar {
+  width: 40px;
+  height: 40px;
+  margin: 10px 12px;
+}
+
+.patient-item-r .patient-info-r {
+  h3 {
+    margin: 0 0 4px 0;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+  p {
+    margin: 2px 0;
+    font-size: 0.85rem;
+    color: var(--ion-color-medium);
+  }
+}
+
+// Slides
+.referral-slides {
+  height: auto;
+}
+
+.referral-slide {
+  width: 100%;
+}
+
+.slide-header {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.summary-item-r {
+  --padding-start: 12px;
+  --inner-padding-end: 12px;
+  margin-bottom: 0.75rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
 // Doctor Details
 .doctor-details-r {
   margin: 1rem 0;

@@ -17,6 +17,8 @@ import {
   IonButtons,
   IonToast,
   IonText,
+  IonHeader,
+  IonToolbar,
 } from "@ionic/react";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
@@ -50,6 +52,7 @@ type FormData = {
   age: number;
   sex: string;
   password: string;
+  confirmPassword: string;
   contact: string;
   town: string;
   street: string;
@@ -71,7 +74,7 @@ const VALIDATION = {
     MAX_LENGTH: 50,
   },
   PASSWORD: {
-    MIN_LENGTH: 6,
+    MIN_LENGTH: 8,
   },
   CONTACT: {
     MIN_LENGTH: 9,
@@ -132,18 +135,18 @@ const PatientSignup: React.FC = () => {
     (message: string, color: "success" | "danger" | "warning" = "success") => {
       setToast({ isOpen: true, message, color });
     },
-    []
+    [],
   );
 
   const uploadImageToStorage = async (
     file: File,
-    userId: string
+    userId: string,
   ): Promise<string> => {
     try {
       const fileExtension = file.name.split(".").pop();
       const storageRef = ref(
         storage,
-        `profilePhotos/${userId}/profile.${fileExtension}`
+        `profilePhotos/${userId}/profile.${fileExtension}`,
       );
 
       const snapshot = await uploadBytes(storageRef, file);
@@ -159,7 +162,7 @@ const PatientSignup: React.FC = () => {
   const createUserInFirestore = async (
     userId: string,
     userData: FormData,
-    profilePhotoURL: string = ""
+    profilePhotoURL: string = "",
   ) => {
     try {
       const userDocRef = doc(collection(db, "patients"), userId);
@@ -196,7 +199,7 @@ const PatientSignup: React.FC = () => {
       if (!file.type.startsWith("image/")) {
         showToast(
           "Please select a valid image file (JPEG, PNG, etc.).",
-          "danger"
+          "danger",
         );
         return;
       }
@@ -236,6 +239,10 @@ const PatientSignup: React.FC = () => {
   };
 
   const onSubmit = async (data: FormData) => {
+    if (data.password !== data.confirmPassword) {
+      showToast("Passwords do not match. Please try again.", "danger");
+      return;
+    }
     if (!isValid) {
       showToast("Please fix the form errors before submitting.", "warning");
       return;
@@ -250,7 +257,7 @@ const PatientSignup: React.FC = () => {
         await createUserWithEmailAndPassword(
           auth,
           data.email.toLowerCase().trim(),
-          data.password
+          data.password,
         );
 
       const user = userCredential.user;
@@ -306,23 +313,23 @@ const PatientSignup: React.FC = () => {
         case "auth/weak-password":
           setError("password", {
             type: "manual",
-            message: "Password is too weak. Please use at least 6 characters.",
+            message: "Password is too weak. Please use at least 8 characters.",
           });
           showToast(
             "Password is too weak. Please use a stronger password.",
-            "danger"
+            "danger",
           );
           break;
         case "auth/network-request-failed":
           showToast(
             "Network error. Please check your internet connection.",
-            "danger"
+            "danger",
           );
           break;
         case "auth/operation-not-allowed":
           showToast(
             "Email/password accounts are not enabled. Please contact support.",
-            "danger"
+            "danger",
           );
           break;
         default:
@@ -332,7 +339,7 @@ const PatientSignup: React.FC = () => {
           });
           showToast(
             "An unexpected error occurred. Please try again.",
-            "danger"
+            "danger",
           );
       }
     } finally {
@@ -368,6 +375,17 @@ const PatientSignup: React.FC = () => {
 
   return (
     <IonPage>
+      <IonHeader class="ion-no-border">
+        <IonToolbar className="signuptoolbar">
+          {" "}
+          <IonButtons>
+            <IonButton onClick={goBack} className="signupback">
+              <IonIcon icon={chevronBackOutline} />
+              Back
+            </IonButton>
+          </IonButtons>
+        </IonToolbar>
+      </IonHeader>
       <IonContent fullscreen className="signup-content">
         <IonToast
           isOpen={toast.isOpen}
@@ -406,13 +424,6 @@ const PatientSignup: React.FC = () => {
             />
           ))}
         </div>
-
-        <IonButtons>
-          <IonButton onClick={goBack} className="signupback">
-            <IonIcon icon={chevronBackOutline} />
-            Back
-          </IonButton>
-        </IonButtons>
 
         <motion.div
           className="form-container"
@@ -623,6 +634,28 @@ const PatientSignup: React.FC = () => {
                     {errors.password && (
                       <IonText color="danger" className="error-text">
                         <p>{errors.password.message}</p>
+                      </IonText>
+                    )}
+                  </motion.div>
+
+                  {/* Confirm Password */}
+                  <motion.div custom={5} variants={itemVariants}>
+                    <IonItem className="form-item" lines="full">
+                      <FiLock className="input-icon" />
+                      <IonInput
+                        type="password"
+                        placeholder="Confirm Password"
+                        {...register("confirmPassword", {
+                          required: "Please confirm your password",
+                          validate: (value) =>
+                            value === watch("password") ||
+                            "Passwords do not match",
+                        })}
+                      />
+                    </IonItem>
+                    {errors.confirmPassword && (
+                      <IonText color="danger" className="error-text">
+                        <p>{errors.confirmPassword.message}</p>
                       </IonText>
                     )}
                   </motion.div>

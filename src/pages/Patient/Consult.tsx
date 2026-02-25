@@ -152,6 +152,7 @@ const Consult: React.FC = () => {
   const [isRecordingLocked, setIsRecordingLocked] = useState(false);
   const [recordingAmplitude, setRecordingAmplitude] = useState<number[]>([]);
   const [showCancelRecording, setShowCancelRecording] = useState(false);
+  const [recordingSlideX, setRecordingSlideX] = useState(0);
 
   // Firebase states
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -170,11 +171,21 @@ const Consult: React.FC = () => {
   const messageInputRef = useRef<HTMLIonTextareaElement>(null);
   const progressIntervalRef = useRef<any>(null);
   const recordButtonRef = useRef<HTMLIonButtonElement>(null);
-  const recordContainerRef = useRef<HTMLIonGridElement>(null);
+  const recordContainerRef = useRef<HTMLDivElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const seenMessageIdsRef = useRef<Set<string>>(new Set());
   const messageListenerInitializedRef = useRef(false);
+  const recordingGestureRef = useRef({
+    active: false,
+    startX: 0,
+    startY: 0,
+    lastDeltaX: 0,
+    lastDeltaY: 0,
+    pointerId: -1,
+    locked: false,
+  });
+  const recordingStopActionRef = useRef<"send" | "cancel">("send");
 
   const [animateCards, setAnimateCards] = useState(false);
   const [presentToast] = useIonToast();
@@ -479,7 +490,7 @@ const Consult: React.FC = () => {
   useIonViewWillLeave(() => {
     setAnimateCards(false);
     if (isRecording) {
-      stopRecordingAndSend();
+      stopRecordingWithoutSend();
     }
     pauseAllAudio();
   });
@@ -752,6 +763,12 @@ const Consult: React.FC = () => {
       mediaRecorder.start();
       setIsRecording(true);
       setRecordingTime(0);
+      setRecordingAmplitude([]);
+      setRecordingSlideX(0);
+      setShowCancelRecording(false);
+      setShowLockRecord(true);
+      setIsRecordingLocked(false);
+      recordingStopActionRef.current = "send";
 
       // Recording timer
       recordingIntervalRef.current = setInterval(() => {
@@ -778,8 +795,20 @@ const Consult: React.FC = () => {
     }
   };
 
+  const stopRecordingWithoutSend = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      recordingStopActionRef.current = "cancel";
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+      }
+    }
+  };
+
   const stopRecordingAndSend = async () => {
     if (mediaRecorderRef.current && isRecording) {
+      recordingStopActionRef.current = "send";
       mediaRecorderRef.current.stop();
       mediaRecorderRef.current.stream
         .getTracks()
@@ -797,48 +826,56 @@ const Consult: React.FC = () => {
   const setupRecordingStopHandler = () => {
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, {
-          type: "audio/webm",
-        });
-        const audioUrl = URL.createObjectURL(audioBlob);
+        const stopAction = recordingStopActionRef.current;
 
-        const attachment: Attachment = {
-          id: Math.random().toString(36).substring(7),
-          type: "audio",
-          url: audioUrl,
-          name: `voice_note_${Date.now()}.webm`,
-          duration: recordingTime,
-          isPlaying: false,
-          currentTime: 0,
-        };
-
-        setAttachments((prev) => [...prev, attachment]);
-
-        // Auto-send the recording
-        if (selectedChat && currentUser) {
-          const uploadedAttachment = await uploadFile(attachment);
-
-          await addDoc(collection(db, "chats", selectedChat.id, "messages"), {
-            text: "",
-            sender: "patient",
-            senderId: currentUser.uid,
-            timestamp: serverTimestamp(),
-            status: "sent",
-            chatId: selectedChat.id,
-            attachments: [uploadedAttachment],
+        if (stopAction === "send") {
+          const audioBlob = new Blob(audioChunksRef.current, {
+            type: "audio/webm",
           });
+          const audioUrl = URL.createObjectURL(audioBlob);
 
-          await updateDoc(doc(db, "chats", selectedChat.id), {
-            lastMessage: "Voice message",
-            lastMessageTime: serverTimestamp(),
-            unreadCount: selectedChat.unreadCount + 1,
-          });
+          const attachment: Attachment = {
+            id: Math.random().toString(36).substring(7),
+            type: "audio",
+            url: audioUrl,
+            name: `voice_note_${Date.now()}.webm`,
+            duration: recordingTime,
+            isPlaying: false,
+            currentTime: 0,
+          };
+
+          if (selectedChat && currentUser) {
+            const uploadedAttachment = await uploadFile(attachment);
+
+            await addDoc(collection(db, "chats", selectedChat.id, "messages"), {
+              text: "",
+              sender: "patient",
+              senderId: currentUser.uid,
+              timestamp: serverTimestamp(),
+              status: "sent",
+              chatId: selectedChat.id,
+              attachments: [uploadedAttachment],
+            });
+
+            await updateDoc(doc(db, "chats", selectedChat.id), {
+              lastMessage: "Voice message",
+              lastMessageTime: serverTimestamp(),
+              unreadCount: selectedChat.unreadCount + 1,
+            });
+          }
+
+          URL.revokeObjectURL(audioUrl);
         }
 
         setRecordingTime(0);
         setIsRecording(false);
         setIsRecordingLocked(false);
         setShowLockRecord(false);
+        setShowCancelRecording(false);
+        setRecordingSlideX(0);
+        recordingGestureRef.current.active = false;
+        recordingGestureRef.current.locked = false;
+        recordingStopActionRef.current = "send";
 
         if (amplitudeIntervalRef.current) {
           clearInterval(amplitudeIntervalRef.current);
@@ -849,6 +886,90 @@ const Consult: React.FC = () => {
           audioContextRef.current = null;
         }
       };
+    }
+  };
+
+  const CANCEL_THRESHOLD = -110;
+  const LOCK_THRESHOLD = -90;
+
+  const handleRecordPointerDown = async (
+    e: React.PointerEvent<HTMLIonButtonElement>,
+  ) => {
+    if (newMessage.trim() !== "" || attachments.length > 0 || isRecording) return;
+
+    recordingGestureRef.current = {
+      active: true,
+      startX: e.clientX,
+      startY: e.clientY,
+      lastDeltaX: 0,
+      lastDeltaY: 0,
+      pointerId: e.pointerId,
+      locked: false,
+    };
+
+    setShowCancelRecording(false);
+    setShowLockRecord(true);
+    setRecordingSlideX(0);
+
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch (err) {
+      console.warn("Pointer capture failed:", err);
+    }
+
+    await startRecording();
+  };
+
+  const handleRecordPointerMove = (
+    e: React.PointerEvent<HTMLIonButtonElement>,
+  ) => {
+    if (!recordingGestureRef.current.active || !isRecording || isRecordingLocked)
+      return;
+
+    const deltaX = e.clientX - recordingGestureRef.current.startX;
+    const deltaY = e.clientY - recordingGestureRef.current.startY;
+    recordingGestureRef.current.lastDeltaX = deltaX;
+    recordingGestureRef.current.lastDeltaY = deltaY;
+
+    const clampedX = Math.max(-120, Math.min(0, deltaX));
+    setRecordingSlideX(clampedX);
+    setShowCancelRecording(deltaX <= CANCEL_THRESHOLD);
+
+    if (deltaY <= LOCK_THRESHOLD) {
+      recordingGestureRef.current.locked = true;
+      setIsRecordingLocked(true);
+      setShowLockRecord(false);
+      setShowCancelRecording(false);
+      setRecordingSlideX(0);
+    }
+  };
+
+  const handleRecordPointerUp = (
+    e: React.PointerEvent<HTMLIonButtonElement>,
+  ) => {
+    if (!recordingGestureRef.current.active) return;
+
+    recordingGestureRef.current.active = false;
+    try {
+      e.currentTarget.releasePointerCapture(recordingGestureRef.current.pointerId);
+    } catch (err) {
+      console.warn("Pointer release failed:", err);
+    }
+
+    if (!isRecording) return;
+
+    const shouldCancel =
+      recordingGestureRef.current.lastDeltaX <= CANCEL_THRESHOLD ||
+      showCancelRecording;
+
+    if (isRecordingLocked || recordingGestureRef.current.locked) {
+      return;
+    }
+
+    if (shouldCancel) {
+      stopRecordingWithoutSend();
+    } else {
+      stopRecordingAndSend();
     }
   };
 
@@ -1118,8 +1239,8 @@ const Consult: React.FC = () => {
 
   return (
     <IonPage className="consult-page">
-      <IonHeader class="ion-no-border" className="consult-header">
-        <IonToolbar>
+      <IonHeader className="ion-no-border consult-header">
+        <IonToolbar className="patient-dashboard-toolbar">
           {selectedDoctor ? (
             <>
               <IonButtons slot="start">
@@ -1170,7 +1291,7 @@ const Consult: React.FC = () => {
         </IonToolbar>
 
         {!selectedDoctor && (
-          <IonToolbar>
+          <IonToolbar className="consult-search-toolbar">
             <IonSearchbar
               value={searchText}
               onIonInput={(e) => setSearchText(e.detail.value!)}
@@ -1181,7 +1302,11 @@ const Consult: React.FC = () => {
         )}
       </IonHeader>
 
-      <IonContent fullscreen ref={contentRef} className="consult-content">
+      <IonContent
+        fullscreen
+        ref={contentRef}
+        className="dashboard-patient consult-content"
+      >
         {!selectedDoctor ? (
           <>
             {/* Available doctors */}
@@ -1342,120 +1467,134 @@ const Consult: React.FC = () => {
                   )}
 
                   <IonGrid className="input-grid">
-                    <IonRow className="ion-align-items-center input-row">
-                      <IonCol size="1" className="attachment-col">
-                        <IonButton
-                          fill="clear"
-                          color="medium"
-                          onClick={openAttachmentActionSheet}
-                          className="attachment-btn"
-                        >
-                          <IonIcon icon={attach} color="primary" />
-                        </IonButton>
-                      </IonCol>
-                      <IonCol size="10" className="text-input-col">
-                        <IonItem lines="none" color={"light"}>
-                          <IonTextarea
-                            ref={messageInputRef}
-                            value={newMessage}
-                            placeholder="Type your message here..."
-                            onIonInput={(e) => setNewMessage(e.detail.value!)}
-                            rows={1}
-                            onKeyPress={handleKeyPress}
-                            autoGrow
-                            className="message-textarea"
-                          />
-                        </IonItem>
-                      </IonCol>
-                      <IonCol size="1" className="send-col">
-                        {newMessage.trim() === "" &&
-                        attachments.length === 0 ? (
-                          <IonButton
-                            ref={recordButtonRef}
-                            fill="clear"
-                            color="primary"
-                            className="record-btn"
-                            onClick={
-                              isRecording
-                                ? stopRecordingAndSend
-                                : startRecording
-                            }
-                          >
-                            <IonIcon icon={micOutline} />
-                          </IonButton>
-                        ) : (
+                    {!isRecording ? (
+                      <IonRow className="ion-align-items-center input-row">
+                        <IonCol size="1" className="attachment-col">
                           <IonButton
                             fill="clear"
-                            color="primary"
-                            onClick={handleSendMessage}
-                            disabled={isSending}
-                            className="send-btn"
+                            color="medium"
+                            onClick={openAttachmentActionSheet}
+                            className="attachment-btn"
                           >
-                            {isSending ? (
-                              <IonSpinner name="crescent" />
-                            ) : (
-                              <IonIcon icon={sendOutline} />
-                            )}
+                            <IonIcon icon={attach} color="primary" />
                           </IonButton>
-                        )}
-                      </IonCol>
-                    </IonRow>
+                        </IonCol>
+                        <IonCol size="10" className="text-input-col">
+                          <IonItem lines="none" color={"light"}>
+                            <IonTextarea
+                              ref={messageInputRef}
+                              value={newMessage}
+                              placeholder="Type your message here..."
+                              onIonInput={(e) => setNewMessage(e.detail.value!)}
+                              rows={1}
+                              onKeyPress={handleKeyPress}
+                              autoGrow
+                              className="message-textarea"
+                            />
+                          </IonItem>
+                        </IonCol>
+                        <IonCol size="1" className="send-col">
+                          {newMessage.trim() === "" &&
+                          attachments.length === 0 ? (
+                            <IonButton
+                              ref={recordButtonRef}
+                              fill="clear"
+                              color="primary"
+                              className="record-btn"
+                              onPointerDown={handleRecordPointerDown}
+                              onPointerMove={handleRecordPointerMove}
+                              onPointerUp={handleRecordPointerUp}
+                              onPointerCancel={handleRecordPointerUp}
+                            >
+                              <IonIcon icon={micOutline} />
+                            </IonButton>
+                          ) : (
+                            <IonButton
+                              fill="clear"
+                              color="primary"
+                              onClick={handleSendMessage}
+                              disabled={isSending}
+                              className="send-btn"
+                            >
+                              {isSending ? (
+                                <IonSpinner name="crescent" />
+                              ) : (
+                                <IonIcon icon={sendOutline} />
+                              )}
+                            </IonButton>
+                          )}
+                        </IonCol>
+                      </IonRow>
+                    ) : (
+                      <IonRow className="recording-row">
+                        <IonCol size="12">
+                          <div
+                            className={`whatsapp-recording-bar ${
+                              showCancelRecording ? "cancel-ready" : ""
+                            }`}
+                            ref={recordContainerRef}
+                            style={{ transform: `translateX(${recordingSlideX}px)` }}
+                          >
+                            <div className="recording-left">
+                              <span className="recording-live-dot"></span>
+                              <IonIcon icon={mic} className="recording-mic" />
+                              <IonText className="recording-time">
+                                {formatTime(recordingTime)}
+                              </IonText>
+                            </div>
+
+                            <div className="recording-wave">
+                              {(recordingAmplitude.length > 0
+                                ? recordingAmplitude
+                                : [0.1, 0.25, 0.35, 0.5, 0.3, 0.2, 0.4]
+                              ).map((amp, index) => (
+                                <span
+                                  key={index}
+                                  className="recording-wave-bar"
+                                  style={{
+                                    height: `${Math.max(18, amp * 34)}px`,
+                                  }}
+                                />
+                              ))}
+                              <IonText className="recording-slide-hint">
+                                {showCancelRecording && !isRecordingLocked
+                                  ? "Release to cancel"
+                                  : isRecordingLocked
+                                  ? "Locked"
+                                  : showLockRecord
+                                  ? "Slide up to lock"
+                                  : "Slide left to cancel"}
+                              </IonText>
+                            </div>
+
+                            <div className="recording-actions">
+                              <IonButton
+                                fill="clear"
+                                color="danger"
+                                className="recording-action-btn cancel"
+                                onClick={() => {
+                                  stopRecordingWithoutSend();
+                                }}
+                              >
+                                <IonIcon icon={trashOutline} />
+                              </IonButton>
+                              <IonButton
+                                fill="solid"
+                                color="primary"
+                                className="recording-action-btn send"
+                                onClick={stopRecordingAndSend}
+                              >
+                                <IonIcon icon={sendOutline} />
+                              </IonButton>
+                            </div>
+                          </div>
+                        </IonCol>
+                      </IonRow>
+                    )}
                   </IonGrid>
                 </IonGrid>
               </IonToolbar>
             </IonFooter>
-
-            {/* Recording UI */}
-            {isRecording && (
-              <IonGrid className="recording-overlay" ref={recordContainerRef}>
-                <IonRow className="ion-justify-content-center ion-align-items-center recording-container">
-                  <IonCol size="12" className="ion-text-center">
-                    <div className="recording-visualization">
-                      {recordingAmplitude.map((amp, index) => (
-                        <div
-                          key={index}
-                          className="amplitude-bar"
-                          style={{ height: `${amp * 100}%` }}
-                        />
-                      ))}
-                    </div>
-                    <IonText className="recording-time">
-                      {formatTime(recordingTime)}
-                    </IonText>
-                    <IonText className="recording-text">
-                      {isRecordingLocked
-                        ? "Recording locked - Tap to send"
-                        : "Recording... Slide up to lock"}
-                    </IonText>
-                    <div className="recording-actions">
-                      <IonButton
-                        fill="clear"
-                        color="danger"
-                        onClick={() => {
-                          setIsRecording(false);
-                          setRecordingTime(0);
-                          if (mediaRecorderRef.current) {
-                            mediaRecorderRef.current.stop();
-                            mediaRecorderRef.current.stream
-                              .getTracks()
-                              .forEach((track) => track.stop());
-                          }
-                        }}
-                      >
-                        <IonIcon icon={trashOutline} />
-                      </IonButton>
-                      <IonButton
-                        fill="clear"
-                        color="primary"
-                        onClick={stopRecordingAndSend}
-                      >
-                        <IonIcon icon={sendOutline} />
-                      </IonButton>
-                    </div>
-                  </IonCol>
-                </IonRow>
-              </IonGrid>
-            )}
           </>
         )}
 

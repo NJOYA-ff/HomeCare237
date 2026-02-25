@@ -1,6 +1,6 @@
 .welcome-content {
   --background: linear-gradient(135deg, #1a237e 0%, #1976d2 50%, #64b5f6 100%);
-  position: relative;
+  position: fixed;
   overflow: hidden;
 }
 

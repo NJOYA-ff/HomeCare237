@@ -1,65 +1,148 @@
-/* Specialties page styles */
-.specialties-page {
-  padding: 12px;
-}
+.specialties-dashboard-page {
+  .specialties-toolbar {
+    --background: transparent;
+    --color: #191d38;
+  }
 
-.specialties-card {
-  padding-bottom: 8px;
-}
+  .specialties-content {
+    --background: linear-gradient(180deg, #edf0ff 0%, #f8f9ff 100%);
+  }
 
-.specialties-title {
-  font-size: 18px;
-  padding: 12px 0;
-}
+  .specialties-shell {
+    padding: 14px 12px calc(92px + env(safe-area-inset-bottom, 0px));
+  }
 
-.specialties-grid {
-  margin-top: 8px;
-}
+  .specialties-card {
+    margin: 0;
+    border-radius: 26px;
+    box-shadow: 0 12px 26px rgba(78, 85, 150, 0.14);
+    border: 1px solid #e5e8f9;
+    --background: #fefeff;
+  }
 
-.specialty-doctor-card {
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
-}
+  .specialties-title {
+    margin: 0;
+    font-size: 20px;
+    color: #191d38;
+    font-weight: 700;
+  }
 
-.specialty-doctor-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 12px 30px rgba(25, 118, 210, 0.08);
-}
+  .specialties-grid {
+    margin-top: 8px;
+  }
 
-.doctor-row {
-  display: flex;
-  align-items: center;
-}
+  .specialty-doctor-card {
+    margin: 0;
+    border-radius: 16px;
+    border: 1px solid #e7eafb;
+    box-shadow: none;
+    background: var(--background);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
 
-// .doctor-avatar img {
-//   width: 56px;
-//   height: 56px;
-//   object-fit: cover;
-//   border-radius: 8px;
-// }
+  .specialty-doctor-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 20px rgba(78, 85, 150, 0.12);
+  }
 
-.doctor-meta h4 {
-  margin: 0 0 4px 0;
-}
+  .doctor-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
 
-.doctor-meta .muted {
-  color: var(--ion-color-medium);
-  margin: 0;
-}
+  .doctor-avatar {
+    width: 52px;
+    height: 52px;
+    border: 2px solid #e8ebfe;
+  }
 
-.book-now-btn {
-  --background: linear-gradient(90deg, #1a237e 0%, #1976d2 100%);
-  --border-radius: 10px;
-  color: white;
+  .doctor-meta {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .doctor-meta h4 {
+    margin: 0 0 2px 0;
+    font-size: 15px;
+    color: #101428;
+  }
+
+  .doctor-meta .muted {
+    color: #838aa7;
+    margin: 0;
+    font-size: 12px;
+  }
+
+  .doctor-meta .small {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: #66708d;
+    margin-top: 6px;
+  }
+
+  .doctor-action {
+    margin-left: auto;
+    min-width: 140px;
+    text-align: right;
+  }
+
+  .fee {
+    margin: 0 0 8px 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: #3a4361;
+  }
+
+  .book-now-btn {
+    --background: linear-gradient(140deg, #6b86ff 0%, #4b77e5 100%);
+    --border-radius: 999px;
+    height: 34px;
+    font-size: 12px;
+    text-transform: none;
+  }
 }
 
 @media (max-width: 768px) {
-  .doctor-row {
+  .specialties-dashboard-page .doctor-row {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .doctor-action {
+  .specialties-dashboard-page .doctor-action {
     width: 100%;
-    margin-top: 8px;
+    margin-left: 0;
+    margin-top: 10px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .specialties-dashboard-page {
+    .specialties-content {
+      --background: var(--background);
+    }
+
+    .specialties-toolbar {
+      --color: #f0f2ff;
+    }
+
+    .specialties-card,
+    .specialty-doctor-card {
+      --background: var(--background);
+      border: 1px solid #2a2f57;
+      box-shadow: 0 12px 26px rgba(5, 7, 20, 0.55);
+    }
+
+    .specialties-title,
+    .doctor-meta h4 {
+      color: #eef0ff;
+    }
+
+    .doctor-meta .muted,
+    .doctor-meta .small,
+    .fee {
+      color: #b1b6d5;
+    }
   }
 }

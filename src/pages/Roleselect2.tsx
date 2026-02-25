@@ -8,11 +8,17 @@ import {
   IonGrid,
   IonRow,
   IonCol,
+  IonButtons,
+  IonHeader,
+  IonIcon,
+  IonToolbar,
 } from "@ionic/react";
 import { motion, useAnimation } from "framer-motion";
 import FaUserDoctor from "react-icons/fa";
 import { useHistory } from "react-router-dom";
+import "../pages/Page.scss";
 import icon from "./images/icon.png";
+import { chevronBackOutline } from "ionicons/icons";
 const Roleselect2: React.FC = () => {
   const history = useHistory();
   const controls = useAnimation();
@@ -42,6 +48,16 @@ const Roleselect2: React.FC = () => {
 
   return (
     <IonPage>
+      <IonHeader class="ion-no-border">
+        <IonToolbar className="signuptoolbar">
+          <IonButtons>
+            <IonButton routerLink="/landingpage" className="signupback">
+              <IonIcon icon={chevronBackOutline} />
+              Back
+            </IonButton>
+          </IonButtons>
+        </IonToolbar>
+      </IonHeader>
       <IonContent fullscreen className="welcome-content">
         <div className="background-gradient">
           {/* Animated circles in background */}

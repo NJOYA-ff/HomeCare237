@@ -6,8 +6,6 @@ import {
   IonTitle,
   IonToolbar,
   IonSearchbar,
-  IonCardTitle,
-  IonCardSubtitle,
   IonAvatar,
   IonButton,
   IonIcon,
@@ -1198,7 +1196,7 @@ const Doc_Consult: React.FC = () => {
               value={searchText}
               onIonInput={(e) => setSearchText(e.detail.value!)}
               placeholder="Search patients or conditions"
-              className="patient-searchbar"
+              className="doctor-search"
             />
           </IonToolbar>
         )}
@@ -1213,61 +1211,52 @@ const Doc_Consult: React.FC = () => {
                 <IonText>Loading patients...</IonText>
               </div>
             ) : (
-              <div className="patients-list-c">
+              <IonList lines="none" className="patient-list-c">
                 {filteredPatients.map((patient) => (
                   <IonItem
                     key={patient.id}
-                    className="patient-card-c"
+                    className="patient-item-c"
                     button
                     onClick={() => handleSelectPatient(patient)}
-                    lines="none"
                   >
-                    <IonGrid className="patient-grid-c">
-                      <div className="avatar-container-c">
-                        <IonAvatar className="patient-avatar">
-                          <img
-                            src="https://ionicframework.com/docs/img/demos/avatar.svg"
-                            alt={patient.name}
-                          />
-                        </IonAvatar>
-                        <div
-                          className={`online-indicator ${
-                            patient.online ? "online" : "offline"
-                          }`}
-                        ></div>
-                      </div>
-
-                      <IonCardTitle className="patient-name-c">
-                        {patient.name}
-                      </IonCardTitle>
-                      <IonCardSubtitle className="patient-condition-c">
-                        {patient.condition}
-                      </IonCardSubtitle>
-
+                    <div className="avatar-container-c">
+                      <IonAvatar className="patient-avatar">
+                        <img
+                          src="https://ionicframework.com/docs/img/demos/avatar.svg"
+                          alt={patient.name}
+                        />
+                      </IonAvatar>
+                      <div
+                        className={`online-indicator ${
+                          patient.online ? "online" : "offline"
+                        }`}
+                      ></div>
+                    </div>
+                    <IonLabel>
+                      <h2>{patient.name}</h2>
+                      <p>{patient.condition}</p>
                       <div className="patient-details-c">
                         <IonChip color="primary" className="age-chip">
                           <IonLabel>{patient.age} years</IonLabel>
                         </IonChip>
-
                         <IonChip className="gender-chip">
                           <IonLabel>{patient.gender}</IonLabel>
                         </IonChip>
                       </div>
-
-                      <div className="patient-footer">
-                        <IonText className="blood-type-text">
-                          <IonIcon icon={medical} />
-                          {patient.bloodType}
-                        </IonText>
-                        <IonText className="last-consult-text">
-                          <IonIcon icon={timeOutline} />
-                          {patient.lastConsultation}
-                        </IonText>
-                      </div>
-                    </IonGrid>
+                    </IonLabel>
+                    <div className="patient-status-c">
+                      <IonText className="blood-type-text">
+                        <IonIcon icon={medical} />
+                        {patient.bloodType}
+                      </IonText>
+                      <IonText className="last-consult-text">
+                        <IonIcon icon={timeOutline} />
+                        {patient.lastConsultation}
+                      </IonText>
+                    </div>
                   </IonItem>
                 ))}
-              </div>
+              </IonList>
             )}
           </>
         ) : (

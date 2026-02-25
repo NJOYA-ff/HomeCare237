@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import { db, auth } from "../../firebaseconfig";
 import {
@@ -111,6 +111,12 @@ interface Doctor {
   phone?: string;
 }
 
+interface PatientDetails {
+  name?: string;
+  age?: string;
+  gender?: string;
+}
+
 interface Appointment {
   id: string;
   doctorId: string;
@@ -122,13 +128,14 @@ interface Appointment {
   date: string;
   time: string;
   status: "pending" | "accepted" | "rejected" | "completed" | "cancelled";
-  type: "home-visit" | "telemedicine" | "clinic";
+  type: "Online" | "Home" | "Hospital";
   reason: string;
   notes: string;
   createdAt: any;
   updatedAt: any;
   consultationFee: number;
   doctor?: Doctor;
+  patientDetails?: PatientDetails;
 }
 
 // Regions of Cameroon
@@ -207,8 +214,8 @@ const Book_Appointment: React.FC = () => {
   );
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [appointmentType, setAppointmentType] = useState<
-    "home-visit" | "telemedicine" | "clinic"
-  >("clinic");
+    "Online" | "Home" | "Hospital"
+  >("Online");
   const [reason, setReason] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -222,6 +229,12 @@ const Book_Appointment: React.FC = () => {
   const [appointmentToCancel, setAppointmentToCancel] = useState<string>("");
   const [appointmentToUpdate, setAppointmentToUpdate] =
     useState<Appointment | null>(null);
+  const [bookingFor, setBookingFor] = useState<"myself" | "someoneElse">(
+    "myself",
+  );
+  const [recipientName, setRecipientName] = useState<string>("");
+  const [recipientAge, setRecipientAge] = useState<string>("");
+  const [recipientGender, setRecipientGender] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<
     "list" | "detail" | "update" | "viewAppointment"
@@ -512,7 +525,7 @@ const Book_Appointment: React.FC = () => {
                 : data.date,
               time: data.time || "00:00",
               status: data.status || "pending",
-              type: data.type || "clinic",
+              type: data.type || "Online",
               reason: data.reason || "",
               notes: data.notes || "",
               consultationFee: data.consultationFee || 5000,
@@ -554,15 +567,30 @@ const Book_Appointment: React.FC = () => {
       return;
     }
 
+    if (
+      bookingFor === "someoneElse" &&
+      (!recipientName || !recipientAge || !recipientGender)
+    ) {
+      alert(
+        "Please fill in all the details for the person you are booking for.",
+      );
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const newAppointment = {
+      const patientName =
+        bookingFor === "someoneElse"
+          ? recipientName
+          : currentUser.displayName || "Patient";
+
+      const newAppointment: any = {
         doctorId: selectedDoctor.id,
         doctorName: selectedDoctor.name,
         doctorSpecialization: selectedDoctor.specialization,
         patientId: currentUser.uid,
-        patientName: currentUser.displayName || "Patient",
+        patientName: patientName,
         patientEmail: currentUser.email,
         date: Timestamp.fromDate(new Date(selectedDate)),
         time: selectedTime,
@@ -574,6 +602,14 @@ const Book_Appointment: React.FC = () => {
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
       };
+
+      if (bookingFor === "someoneElse") {
+        newAppointment.patientDetails = {
+          name: recipientName,
+          age: recipientAge,
+          gender: recipientGender,
+        };
+      }
 
       console.log("Booking appointment:", newAppointment);
 
@@ -987,7 +1023,7 @@ const Book_Appointment: React.FC = () => {
                 : data.date,
               time: data.time || "",
               status: data.status || "pending",
-              type: data.type || "clinic",
+              type: data.type || "Online",
               reason: data.reason || "",
               notes: data.notes || "",
               createdAt: data.createdAt?.toDate?.() || data.createdAt,
@@ -1074,6 +1110,37 @@ const Book_Appointment: React.FC = () => {
     setFilteredDoctors(Array.from(uniqueMap.values()));
   }, [selectedRegion, selectedSpecialty, searchQuery, doctors]);
 
+  const datePills = useMemo(() => {
+    const today = new Date();
+    return Array.from({ length: 30 }).map((_, index) => {
+      const date = new Date(today);
+      date.setDate(today.getDate() + index);
+      return {
+        iso: date.toISOString(),
+        day: date.getDate(),
+        week: date
+          .toLocaleDateString("en-US", { weekday: "short" })
+          .toUpperCase(),
+      };
+    });
+  }, []);
+
+  const selectedDayKey = useMemo(() => {
+    const current = new Date(selectedDate);
+    return isNaN(current.getTime()) ? "" : current.toDateString();
+  }, [selectedDate]);
+
+  const todaysAppointments = useMemo(() => {
+    const todayKey = new Date().toDateString();
+    return [...appointments]
+      .filter((appointment) => {
+        const dateObj = new Date(appointment.date);
+        return !isNaN(dateObj.getTime()) && dateObj.toDateString() === todayKey;
+      })
+      .sort((a, b) => (a.time || "").localeCompare(b.time || ""))
+      .slice(0, 3);
+  }, [appointments]);
+
   return (
     <IonPage>
       <IonHeader class="ion-no-border">
@@ -1125,16 +1192,112 @@ const Book_Appointment: React.FC = () => {
         ) : viewMode === "list" ? (
           <>
             <IonSegment
+              className="appointment-segment"
               value={activeSegment}
               onIonChange={(e) => setActiveSegment(e.detail.value as any)}
             >
-              <IonSegmentButton value="book">
+              <IonSegmentButton
+                className="appointment-segment-btn"
+                value="book"
+              >
                 <IonLabel>Book Appointment</IonLabel>
               </IonSegmentButton>
-              <IonSegmentButton value="myAppointments">
+              <IonSegmentButton
+                className="appointment-segment-btn"
+                value="myAppointments"
+              >
                 <IonLabel>My Appointments ({appointments.length})</IonLabel>
               </IonSegmentButton>
             </IonSegment>
+
+            <div className="todays-appointment-panel">
+              <div className="todays-headline">
+                <h2>Today&apos;s Appointment</h2>
+                <br />
+                <p>Select Date</p>
+              </div>
+
+              <div className="todays-date-pills">
+                {datePills.map((pill) => {
+                  const isActive =
+                    new Date(pill.iso).toDateString() === selectedDayKey;
+                  return (
+                    <button
+                      type="button"
+                      key={pill.iso}
+                      className={`date-pill ${isActive ? "is-active" : ""}`}
+                      onClick={() => setSelectedDate(pill.iso)}
+                    >
+                      <span className="pill-day">{pill.day}</span>
+                      <span className="pill-week">{pill.week}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="todays-specialty-chips">
+                {["Cardiologist", "Dentist", "Neurologist", "Pediatrician"].map(
+                  (specialty) => (
+                    <IonChip
+                      key={specialty}
+                      onClick={() => {
+                        setSelectedSpecialty(specialty);
+                        setActiveSegment("book");
+                      }}
+                      className={`todays-chip ${
+                        selectedSpecialty === specialty ? "is-active" : ""
+                      }`}
+                    >
+                      <IonLabel>{specialty}</IonLabel>
+                    </IonChip>
+                  ),
+                )}
+              </div>
+
+              <IonButton
+                fill="clear"
+                className="todays-book-btn"
+                onClick={() => setActiveSegment("book")}
+              >
+                Book Appointment
+              </IonButton>
+
+              <div className="todays-list">
+                {todaysAppointments.length > 0 ? (
+                  todaysAppointments.map((appointment, index) => (
+                    <div
+                      key={appointment.id}
+                      className={`todays-item ${
+                        index === 0 ? "is-highlighted" : ""
+                      }`}
+                      onClick={() => handleViewAppointment(appointment)}
+                    >
+                      <IonAvatar>
+                        <img
+                          src={
+                            appointment.doctor?.avatar ||
+                            "https://ionicframework.com/docs/img/demos/avatar.svg"
+                          }
+                          alt={appointment.doctorName}
+                        />
+                      </IonAvatar>
+                      <div className="todays-item-meta">
+                        <p className="todays-time">
+                          {formatTime(appointment.time)}
+                        </p>
+                        <h4>{appointment.doctorName}</h4>
+                        <p>{appointment.doctorSpecialization}</p>
+                      </div>
+                      <IonIcon icon={timeOutline} />
+                    </div>
+                  ))
+                ) : (
+                  <p className="todays-empty">
+                    No appointments scheduled today.
+                  </p>
+                )}
+              </div>
+            </div>
 
             {activeSegment === "book" ? (
               <div className="booking-section">
@@ -1417,11 +1580,11 @@ const Book_Appointment: React.FC = () => {
                                 <div className="detail-item-d">
                                   <IonIcon icon={medical} />
                                   <span>
-                                    {appointment.type === "clinic"
-                                      ? "Clinic Visit"
-                                      : appointment.type === "home-visit"
-                                      ? "Home Visit"
-                                      : "Telemedicine"}
+                                    {appointment.type === "Home"
+                                      ? "Home"
+                                      : appointment.type === "Online"
+                                      ? "Online"
+                                      : "Hospital"}
                                   </span>
                                 </div>
 
@@ -1466,21 +1629,6 @@ const Book_Appointment: React.FC = () => {
 
                                 {appointment.status === "accepted" && (
                                   <>
-                                    {/* <IonButton
-                                      fill="outline"
-                                      color="primary"
-                                      size="small"
-                                      onClick={() =>
-                                        handleEditAppointment(appointment)
-                                      }
-                                    >
-                                      <IonIcon
-                                        icon={createOutline}
-                                        slot="start"
-                                      />
-                                      Update
-                                    </IonButton> */}
-
                                     <IonButton
                                       fill="outline"
                                       color="danger"
@@ -1610,11 +1758,11 @@ const Book_Appointment: React.FC = () => {
                               <strong>Type</strong>
                             </IonLabel>
                             <IonText>
-                              {selectedAppointment.type === "clinic"
-                                ? "Clinic Visit"
-                                : selectedAppointment.type === "home-visit"
-                                ? "Home Visit"
-                                : "Telemedicine"}
+                              {selectedAppointment.type === "Home"
+                                ? "Home"
+                                : selectedAppointment.type === "Online"
+                                ? "Online"
+                                : "Hospital"}
                             </IonText>
                           </IonItem>
                         </IonCol>
@@ -1789,6 +1937,73 @@ const Book_Appointment: React.FC = () => {
 
                 <div className="booking-form">
                   <h3>Appointment Details</h3>
+                  <IonItem>
+                    <IonLabel>This appointment is for:</IonLabel>
+                    <IonSegment
+                      value={bookingFor}
+                      onIonChange={(e) => setBookingFor(e.detail.value as any)}
+                    >
+                      <IonSegmentButton value="myself">
+                        <IonLabel>Myself</IonLabel>
+                      </IonSegmentButton>
+                      <IonSegmentButton value="someoneElse">
+                        <IonLabel>Someone Else</IonLabel>
+                      </IonSegmentButton>
+                    </IonSegment>
+                  </IonItem>
+
+                  {bookingFor === "someoneElse" && (
+                    <>
+                      <IonItem className="form-item">
+                        <IonLabel position="stacked">
+                          Patient's Full Name
+                        </IonLabel>
+                        <IonInput
+                          value={recipientName}
+                          onIonInput={(e) => setRecipientName(e.detail.value!)}
+                          placeholder="Enter the full name of the patient"
+                        />
+                      </IonItem>
+                      <IonRow>
+                        <IonCol size="6">
+                          <IonItem className="form-item">
+                            <IonLabel position="stacked">Age</IonLabel>
+                            <IonInput
+                              type="number"
+                              value={recipientAge}
+                              onIonInput={(e) =>
+                                setRecipientAge(e.detail.value!)
+                              }
+                              placeholder="e.g., 35"
+                            />
+                          </IonItem>
+                        </IonCol>
+                        <IonCol size="6">
+                          <IonItem className="form-item">
+                            <IonLabel position="stacked">Gender</IonLabel>
+                            <IonSelect
+                              value={recipientGender}
+                              onIonChange={(e) =>
+                                setRecipientGender(e.detail.value)
+                              }
+                              interface="popover"
+                              placeholder="Select Gender"
+                            >
+                              <IonSelectOption value="male">
+                                Male
+                              </IonSelectOption>
+                              <IonSelectOption value="female">
+                                Female
+                              </IonSelectOption>
+                              <IonSelectOption value="other">
+                                Other
+                              </IonSelectOption>
+                            </IonSelect>
+                          </IonItem>
+                        </IonCol>
+                      </IonRow>
+                    </>
+                  )}
                   <IonGrid>
                     <IonRow>
                       <IonCol size="12" size-md="6">
@@ -1803,14 +2018,12 @@ const Book_Appointment: React.FC = () => {
                             }
                             interface="popover"
                           >
-                            <IonSelectOption value="clinic">
-                              Clinic Visit
+                            <IonSelectOption value="Home">Home</IonSelectOption>
+                            <IonSelectOption value="Online">
+                              Online
                             </IonSelectOption>
-                            <IonSelectOption value="home-visit">
-                              Home Visit
-                            </IonSelectOption>
-                            <IonSelectOption value="telemedicine">
-                              Telemedicine
+                            <IonSelectOption value="Hospital">
+                              Hospital
                             </IonSelectOption>
                           </IonSelect>
                         </IonItem>

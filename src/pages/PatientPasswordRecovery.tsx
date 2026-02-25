@@ -106,6 +106,20 @@ const PatientPasswordRecovery: React.FC = () => {
 
   return (
     <IonPage>
+      <IonHeader class="ion-no-border">
+        <IonToolbar className="signuptoolbar">
+          {" "}
+          <IonTitle className="header-title">
+            {recoverySent ? "Check Your Email" : "Password Recovery"}
+          </IonTitle>
+          <IonButtons slot="start">
+            <IonButton routerLink="/Patient_signin" className="signupback">
+              <IonIcon icon={chevronBackOutline} />
+              Back
+            </IonButton>
+          </IonButtons>
+        </IonToolbar>
+      </IonHeader>
       <IonContent fullscreen className="recovery-content">
         {/* Background elements */}
         <div className="background-elements">
@@ -136,16 +150,6 @@ const PatientPasswordRecovery: React.FC = () => {
             />
           ))}
         </div>
-
-        <IonButtons>
-          <IonButton routerLink="/Patient_signin" className="signupback">
-            <IonIcon icon={chevronBackOutline} />
-            Back
-          </IonButton>
-        </IonButtons>
-        <IonTitle className="header-title">
-          {recoverySent ? "Check Your Email" : "Password Recovery"}
-        </IonTitle>
 
         <motion.div
           className="form-container"

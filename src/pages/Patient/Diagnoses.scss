@@ -1,7 +1,52 @@
 // /* Diagnoses.css */
-.diagnoses-container {
+// Patient dashboard-aligned styling
+.diagnoses-content {
+  --background: var(--background);
+}
+
+.diagnoses-shell {
+  padding: 14px 12px calc(92px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.diagnoses-hero {
+  margin: 0;
+  border-radius: 26px;
+  box-shadow: 0 12px 26px rgba(78, 85, 150, 0.14);
+  border: 1px solid #e5e8f9;
+  background: #fefeff;
   padding: 16px;
-  margin-bottom: 1em;
+}
+
+.tiny-greeting {
+  margin: 0 0 6px;
+  color: #6870d9;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.hero-title {
+  margin: 0 0 6px;
+  font-size: 26px;
+  line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #191d38;
+}
+
+.hero-subtitle {
+  margin: 0;
+  color: #6f7692;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.diagnoses-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 ion-button {
   --border-radius: 6px;
@@ -24,7 +69,7 @@ ion-button {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 60vh;
+  height: 40vh;
   text-align: center;
   color: var(--ion-color-medium);
 }
@@ -36,17 +81,18 @@ ion-button {
 }
 
 .diagnosis-card-p {
-  border-radius: 10px;
+  border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 10px 24px rgba(77, 86, 145, 0.12);
   animation: fadeIn 0.35s ease-out;
-  border: solid 1px var(--ion-color-light-shade);
+  border: 1px solid #e4e8fb;
   padding: 10px;
+  background: #ffffff;
 }
 .card-header-p {
-  --background: rgba(var(--ion-color-primary-rgb), 0.1);
-  padding: 8px 10px;
-  border-radius: 8px;
+  --background: transparent;
+  padding: 0 0 6px 0;
+  border-radius: 0;
 }
 .card-header-content {
   display: flex;
@@ -55,16 +101,16 @@ ion-button {
   width: 100%;
 }
 .card-title-p {
-  color: var(--ion-color-dark);
-  font-size: 1rem;
+  color: #1b2141;
+  font-size: 1.05rem;
   margin: 0;
-  font-weight: 600;
+  font-weight: 700;
 }
 .diagnosis-date {
   display: flex;
   align-items: center;
-  font-size: 0.8rem;
-  color: var(--ion-color-medium);
+  font-size: 0.78rem;
+  color: #6f7692;
   margin-top: 2px;
 }
 
@@ -76,39 +122,39 @@ ion-button {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 
 .doctor-info ion-icon {
   margin-right: 8px;
-  color: var(--ion-color-primary);
+  color: #5f69ef;
   font-size: 18px;
 }
 
 .doctor-name {
-  font-weight: 600;
+  font-weight: 700;
   margin: 0 0 2px 0;
   font-size: 0.95rem;
 }
 
 .doctor-specialty {
   margin: 0;
-  color: var(--ion-color-medium);
+  color: #8b92ab;
   font-size: 0.8rem;
 }
 
 .hospital {
   margin: 0;
-  color: var(--ion-color-medium);
+  color: #8b92ab;
   font-size: 0.75rem;
 }
 
 .diagnosis-description {
-  color: var(--ion-color-dark);
+  color: #22263f;
   line-height: 1.3;
-  margin-bottom: 12px;
-  font-size: 0.95rem;
-  max-height: 3.6em;
+  margin-bottom: 8px;
+  font-size: 0.92rem;
+  max-height: 3.2em;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -116,14 +162,15 @@ ion-button {
 .lab-result-card,
 .prescription-card {
   margin: 8px 0;
-  border-radius: 8px;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+  border-radius: 16px;
+  box-shadow: 0 8px 18px rgba(77, 86, 145, 0.1);
+  border: 1px solid #e8ebfb;
 }
 
 .result-date {
   display: flex;
   align-items: center;
-  color: var(--ion-color-medium);
+  color: #6f7692;
   font-size: 0.85rem;
   margin: 8px 0 0 0;
 }
@@ -140,7 +187,7 @@ ion-button {
   display: flex;
   justify-content: space-between;
   padding: 8px 0;
-  border-bottom: 1px solid var(--ion-color-light-shade);
+  border-bottom: 1px solid #e8ebfb;
 }
 
 .result-item:last-child {
@@ -152,15 +199,16 @@ ion-button {
 }
 
 .result-value {
-  color: var(--ion-color-dark);
+  color: #1b2141;
 }
 
 .result-notes,
 .instructions {
   margin: 16px 0;
   padding: 12px;
-  background-color: var(--ion-color-light);
-  border-radius: 8px;
+  background-color: #f6f7ff;
+  border-radius: 12px;
+  border: 1px solid #e7eafc;
 }
 
 .result-notes h4,
@@ -172,7 +220,7 @@ ion-button {
 .result-notes p,
 .instructions p {
   margin: 0;
-  color: var(--ion-color-dark);
+  color: #2c3252;
   line-height: 1.5;
 }
 
@@ -184,7 +232,7 @@ ion-button {
   display: flex;
   justify-content: space-between;
   padding: 8px 0;
-  border-bottom: 1px solid var(--ion-color-light-shade);
+  border-bottom: 1px solid #e8ebfb;
 }
 
 .detail-item:last-child {
@@ -196,21 +244,23 @@ ion-button {
 }
 
 .detail-value {
-  color: var(--ion-color-dark);
+  color: #1b2141;
 }
 
 .action-buttons {
   gap: 8px;
-  margin-top: 12px;
+  margin-top: 6px;
   justify-content: space-between;
 }
 
 .action-buttons ion-button {
-  --padding-top: 6px;
-  --padding-bottom: 6px;
+  --padding-top: 4px;
+  --padding-bottom: 4px;
   --padding-start: 10px;
   --padding-end: 10px;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  height: 30px;
+  text-transform: none;
 }
 
 .pdf-download-link {
@@ -220,6 +270,7 @@ ion-button {
 
 .modal-content {
   padding: 12px;
+  background: linear-gradient(180deg, #edf0ff 0%, #f8f9ff 100%);
 }
 
 /* Animation for modals */
@@ -242,15 +293,15 @@ ion-modal::part(content) {
 }
 
 /* Hover effects */
-.diagnosis-card:hover {
+.diagnosis-card-p:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  .diagnoses-container {
-    padding: 8px;
+  .diagnoses-shell {
+    padding: 12px 10px calc(92px + env(safe-area-inset-bottom, 0px));
   }
 
   .card-header-content {
@@ -272,5 +323,108 @@ ion-modal::part(content) {
     --width: 600px;
     --height: 80%;
     --border-radius: 20px;
+  }
+}
+.action-buttons ion-button {
+  --color: #aeb5ff;
+  --border-color: #6c75e6;
+  --background: transparent;
+}
+
+.action-buttons ion-button[fill="solid"],
+.action-buttons ion-button:not([fill]) {
+  --background: linear-gradient(140deg, #6b86ff 0%, #4b77e5 100%);
+  --color: #ffffff;
+}
+
+.action-buttons ion-button[fill="outline"] {
+  --background: transparent;
+  --color: #aeb5ff;
+  --border-color: #6c76e6;
+}
+@media (prefers-color-scheme: dark) {
+  .diagnoses-content {
+    --background: var(--background);
+  }
+
+  .diagnoses-hero {
+    background: var(--background);
+    border: 1px solid #2a2f57;
+    box-shadow: 0 12px 26px rgba(5, 7, 20, 0.55);
+  }
+
+  .tiny-greeting {
+    color: #aeb5ff;
+  }
+
+  .hero-title {
+    color: #f3f4ff;
+  }
+
+  .hero-subtitle {
+    color: #b5bbd6;
+  }
+
+  .diagnosis-card-p {
+    background: var(--background);
+    border: 1px solid #2a2f57;
+    box-shadow: 0 10px 24px rgba(5, 7, 20, 0.55);
+  }
+
+  .card-title-p {
+    color: #eef0ff;
+  }
+
+  .diagnosis-date {
+    color: #aab0cb;
+  }
+
+  .doctor-info ion-icon {
+    color: #aeb5ff;
+  }
+
+  .doctor-specialty,
+  .hospital {
+    color: #aab0cb;
+  }
+
+  .diagnosis-description {
+    color: #e3e6ff;
+  }
+
+  .lab-result-card,
+  .prescription-card {
+    background: var(--background);
+    border: 1px solid #2a2f57;
+    box-shadow: 0 8px 18px rgba(5, 7, 20, 0.5);
+  }
+
+  .result-date {
+    color: #aab0cb;
+  }
+
+  .result-item,
+  .detail-item {
+    border-bottom: 1px solid #2a2f57;
+  }
+
+  .result-value,
+  .detail-value {
+    color: #eef0ff;
+  }
+
+  .result-notes,
+  .instructions {
+    background: var(--background);
+    border: 1px solid #2a2f57;
+  }
+
+  .result-notes p,
+  .instructions p {
+    color: #d8dcf5;
+  }
+
+  .modal-content {
+    background: var(--background);
   }
 }

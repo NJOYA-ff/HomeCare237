@@ -61,6 +61,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "../Admin/Admin2.scss";
+import "./Health_units_p.scss";
 
 // Fix for default markers in react-leaflet
 // delete L.Icon.Default.prototype._getIconUrl;
@@ -673,7 +674,7 @@ const Health_units_p: React.FC = () => {
   return (
     <IonPage className="health-units-page">
       <IonHeader className="health-units-header">
-        <IonToolbar className="health-units-toolbar">
+        <IonToolbar className="patient-dashboard-toolbar health-units-toolbar">
           <IonButtons slot="start">
             <IonBackButton defaultHref="/patient/dashboard" />
           </IonButtons>
@@ -700,7 +701,10 @@ const Health_units_p: React.FC = () => {
         </IonToolbar>
       </IonHeader>
 
-      <IonContent fullscreen className="health-units-content">
+      <IonContent
+        fullscreen
+        className="dashboard-patient health-units-content"
+      >
         {/* Search Section */}
         <div className="search-section">
           <IonSearchbar

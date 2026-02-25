@@ -110,6 +110,82 @@
   opacity: 0.5;
 }
 
+/* Recent patients list styling */
+.activity-card {
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  height: 100%;
+  overflow-y: scroll;
+}
+
+.activity-card ion-card-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.activity-card ion-card-subtitle {
+  color: var(--ion-color-medium);
+  font-size: 0.9rem;
+}
+
+.patient-list {
+  background: transparent;
+}
+
+.patient-item {
+  --padding-start: 0;
+  --inner-padding-end: 0;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.patient-item ion-avatar {
+  width: 48px;
+  height: 48px;
+  margin: 12px 16px;
+}
+
+.patient-item ion-avatar img {
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.patient-item ion-label {
+  margin: 12px 0;
+}
+
+.patient-item ion-label h2 {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.patient-item ion-label p {
+  color: var(--ion-color-medium);
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+
+.patient-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-right: 16px;
+}
+
+.patient-status .last-checkup {
+  display: flex;
+  align-items: center;
+  font-size: 0.8rem;
+  color: var(--ion-color-medium);
+  margin-top: 4px;
+}
+
+.patient-status .last-checkup ion-icon {
+  margin-right: 4px;
+  font-size: 0.9rem;
+}
+
 /* Patient Detail Modal */
 .patient-detail .patient-profile {
   display: flex;

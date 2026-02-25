@@ -1,16 +1,104 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 
 // Add a declaration for the global voiceflow object on the window
 declare global {
   interface Window {
-    voiceflow: any;
+    voiceflow?: any;
     __voiceflow__loaded?: boolean;
+    __voiceflow__loading?: boolean;
+    __voiceflow__initialized?: boolean;
   }
 }
 
-const VoiceflowChat: React.FC = () => {
+interface VoiceflowChatProps extends React.HTMLAttributes<HTMLDivElement> {
+  projectID?: string;
+}
+
+const VoiceflowChat: React.FC<VoiceflowChatProps> = ({
+  projectID = "6884d01bac55ce90f0e97dad",
+  className,
+  style,
+  children,
+  ...props
+}) => {
   useEffect(() => {
+    // Inject CSS to hide the default Voiceflow launcher button
+    const styleId = "voiceflow-launcher-hidden";
+    if (!document.getElementById(styleId)) {
+      const styleEl = document.createElement("style");
+      styleEl.id = styleId;
+      styleEl.innerHTML = `
+        .vfrc-launcher,
+        .vfrc-launcher-button ._1u16jol1 ,
+        .vfrc-launcher--chat,
+        .vfrc-widget .vfrc-launcher,
+        button[title="Open chat agent"] {
+          display: none !important;
+          visibility: hidden !important;
+          opacity: 0 !important;
+          pointer-events: none !important;
+        }
+      `;
+      document.head.appendChild(styleEl);
+    }
+
+    const hideLauncher = () => {
+      if (window.voiceflow?.chat?.hideLauncher) {
+        window.voiceflow.chat.hideLauncher();
+      }
+      const selectors = [
+        ".vfrc-launcher",
+        ".vfrc-launcher-button ._1u16jol1",
+        ".vfrc-launcher--chat",
+        ".vfrc-widget .vfrc-launcher",
+        'button[title="Open chat agent"]',
+        "[data-testid='launcher']",
+        "[data-testid='voiceflow-launcher']",
+      ];
+
+      const hideElement = (el: Element) => {
+        const node = el as HTMLElement;
+        node.style.display = "none";
+        node.style.visibility = "hidden";
+        node.style.opacity = "0";
+        node.style.pointerEvents = "none";
+      };
+
+      const walk = (root: ParentNode) => {
+        selectors.forEach((selector) => {
+          root.querySelectorAll(selector).forEach(hideElement);
+        });
+
+        root.querySelectorAll("*").forEach((el) => {
+          const shadow = (el as HTMLElement).shadowRoot;
+          if (shadow) {
+            walk(shadow);
+          }
+        });
+      };
+
+      walk(document);
+    };
+
+    const observer = new MutationObserver(() => {
+      hideLauncher();
+    });
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
+    const intervalId = window.setInterval(() => {
+      hideLauncher();
+    }, 500);
+
     const loadVoiceflow = () => {
+      if (window.__voiceflow__initialized) {
+        window.voiceflow?.chat?.show?.();
+        hideLauncher();
+        return;
+      }
+
       window.voiceflow.chat.load({
         verify: { projectID: "6884d01bac55ce90f0e97dad" },
         url: "https://general-runtime.voiceflow.com",
@@ -19,18 +107,15 @@ const VoiceflowChat: React.FC = () => {
           url: "https://runtime-api.voiceflow.com",
         },
       });
+      window.__voiceflow__initialized = true;
+      hideLauncher();
     };
 
     if (window.__voiceflow__loaded) {
-      // If script is already loaded, just show the chat.
-      if (
-        window.voiceflow &&
-        typeof window.voiceflow.chat.show === "function"
-      ) {
-        window.voiceflow.chat.show();
-      }
-    } else {
-      // If script is not loaded, load it.
+      loadVoiceflow();
+    } else if (!window.__voiceflow__loading) {
+      // If script is not loaded and not loading, load it.
+      window.__voiceflow__loading = true;
       const script = document.createElement("script");
       script.src = "https://cdn.voiceflow.com/widget-next/bundle.mjs";
       script.type = "text/javascript";
@@ -38,12 +123,18 @@ const VoiceflowChat: React.FC = () => {
       script.onload = () => {
         loadVoiceflow();
         window.__voiceflow__loaded = true;
+        window.__voiceflow__loading = false;
+      };
+      script.onerror = () => {
+        window.__voiceflow__loading = false;
       };
 
       document.head.appendChild(script);
     }
 
     return () => {
+      observer.disconnect();
+      window.clearInterval(intervalId);
       // When component unmounts, hide the chat.
       if (
         window.voiceflow &&
@@ -54,7 +145,33 @@ const VoiceflowChat: React.FC = () => {
     };
   }, []);
 
-  return null; // The component doesn't render anything itself
+  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (window.voiceflow?.chat?.open) {
+      window.voiceflow.chat.open();
+    }
+    if (props.onClick) {
+      props.onClick(e);
+    }
+  };
+
+  return (
+    <div
+      className={className}
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: "pointer",
+        ...style,
+      }}
+      onClick={handleClick}
+      {...props}
+    >
+      {children}
+    </div>
+  );
 };
 
 export default VoiceflowChat;

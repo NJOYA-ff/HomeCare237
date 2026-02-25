@@ -13,6 +13,7 @@ ion-content {
   overflow-y: hidden !important;
   overflow-x: hidden !important;
 }
+
 /* General Styles */
 .signup-content {
   --background: linear-gradient(135deg, #1a237e 0%, #1976d2 50%, #64b5f6 100%);
@@ -22,6 +23,11 @@ ion-content {
 }
 .signuptoolbar {
   --background: transparent;
+  border: none;
+}
+.signintoolbar {
+  --background: transparent;
+  border: none;
 }
 .signupback {
   font-size: 16px;
@@ -156,7 +162,7 @@ ion-content {
 /* Signin */
 .signin-content {
   --background: linear-gradient(135deg, #1a237e 0%, #1976d2 50%, #64b5f6 100%);
-  position: relative;
+  position: fixed;
   overflow: scroll;
   --color: azure;
 }
@@ -320,7 +326,7 @@ ion-content {
 /* PasswordRecovery */
 .recovery-content {
   --background: linear-gradient(135deg, #1a237e 0%, #1976d2 50%, #64b5f6 100%);
-  position: relative;
+  position: fixed;
   overflow: scroll;
   --color: azure;
 }
@@ -335,7 +341,7 @@ ion-content {
   color: white;
   font-weight: bold;
   font-size: 1.5rem;
-  text-align: center;
+  // text-align: center;
 }
 
 .back-button {

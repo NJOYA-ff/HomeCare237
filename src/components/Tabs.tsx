@@ -1,14 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
   IonTabs,
   IonTabBar,
   IonTabButton,
-  IonIcon,
-  IonLabel,
   IonRouterOutlet,
-  IonChip,
 } from "@ionic/react";
 import { Redirect, Route } from "react-router";
+import { useLocation } from "react-router-dom";
 import Book_Appointment from "../pages/Patient/Book_Appointment";
 import Consult from "../pages/Patient/Consult";
 import Diagnoses from "../pages/Patient/Diagnoses";
@@ -32,7 +30,6 @@ interface TabPage {
   url: string;
   icon: React.ReactNode;
   tab: string;
-  color: string;
 }
 
 const tabPages: TabPage[] = [
@@ -41,50 +38,39 @@ const tabPages: TabPage[] = [
     url: "/patient/dashboard",
     icon: <MdSpaceDashboard size={20} />,
     tab: "home",
-    color: "primary",
   },
   {
     title: "Diagnosis",
     url: "/patient/diagnoses",
     icon: <FaFileMedical size={20} />,
     tab: "diagnosis",
-    color: "primary",
   },
   {
     title: "My appt",
     url: "/patient/book_appointment",
     icon: <FaCalendarAlt size={20} />,
     tab: "book-appointment",
-    color: "primary",
   },
   {
     title: "Consult",
     url: "/patient/consult",
     icon: <FaComments size={20} />,
     tab: "consult",
-    color: "primary",
   },
   {
     title: "Me",
     url: "/patient/profile",
     icon: <FaUser size={20} />,
     tab: "profile",
-    color: "primary",
   },
 ];
 
 const Tabs: React.FC = () => {
-  const [activeTab, setActiveTab] = useState("/patient/dashboard");
+  const location = useLocation();
+  const activeTab = location.pathname;
 
-  useEffect(() => {
-    setActiveTab(window.location.pathname);
-  }, []);
-
-  const handleTabClick = (url: string) => {
-    setActiveTab(url);
-  };
-
-  const isTabActive = (url: string) => activeTab === url;
+  const isTabActive = (url: string) =>
+    activeTab === url || activeTab.startsWith(`${url}/`);
 
   return (
     <IonTabs>
@@ -127,27 +113,12 @@ const Tabs: React.FC = () => {
               tab={tabPage.tab}
               href={tabPage.url}
               className="custom-tab-button"
-              onClick={() => handleTabClick(tabPage.url)}
+              aria-label={tabPage.title}
             >
-              <div className="tab-content">
-                <div className="icon-container">
-                  {active ? (
-                    <IonChip
-                      color={tabPage.color as any}
-                      className="active-chip"
-                    >
-                      {tabPage.icon}
-                    </IonChip>
-                  ) : (
-                    <div className="icon-inactive">{tabPage.icon}</div>
-                  )}
+              <div className="tab-content" data-active={active}>
+                <div className={`icon-container ${active ? "is-active" : ""}`}>
+                  <div className="icon-inactive">{tabPage.icon}</div>
                 </div>
-                <IonLabel
-                  color={active ? (tabPage.color as any) : "medium"}
-                  className="tab-label"
-                >
-                  {tabPage.title}
-                </IonLabel>
               </div>
             </IonTabButton>
           );

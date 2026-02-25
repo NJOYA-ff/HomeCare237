@@ -213,3 +213,128 @@ ion-item:active {
     color: white;
   }
 }
+
+/* Dashboard-aligned theme overrides */
+.profile-page {
+  .toolbar-profile {
+    --background: transparent;
+    --color: #191d38;
+    border-bottom: 0;
+  }
+
+  .profile-content {
+    --background: linear-gradient(180deg, #edf0ff 0%, #f8f9ff 100%);
+  }
+
+  .profile-shell {
+    padding: 14px 12px calc(92px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .profile-header,
+  .profile-details,
+  .edit-actions {
+    background: #fefeff;
+    border: 1px solid #e5e8f9;
+    box-shadow: 0 12px 26px rgba(78, 85, 150, 0.14);
+    border-radius: 24px;
+  }
+
+  .profile-name {
+    color: #191d38;
+  }
+
+  .profile-avatar {
+    border-color: #e7ebff;
+  }
+
+  .profile-meta ion-chip {
+    --background: #eef0ff;
+    --color: #4b55e5;
+    border: 1px solid #dfe3fb;
+    font-weight: 600;
+  }
+
+  .profile-d-item {
+    --background: transparent;
+  }
+
+  .profile-d-item h3 {
+    color: #161b35;
+    font-weight: 700;
+  }
+
+  .profile-d-item p {
+    color: #626a89;
+  }
+
+  .profile-edit-input,
+  .profile-edit-textarea,
+  .item-input {
+    --background: #f3f4fb;
+    border: 1px solid #e5e8f9;
+  }
+
+  .profile-save-btn {
+    --background: linear-gradient(140deg, #6b74ff 0%, #4b55e5 100%);
+    --border-radius: 999px;
+    min-width: 180px;
+    font-weight: 700;
+  }
+
+  .profile-logout-btn {
+    --color: #4b55e5;
+    --border-color: #cad0fa;
+    --border-radius: 999px;
+    font-weight: 600;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .profile-page {
+    .profile-content {
+      --background: var(--background);
+    }
+
+    .toolbar-profile {
+      --color: #f0f2ff;
+    }
+
+    .profile-header,
+    .profile-details,
+    .edit-actions {
+      background: var(--background);
+      border: 1px solid #2a2f57;
+      box-shadow: 0 12px 26px rgba(5, 7, 20, 0.55);
+    }
+
+    .profile-name,
+    .profile-d-item h3,
+    .stat-value {
+      color: #eef0ff;
+    }
+
+    .profile-d-item p,
+    .stat-label {
+      color: #b1b6d5;
+    }
+
+    .profile-meta ion-chip {
+      --background: #252b4f;
+      --color: #aeb5ff;
+      border: 1px solid #313968;
+    }
+
+    .profile-edit-input,
+    .profile-edit-textarea,
+    .item-input {
+      --background: #202448;
+      border: 1px solid #2a2f57;
+      color: #e3e6ff;
+    }
+
+    .profile-logout-btn {
+      --color: #aeb5ff;
+      --border-color: #4f588f;
+    }
+  }
+}

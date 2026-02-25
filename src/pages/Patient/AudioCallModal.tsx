@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   IonModal,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
   IonContent,
   IonButton,
   IonIcon,
@@ -13,9 +10,6 @@ import {
   IonCardHeader,
   IonCardTitle,
   IonCardContent,
-  IonList,
-  IonItem,
-  IonLabel,
   IonAvatar,
 } from "@ionic/react";
 import {
@@ -427,45 +421,36 @@ const AudioCallModal: React.FC<AudioCallModalProps> = ({
       onDidDismiss={onClose}
       className="audio-call-modal"
     >
-      <IonHeader>
-        <IonToolbar>
-          <IonTitle>Audio Call with Doctor</IonTitle>
-          <IonButton slot="end" fill="clear" onClick={onClose}>
-            <IonIcon icon={close} />
-          </IonButton>
-        </IonToolbar>
-      </IonHeader>
-
-      <IonContent className="ion-padding">
+      <IonContent className="audio-call-content">
         {isLoading ? (
           <div className="loading-container">
             <IonSpinner name="crescent" />
             <p>Loading doctor information...</p>
           </div>
         ) : (
-          <div className="content-container">
-            {/* Doctor Info Card */}
-            <IonCard className="doctor-card">
-              <div className="doctor-header">
-                <IonAvatar className="doctor-avatar">
-                  {doctorInfo.avatarUrl ? (
-                    <img src={doctorInfo.avatarUrl} alt={doctorInfo.name} />
-                  ) : (
-                    <IonIcon icon={personCircleOutline} />
-                  )}
-                </IonAvatar>
-                <div className="doctor-details">
-                  <h2 className="doctor-name">{doctorInfo.name}</h2>
-                  <p className="doctor-specialty">{doctorInfo.specialty}</p>
-                  <p className="availability">
-                    Status:{" "}
-                    {doctorInfo.isAvailable ? "Available" : "Unavailable"}
-                  </p>
-                </div>
-              </div>
-            </IonCard>
+          <div className="audio-phone-shell">
+            <div className="audio-topbar">
+              <div className="audio-call-chip">Audio Consultation</div>
+              <IonButton fill="clear" className="audio-close-btn" onClick={onClose}>
+                <IonIcon icon={close} />
+              </IonButton>
+            </div>
 
-            {/* Status Section */}
+            <div className="audio-profile-card">
+              <IonAvatar className="doctor-avatar">
+                {doctorInfo.avatarUrl ? (
+                  <img src={doctorInfo.avatarUrl} alt={doctorInfo.name} />
+                ) : (
+                  <IonIcon icon={personCircleOutline} />
+                )}
+              </IonAvatar>
+              <h2 className="doctor-name">{doctorInfo.name}</h2>
+              <p className="doctor-specialty">{doctorInfo.specialty}</p>
+              <p className="availability">
+                {doctorInfo.isAvailable ? "Available now" : "Unavailable"}
+              </p>
+            </div>
+
             <div className="status-section">
               <div className={`status-icon ${callStatus}`}>
                 {callStatus === "calling" || callStatus === "ringing" ? (
@@ -476,7 +461,9 @@ const AudioCallModal: React.FC<AudioCallModalProps> = ({
                     color="success"
                     className="connected"
                   />
-                ) : null}
+                ) : (
+                  <IonIcon icon={timeOutline} />
+                )}
               </div>
 
               <h3
@@ -489,50 +476,33 @@ const AudioCallModal: React.FC<AudioCallModalProps> = ({
                   : getStatusMessage()}
               </h3>
 
-              {callStatus === "connected" && (
-                <p className="status-message success">Call in progress</p>
-              )}
               {callStatus === "error" && (
                 <p className="status-message error">{error}</p>
               )}
             </div>
 
-            {/* Patient Info */}
             <IonCard className="patient-card">
               <IonCardHeader>
-                <IonCardTitle>Your Information</IonCardTitle>
+                <IonCardTitle>Caller</IonCardTitle>
               </IonCardHeader>
               <IonCardContent>
-                <IonList>
-                  <IonItem>
-                    <IonLabel>
-                      <h3>Name</h3>
-                      <p>{patientInfo.name}</p>
-                    </IonLabel>
-                  </IonItem>
-                  <IonItem>
-                    <IonLabel>
-                      <h3>Phone Number</h3>
-                      <p>{patientInfo.phoneNumber || "Not provided"}</p>
-                    </IonLabel>
-                  </IonItem>
-                </IonList>
+                <p className="patient-name">{patientInfo.name}</p>
+                <p className="patient-phone">
+                  {patientInfo.phoneNumber || "Phone not provided"}
+                </p>
               </IonCardContent>
             </IonCard>
 
-            {/* Call Controls */}
             <div className="call-controls">
               {callStatus === "connected" && (
-                <div className="mute-control">
-                  <IonButton
-                    fill="outline"
-                    className={isMuted ? "active" : ""}
-                    onClick={toggleMute}
-                  >
-                    <IonIcon icon={isMuted ? volumeMute : volumeHigh} />
-                    {isMuted ? "Unmute" : "Mute"}
-                  </IonButton>
-                </div>
+                <IonButton
+                  fill="clear"
+                  className={`mute-pill ${isMuted ? "active" : ""}`}
+                  onClick={toggleMute}
+                >
+                  <IonIcon icon={isMuted ? volumeMute : volumeHigh} />
+                  {isMuted ? "Unmute" : "Mute"}
+                </IonButton>
               )}
 
               <div className="primary-controls">
@@ -541,12 +511,10 @@ const AudioCallModal: React.FC<AudioCallModalProps> = ({
                     expand="block"
                     className="call-button"
                     onClick={startCall}
-                    disabled={
-                      !doctorInfo.phoneNumber || !doctorInfo.isAvailable
-                    }
+                    disabled={!doctorInfo.phoneNumber || !doctorInfo.isAvailable}
                   >
                     <IonIcon icon={call} />
-                    {/* Call Dr. {doctorInfo.name.split(" ")[0]} */}
+                    Start Call
                   </IonButton>
                 )}
 
