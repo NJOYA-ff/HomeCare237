@@ -420,11 +420,16 @@ const Doc_profile: React.FC = () => {
     return (
       <IonPage>
         <IonContent>
-          <IonLoading
-            isOpen={loading}
-            message="Loading profile..."
-            spinner="circles"
-          />
+          <div className="loading-container">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              className="loading-spinner"
+            />
+            <IonText className="ion-text-center ion-padding">
+              <p>Loading profile...</p>
+            </IonText>
+          </div>
         </IonContent>
       </IonPage>
     );
@@ -432,8 +437,8 @@ const Doc_profile: React.FC = () => {
 
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar className="toolbar-profile">
+      <IonHeader class="ion-no-border">
+        <IonToolbar className="patient-dashboard-toolbar toolbar-profile">
           <IonButtons slot="start">
             <IonBackButton defaultHref="/doc/dashboard" />
           </IonButtons>
@@ -903,9 +908,11 @@ const Doc_profile: React.FC = () => {
           className="profile-actions"
         >
           <IonButton
+            expand="block"
             color="danger"
             fill="outline"
             onClick={() => setShowLogOutAlert(true)}
+            disabled={isLoading}
           >
             <IonIcon slot="start" icon={logOutOutline} />
             Log Out

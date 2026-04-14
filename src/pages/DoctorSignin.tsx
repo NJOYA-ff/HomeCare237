@@ -61,9 +61,28 @@ const DoctorSignin: React.FC = () => {
       } else {
         setLoginError("Login failed. Please try again.");
       }
-    } catch (err: any) {
-      console.error("Login error:", err);
-      setLoginError(err.message || "Invalid credentials. Please try again.");
+    } catch (error: any) {
+      console.error("Login error:", error);
+      // Handle specific Firebase error codes
+      switch (error.code) {
+        case "auth/user-not-found":
+          setLoginError("No doctor account found with this email address");
+          break;
+        case "auth/invalid-email":
+          setLoginError("Invalid email address format");
+          break;
+        case "auth/invalid-password":
+          setLoginError("Invalid password");
+          break;
+        case "auth/too-many-requests":
+          setLoginError("Too many attempts. Please try again later.");
+          break;
+        case "auth/network-request-failed":
+          setLoginError("Network error. Please check your connection.");
+          break;
+        default:
+          setLoginError("Failed to log in. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -122,19 +141,6 @@ const DoctorSignin: React.FC = () => {
             <IonGrid>
               <IonRow className="ion-justify-content-center">
                 <IonCol size="12" sizeMd="8" sizeLg="6">
-                  {/* Logo/Header */}
-                  <motion.div
-                    className="app-logo"
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.2, type: "spring" }}
-                  >
-                    <div className="logo-circle">
-                      <FiLogIn size={32} />
-                    </div>
-                    <IonText className="logo-text">HomeCare237</IonText>
-                  </motion.div>
-
                   {/* Email */}
                   <motion.div
                     initial={{ opacity: 0, x: -20 }}

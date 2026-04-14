@@ -23,7 +23,8 @@
           "scrollbar-color",
           "scrollbar-width: thin",
           "width: fit-content",
-          "backdrop-filter"
+          "backdrop-filter",
+          "inset"
         ]
       }
     ],

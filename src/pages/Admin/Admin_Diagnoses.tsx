@@ -243,60 +243,46 @@ const Admin_diagnoses: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar className="diagnoses-toolbar">
-          <IonButtons slot="start">
-            <IonBackButton defaultHref="/admin/dashboard" />{" "}
-          </IonButtons>
-          <IonTitle className="diagnoses-tilte">Patient Diagnoses</IonTitle>
+        <IonToolbar>
+          <IonButtons slot="start"><IonBackButton defaultHref="/admin/dashboard" /></IonButtons>
+          <IonTitle>Diagnoses</IonTitle>
         </IonToolbar>
       </IonHeader>
+
       <IonContent ref={contentRef}>
         <div className="diagnoses-container">
           {diagnoses.map((diagnosis) => (
-            <IonCard
-              key={diagnosis.id}
-              className="diagnosis-card"
-              onClick={() => handleDiagnosisSelect(diagnosis)}
-              button
-            >
+            <IonCard key={diagnosis.id} className="diagnosis-card" onClick={() => handleDiagnosisSelect(diagnosis)} button>
               <IonCardHeader>
-                <IonCardTitle color={"light"}>
-                  <IonIcon icon={personOutline} /> {diagnosis.patientName}
-                </IonCardTitle>
-                <IonCardSubtitle className="condition-badge">
-                  <IonBadge color="primary">{diagnosis.condition}</IonBadge>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                  <IonCardTitle style={{ fontSize: "1rem", fontWeight: 700 }}>
+                    <IonIcon icon={personOutline} style={{ marginRight: 6 }} />{diagnosis.patientName}
+                  </IonCardTitle>
+                  <IonChip color={diagnosis.status === "active" ? "warning" : diagnosis.status === "followup" ? "primary" : "success"}
+                    style={{ margin: 0, height: 24, fontSize: "0.7rem" }}>
+                    {diagnosis.status}
+                  </IonChip>
+                </div>
+                <IonBadge color="primary" style={{ fontSize: "0.8rem", padding: "5px 10px", borderRadius: 8 }}>
+                  {diagnosis.condition}
+                </IonBadge>
+                <IonCardSubtitle style={{ marginTop: 8, fontSize: "0.8rem" }}>
+                  <IonIcon icon={personOutline} style={{ marginRight: 4 }} />
+                  {diagnosis.doctor.name} · {diagnosis.doctor.specialty}
                 </IonCardSubtitle>
-                <IonCardSubtitle>
-                  <IonIcon icon={personOutline} /> {diagnosis.doctor.name} -{" "}
-                  {diagnosis.doctor.specialty}
-                </IonCardSubtitle>
-                <IonCardSubtitle>
-                  <IonIcon icon={calendarOutline} />{" "}
+                <IonCardSubtitle style={{ fontSize: "0.78rem" }}>
+                  <IonIcon icon={calendarOutline} style={{ marginRight: 4 }} />
                   {new Date(diagnosis.date).toLocaleDateString()}
                 </IonCardSubtitle>
               </IonCardHeader>
               <IonCardContent>
                 <p className="diagnosis-description">{diagnosis.description}</p>
-                <IonChip
-                  color={
-                    diagnosis.status === "active"
-                      ? "warning"
-                      : diagnosis.status === "followup"
-                      ? "primary"
-                      : "success"
-                  }
-                  style={{ marginBottom: "10px" }}
-                >
-                  {diagnosis.status}
-                </IonChip>
                 <div className="stats-container">
                   <span className="stat-badge lab-count">
-                    <IonIcon icon={flaskOutline} />{" "}
-                    {diagnosis.labResults.length} Lab Tests
+                    <IonIcon icon={flaskOutline} /> {diagnosis.labResults.length} Labs
                   </span>
                   <span className="stat-badge prescription-count">
-                    <IonIcon icon={medicalOutline} />{" "}
-                    {diagnosis.prescriptions.length} Prescriptions
+                    <IonIcon icon={medicalOutline} /> {diagnosis.prescriptions.length} Rx
                   </span>
                 </div>
               </IonCardContent>
@@ -307,215 +293,108 @@ const Admin_diagnoses: React.FC = () => {
         <IonModal isOpen={showModal} onDidDismiss={handleCloseDetails}>
           <IonHeader>
             <IonToolbar>
-              <IonTitle>
-                <IonIcon icon={personOutline} />{" "}
-                {selectedDiagnosis?.patientName}'s Diagnosis
+              <IonTitle style={{ fontSize: "1rem" }}>
+                {selectedDiagnosis?.patientName} — {selectedDiagnosis?.condition}
               </IonTitle>
               <IonButtons slot="end">
-                <IonButton onClick={handleCloseDetails}>
-                  <IonIcon icon={closeOutline} />
-                </IonButton>
+                <IonButton onClick={handleCloseDetails}><IonIcon icon={closeOutline} /></IonButton>
               </IonButtons>
             </IonToolbar>
           </IonHeader>
-          <IonContent>
+          <IonContent className="ion-padding">
             {selectedDiagnosis && (
-              <div className="diagnosis-details-content">
-                <div className="diagnosis-info-section">
-                  <h3>
-                    <IonIcon icon={documentTextOutline} /> Diagnosis Information
-                  </h3>
-                  <IonCard className="info-card">
-                    <IonCardContent>
-                      <IonGrid>
-                        <IonRow>
-                          <IonCol size="12" size-md="6">
-                            <IonItem>
-                              <IonLabel>Condition</IonLabel>
-                              <p>{selectedDiagnosis.condition}</p>
-                            </IonItem>
-                          </IonCol>
-                          <IonCol size="12" size-md="6">
-                            <IonItem>
-                              <IonLabel>Diagnosis Date</IonLabel>
-                              <p>
-                                {new Date(
-                                  selectedDiagnosis.date,
-                                ).toLocaleDateString()}
-                              </p>
-                            </IonItem>
-                          </IonCol>
-                          <IonCol size="12">
-                            <IonItem>
-                              <IonLabel>Description</IonLabel>
-                              <p>{selectedDiagnosis.description}</p>
-                            </IonItem>
-                          </IonCol>
-                        </IonRow>
-                      </IonGrid>
-                    </IonCardContent>
-                  </IonCard>
-                </div>
+              <>
+                <p style={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.7px", color: "var(--ion-color-medium)", marginBottom: 8 }}>Diagnosis Info</p>
+                <IonCard className="info-card">
+                  <IonCardContent>
+                    <div className="info-grid">
+                      <div className="info-item"><IonLabel>Condition</IonLabel><p>{selectedDiagnosis.condition}</p></div>
+                      <div className="info-item"><IonLabel>Date</IonLabel><p>{new Date(selectedDiagnosis.date).toLocaleDateString()}</p></div>
+                      <div className="info-item full-width"><IonLabel>Description</IonLabel><p>{selectedDiagnosis.description}</p></div>
+                    </div>
+                  </IonCardContent>
+                </IonCard>
 
-                <div className="lab-results-section">
-                  <h3>
-                    <IonIcon icon={flaskOutline} /> Lab Results
-                  </h3>
-                  {selectedDiagnosis.labResults.map((lab) => (
-                    <IonCard key={lab.id} className="lab-result-card">
-                      <IonCardHeader>
-                        <div className="card-header-content">
-                          <IonCardTitle color={"light"}>
-                            {lab.name}
-                          </IonCardTitle>
-                          <IonBadge
-                            color={
-                              lab.status === "completed"
-                                ? "success"
-                                : lab.status === "pending"
-                                ? "warning"
-                                : "danger"
-                            }
-                          >
-                            {lab.status}
-                          </IonBadge>
-                        </div>
-                        <IonCardSubtitle>
-                          {new Date(lab.date).toLocaleDateString()}
-                        </IonCardSubtitle>
-                      </IonCardHeader>
-                      <IonCardContent>
-                        <IonList>
-                          {Object.entries(lab.results).map(([key, value]) => (
-                            <IonItem key={key}>
-                              <IonLabel>
-                                <h3>{key}</h3>
-                                <p>{value}</p>
-                              </IonLabel>
-                            </IonItem>
-                          ))}
-                        </IonList>
-                        {lab.notes && (
-                          <div className="lab-notes">
-                            <p>
-                              <strong>Notes:</strong> {lab.notes}
-                            </p>
+                {selectedDiagnosis.labResults.length > 0 && (
+                  <>
+                    <p style={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.7px", color: "var(--ion-color-medium)", margin: "16px 0 8px" }}>
+                      Lab Results
+                    </p>
+                    {selectedDiagnosis.labResults.map((lab) => (
+                      <IonCard key={lab.id} className="lab-result-card">
+                        <IonCardHeader>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <IonCardTitle style={{ fontSize: "0.95rem", fontWeight: 700 }}>{lab.name}</IonCardTitle>
+                            <IonBadge color={lab.status === "completed" ? "success" : lab.status === "pending" ? "warning" : "danger"}>{lab.status}</IonBadge>
                           </div>
-                        )}
-                        <div className="download-button-container">
-                          <PDFDownloadLink
-                            document={
-                              <DiagnosesDocument
-                                diagnosis={selectedDiagnosis}
-                                type="lab"
-                                labId={lab.id}
-                              />
-                            }
-                            fileName={`${
-                              selectedDiagnosis.patientName
-                            }_${lab.name.replace(/\s+/g, "_")}_${lab.date}.pdf`}
-                          >
-                            {({ loading }) => (
-                              <IonButton
-                                size="small"
-                                disabled={loading}
-                                fill="outline"
-                              >
-                                <IonIcon slot="start" icon={downloadOutline} />
-                                {loading
-                                  ? "Preparing PDF..."
-                                  : "Download Lab Result"}
-                              </IonButton>
-                            )}
-                          </PDFDownloadLink>
-                        </div>
-                      </IonCardContent>
-                    </IonCard>
-                  ))}
-                </div>
+                          <IonCardSubtitle>{new Date(lab.date).toLocaleDateString()}</IonCardSubtitle>
+                        </IonCardHeader>
+                        <IonCardContent>
+                          <div className="lab-results-grid">
+                            {Object.entries(lab.results).map(([key, value]) => (
+                              <div key={key} className="lab-result-item">
+                                <span className="lab-result-key">{key}</span>
+                                <span className="lab-result-value">{value as string}</span>
+                              </div>
+                            ))}
+                          </div>
+                          {lab.notes && <div className="lab-notes"><p><strong>Notes:</strong> {lab.notes}</p></div>}
+                          <div className="download-button-container">
+                            <PDFDownloadLink
+                              document={<DiagnosesDocument diagnosis={selectedDiagnosis} type="lab" labId={lab.id} />}
+                              fileName={`${selectedDiagnosis.patientName}_${lab.name.replace(/\s+/g, "_")}.pdf`}>
+                              {({ loading }) => (
+                                <IonButton size="small" fill="outline" disabled={loading}>
+                                  <IonIcon slot="start" icon={downloadOutline} />
+                                  {loading ? "Preparing..." : "Download"}
+                                </IonButton>
+                              )}
+                            </PDFDownloadLink>
+                          </div>
+                        </IonCardContent>
+                      </IonCard>
+                    ))}
+                  </>
+                )}
 
-                <div className="prescriptions-section">
-                  <h3>
-                    <IonIcon icon={medicalOutline} /> Prescriptions
-                  </h3>
-                  {selectedDiagnosis.prescriptions.map((prescription) => (
-                    <IonCard
-                      key={prescription.id}
-                      className="prescription-card"
-                    >
-                      <IonCardHeader>
-                        <div className="card-header-content">
-                          <IonCardTitle color={"light"}>
-                            {prescription.medication}
-                          </IonCardTitle>
-                          <IonBadge
-                            color={
-                              prescription.status === "active"
-                                ? "success"
-                                : "medium"
-                            }
-                          >
-                            {prescription.status}
-                          </IonBadge>
-                        </div>
-                        <IonCardSubtitle>{prescription.dosage}</IonCardSubtitle>
-                      </IonCardHeader>
-                      <IonCardContent>
-                        <IonList>
-                          <IonItem>
-                            <IonLabel>
-                              <h3>Frequency</h3>
-                              <p>{prescription.frequency}</p>
-                            </IonLabel>
-                          </IonItem>
-                          <IonItem>
-                            <IonLabel>
-                              <h3>Duration</h3>
-                              <p>{prescription.duration}</p>
-                            </IonLabel>
-                          </IonItem>
-                          <IonItem>
-                            <IonLabel>
-                              <h3>Instructions</h3>
-                              <p>{prescription.instructions}</p>
-                            </IonLabel>
-                          </IonItem>
-                        </IonList>
-                        <div className="download-button-container">
-                          <PDFDownloadLink
-                            document={
-                              <DiagnosesDocument
-                                diagnosis={selectedDiagnosis}
-                                type="prescription"
-                                prescriptionId={prescription.id}
-                              />
-                            }
-                            fileName={`${
-                              selectedDiagnosis.patientName
-                            }_${prescription.medication.replace(
-                              /\s+/g,
-                              "_",
-                            )}_Prescription.pdf`}
-                          >
-                            {({ loading }) => (
-                              <IonButton
-                                size="small"
-                                disabled={loading}
-                                fill="outline"
-                              >
-                                <IonIcon slot="start" icon={downloadOutline} />
-                                {loading
-                                  ? "Preparing PDF..."
-                                  : "Download Prescription"}
-                              </IonButton>
-                            )}
-                          </PDFDownloadLink>
-                        </div>
-                      </IonCardContent>
-                    </IonCard>
-                  ))}
-                </div>
-              </div>
+                {selectedDiagnosis.prescriptions.length > 0 && (
+                  <>
+                    <p style={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.7px", color: "var(--ion-color-medium)", margin: "16px 0 8px" }}>
+                      Prescriptions
+                    </p>
+                    {selectedDiagnosis.prescriptions.map((rx) => (
+                      <IonCard key={rx.id} className="prescription-card">
+                        <IonCardHeader>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <IonCardTitle style={{ fontSize: "0.95rem", fontWeight: 700 }}>{rx.medication}</IonCardTitle>
+                            <IonBadge color={rx.status === "active" ? "success" : "medium"}>{rx.status}</IonBadge>
+                          </div>
+                          <IonCardSubtitle>{rx.dosage}</IonCardSubtitle>
+                        </IonCardHeader>
+                        <IonCardContent>
+                          <div className="prescription-grid">
+                            <div className="prescription-item"><IonLabel>Frequency</IonLabel><p>{rx.frequency}</p></div>
+                            <div className="prescription-item"><IonLabel>Duration</IonLabel><p>{rx.duration}</p></div>
+                            {rx.instructions && <div className="prescription-item full-width"><IonLabel>Instructions</IonLabel><p>{rx.instructions}</p></div>}
+                          </div>
+                          <div className="download-button-container">
+                            <PDFDownloadLink
+                              document={<DiagnosesDocument diagnosis={selectedDiagnosis} type="prescription" prescriptionId={rx.id} />}
+                              fileName={`${selectedDiagnosis.patientName}_${rx.medication.replace(/\s+/g, "_")}_Rx.pdf`}>
+                              {({ loading }) => (
+                                <IonButton size="small" fill="outline" disabled={loading}>
+                                  <IonIcon slot="start" icon={downloadOutline} />
+                                  {loading ? "Preparing..." : "Download"}
+                                </IonButton>
+                              )}
+                            </PDFDownloadLink>
+                          </div>
+                        </IonCardContent>
+                      </IonCard>
+                    ))}
+                  </>
+                )}
+              </>
             )}
           </IonContent>
         </IonModal>

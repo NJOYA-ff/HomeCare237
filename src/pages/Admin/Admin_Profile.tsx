@@ -550,459 +550,163 @@ const Admin_Profile: React.FC = () => {
           <IonButtons slot="start">
             <IonBackButton defaultHref="/admin/dashboard" />
           </IonButtons>
-          <IonTitle className="profile-title">Admin Profile</IonTitle>
+          <IonTitle>Profile</IonTitle>
           <IonButtons slot="end">
             {!isEditing ? (
               <IonButton onClick={() => setIsEditing(true)}>
                 <IonIcon slot="icon-only" icon={pencilOutline} />
               </IonButton>
             ) : (
-              <IonButton onClick={cancelEditing} color="danger">
-                Cancel
-              </IonButton>
+              <IonButton onClick={cancelEditing} color="danger">Cancel</IonButton>
             )}
           </IonButtons>
         </IonToolbar>
       </IonHeader>
 
-      <IonContent className="ion-padding profile-content">
-        {/* Hidden file input */}
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileChange}
-          accept="image/*"
-          style={{ display: "none" }}
-        />
+      <IonContent className="profile-content">
+        <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" style={{ display: "none" }} />
+        <IonLoading isOpen={isLoading} message="Saving..." />
 
-        {/* Loading Indicator */}
-        <IonLoading isOpen={isLoading} message="Saving changes..." />
-
-        {/* Reauthentication Modal */}
+        {/* Modals */}
         <IonModal isOpen={showReauthModal} onDidDismiss={closeReauthModal}>
-          <IonCard>
-            <IonCardHeader>
-              <IonCardTitle className="ion-text-center">
-                {fieldToUpdate === "email"
-                  ? "Update Email"
-                  : "Security Verification"}
-                <IonButton
-                  fill="clear"
-                  color="medium"
-                  onClick={closeReauthModal}
-                  style={{ position: "absolute", right: "8px", top: "8px" }}
-                >
-                  <IonIcon icon={closeOutline} />
-                </IonButton>
-              </IonCardTitle>
-            </IonCardHeader>
-            <IonCardContent>
-              <p className="ion-text-center ion-margin-bottom">
-                {fieldToUpdate === "email"
-                  ? "Please enter your current password to update your email address."
-                  : "Please enter your current password to continue."}
-              </p>
-
-              <IonItem>
-                <IonLabel position="stacked">Current Password</IonLabel>
-                <IonInput
-                  type="password"
-                  value={reauthPassword}
-                  placeholder="Enter your current password"
-                  onIonInput={(e) => setReauthPassword(e.detail.value!)}
-                  clearOnEdit={false}
-                />
-              </IonItem>
-
-              <div className="ion-margin-top">
-                <IonButton
-                  expand="block"
-                  color="primary"
-                  onClick={handleReauthSubmit}
-                  disabled={!reauthPassword || isLoading}
-                >
-                  {isLoading ? "Verifying..." : "Confirm"}
-                </IonButton>
-                <IonButton
-                  expand="block"
-                  color="medium"
-                  fill="outline"
-                  onClick={closeReauthModal}
-                  disabled={isLoading}
-                >
-                  Cancel
-                </IonButton>
-              </div>
-            </IonCardContent>
-          </IonCard>
+          <IonHeader><IonToolbar>
+            <IonTitle>{fieldToUpdate === "email" ? "Update Email" : "Verify Identity"}</IonTitle>
+            <IonButtons slot="end"><IonButton onClick={closeReauthModal}><IonIcon icon={closeOutline} /></IonButton></IonButtons>
+          </IonToolbar></IonHeader>
+          <IonContent className="ion-padding">
+            <p style={{ color: "var(--ion-color-medium)", marginBottom: 16, fontSize: "0.9rem" }}>
+              {fieldToUpdate === "email" ? "Enter your current password to update email." : "Enter your current password to continue."}
+            </p>
+            <IonItem><IonLabel position="stacked">Current Password</IonLabel>
+              <IonInput type="password" value={reauthPassword} onIonInput={(e) => setReauthPassword(e.detail.value!)} clearOnEdit={false} />
+            </IonItem>
+            <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 10 }}>
+              <IonButton expand="block" color="primary" onClick={handleReauthSubmit} disabled={!reauthPassword || isLoading}>
+                {isLoading ? "Verifying..." : "Confirm"}
+              </IonButton>
+              <IonButton expand="block" fill="outline" color="medium" onClick={closeReauthModal}>Cancel</IonButton>
+            </div>
+          </IonContent>
         </IonModal>
 
-        {/* Stat Editing Modal */}
         <IonModal isOpen={showStatModal} onDidDismiss={cancelStatEdit}>
-          <IonCard>
-            <IonCardHeader>
-              <IonCardTitle className="ion-text-center">
-                Edit{" "}
-                {editingStat === "staffCount"
-                  ? "Staff Count"
-                  : editingStat === "patientCount"
-                  ? "Patient Count"
-                  : "Experience Years"}
-                <IonButton
-                  fill="clear"
-                  color="medium"
-                  onClick={cancelStatEdit}
-                  style={{ position: "absolute", right: "8px", top: "8px" }}
-                >
-                  <IonIcon icon={closeOutline} />
-                </IonButton>
-              </IonCardTitle>
-            </IonCardHeader>
-            <IonCardContent>
-              <IonItem>
-                <IonLabel position="stacked">
-                  {editingStat === "staffCount"
-                    ? "Number of Staff"
-                    : editingStat === "patientCount"
-                    ? "Number of Patients"
-                    : "Years of Experience"}
-                </IonLabel>
-                <IonInput
-                  type="number"
-                  value={tempStatValue}
-                  placeholder={`Enter ${
-                    editingStat === "experienceYears" ? "years" : "count"
-                  }`}
-                  onIonInput={(e) => setTempStatValue(e.detail.value!)}
-                  min={editingStat === "experienceYears" ? "0" : "0"}
-                  clearOnEdit={false}
-                />
-              </IonItem>
-
-              <div className="ion-margin-top">
-                <IonButton
-                  expand="block"
-                  color="primary"
-                  onClick={saveStatEdit}
-                  disabled={!tempStatValue || isLoading}
-                >
-                  {isLoading ? "Saving..." : "Save Changes"}
-                </IonButton>
-                <IonButton
-                  expand="block"
-                  color="medium"
-                  fill="outline"
-                  onClick={cancelStatEdit}
-                  disabled={isLoading}
-                >
-                  Cancel
-                </IonButton>
-              </div>
-            </IonCardContent>
-          </IonCard>
+          <IonHeader><IonToolbar>
+            <IonTitle>Edit {editingStat === "staffCount" ? "Staff" : editingStat === "patientCount" ? "Patients" : "Experience"}</IonTitle>
+            <IonButtons slot="end"><IonButton onClick={cancelStatEdit}><IonIcon icon={closeOutline} /></IonButton></IonButtons>
+          </IonToolbar></IonHeader>
+          <IonContent className="ion-padding">
+            <IonItem><IonLabel position="stacked">Value</IonLabel>
+              <IonInput type="number" value={tempStatValue} onIonInput={(e) => setTempStatValue(e.detail.value!)} min="0" clearOnEdit={false} />
+            </IonItem>
+            <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 10 }}>
+              <IonButton expand="block" color="primary" onClick={saveStatEdit} disabled={!tempStatValue || isLoading}>
+                {isLoading ? "Saving..." : "Save"}
+              </IonButton>
+              <IonButton expand="block" fill="outline" color="medium" onClick={cancelStatEdit}>Cancel</IonButton>
+            </div>
+          </IonContent>
         </IonModal>
 
-        {/* Toast for notifications */}
-        <IonToast
-          isOpen={toast.isOpen}
-          onDidDismiss={() => setToast({ ...toast, isOpen: false })}
-          message={toast.message}
-          duration={3000}
-          color={toast.color as any}
-          position="top"
-        />
+        <IonToast isOpen={toast.isOpen} onDidDismiss={() => setToast({ ...toast, isOpen: false })}
+          message={toast.message} duration={3000} color={toast.color as any} position="top" />
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="profile-header">
-            <motion.div
-              whileHover={{ scale: isEditing ? 1.05 : 1 }}
-              whileTap={{ scale: isEditing ? 0.95 : 1 }}
-              className="avatar-container"
-              onClick={isEditing ? triggerFileInput : undefined}
-            >
+        {/* Hero Banner */}
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+          <div className="profile-hero">
+            <motion.div className="avatar-container" whileHover={{ scale: isEditing ? 1.05 : 1 }}
+              whileTap={{ scale: isEditing ? 0.95 : 1 }} onClick={isEditing ? triggerFileInput : undefined}>
               <IonAvatar className="profile-avatar">
-                <img
-                  src={
-                    admin.avatar ||
-                    "https://ionicframework.com/docs/img/demos/avatar.svg"
-                  }
-                  alt="Admin Avatar"
-                />
+                <img src={admin.avatar || "https://ionicframework.com/docs/img/demos/avatar.svg"} alt="Avatar" />
               </IonAvatar>
               {isEditing && (
-                <div className="avatar-overlay">
-                  <IonIcon icon={cameraOutline} color="light" size="large" />
-                </div>
+                <div className="avatar-overlay"><IonIcon icon={cameraOutline} color="light" size="large" /></div>
               )}
             </motion.div>
 
-            <div className="profile-info">
-              {isEditing ? (
-                <IonItem>
-                  <IonInput
-                    value={tempData.name || ""}
-                    placeholder="Full Name"
-                    onIonInput={(e) =>
-                      handleInputChange("name", e.detail.value!)
-                    }
-                    className="profile-edit-input"
-                  />
-                </IonItem>
-              ) : (
-                <IonText color="dark">
-                  <h1 className="profile-name">{admin.name}</h1>
-                </IonText>
-              )}
+            {isEditing ? (
+              <IonInput value={tempData.name || ""} placeholder="Full Name"
+                onIonInput={(e) => handleInputChange("name", e.detail.value!)}
+                style={{ textAlign: "center", fontSize: "1.2rem", fontWeight: 700 }} />
+            ) : (
+              <h1 className="profile-name">{admin.name}</h1>
+            )}
 
-              <div className="profile-role">
-                <IonIcon icon={shieldCheckmarkOutline} color="primary" />
-                <span>{admin.role || "Administrator"}</span>
-              </div>
+            <div className="profile-role">
+              <IonIcon icon={shieldCheckmarkOutline} />
+              <span>{admin.role || "Administrator"}</span>
+            </div>
 
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                className="profile-stats"
-              >
-                <motion.div
-                  className="stat-item"
+            <div className="profile-stats">
+              {[
+                { key: "staffCount", label: "Staff", value: admin.staffCount, icon: peopleOutline },
+                { key: "patientCount", label: "Patients", value: admin.patientCount, icon: medicalOutline },
+                { key: "experienceYears", label: "Exp. (yrs)", value: admin.experienceYears, icon: timeOutline },
+              ].map((s) => (
+                <motion.div key={s.key} className="stat-item"
                   whileHover={{ scale: isEditing ? 1.05 : 1 }}
-                  whileTap={{ scale: isEditing ? 0.95 : 1 }}
-                  onClick={
-                    isEditing
-                      ? () => startEditingStat("staffCount", admin.staffCount)
-                      : undefined
-                  }
-                >
-                  <IonIcon icon={peopleOutline} className="stat-icon" />
-                  <span className="stat-value">{admin.staffCount}</span>
-                  <span className="stat-label">Staff</span>
-                  {isEditing && (
-                    <IonIcon icon={pencilOutline} className="stat-edit-icon" />
-                  )}
+                  onClick={isEditing ? () => startEditingStat(s.key, s.value) : undefined}
+                  style={{ cursor: isEditing ? "pointer" : "default" }}>
+                  <span className="stat-value">{s.value}{s.key === "experienceYears" ? "y" : ""}</span>
+                  <span className="stat-label">{s.label}</span>
+                  {isEditing && <IonIcon icon={pencilOutline} className="stat-edit-icon" />}
                 </motion.div>
-
-                <motion.div
-                  className="stat-item"
-                  whileHover={{ scale: isEditing ? 1.05 : 1 }}
-                  whileTap={{ scale: isEditing ? 0.95 : 1 }}
-                  onClick={
-                    isEditing
-                      ? () =>
-                          startEditingStat("patientCount", admin.patientCount)
-                      : undefined
-                  }
-                >
-                  <IonIcon icon={medicalOutline} className="stat-icon" />
-                  <span className="stat-value">{admin.patientCount}</span>
-                  <span className="stat-label">Patients</span>
-                  {isEditing && (
-                    <IonIcon icon={pencilOutline} className="stat-edit-icon" />
-                  )}
-                </motion.div>
-
-                <motion.div
-                  className="stat-item"
-                  whileHover={{ scale: isEditing ? 1.05 : 1 }}
-                  whileTap={{ scale: isEditing ? 0.95 : 1 }}
-                  onClick={
-                    isEditing
-                      ? () =>
-                          startEditingStat(
-                            "experienceYears",
-                            admin.experienceYears
-                          )
-                      : undefined
-                  }
-                >
-                  <IonIcon icon={timeOutline} className="stat-icon" />
-                  <span className="stat-value">{admin.experienceYears}y</span>
-                  <span className="stat-label">Experience</span>
-                  {isEditing && (
-                    <IonIcon icon={pencilOutline} className="stat-edit-icon" />
-                  )}
-                </motion.div>
-              </motion.div>
+              ))}
             </div>
           </div>
         </motion.div>
 
-        <AnimatePresence>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            exit={{ opacity: 0 }}
-            className="profile-details"
-          >
+        {/* Details */}
+        <div className="profile-details-section">
+          <p className="profile-section-title">Contact Information</p>
+          <div className="profile-details">
             <IonList lines="full" className="ion-no-padding">
-              <motion.div whileHover={{ scale: 1.01 }}>
-                <IonItem>
-                  <IonIcon slot="start" icon={mailOutline} color="medium" />
+              {[
+                { icon: mailOutline, label: "Email", field: "email" as const, type: "email" },
+                { icon: callOutline, label: "Phone", field: "phone" as const, type: "tel" },
+                { icon: locationOutline, label: "Address", field: "address" as const, type: "text" },
+                { icon: locationOutline, label: "Town/City", field: "town" as const, type: "text" },
+              ].map(({ icon, label, field, type }) => (
+                <IonItem key={field}>
+                  <IonIcon slot="start" icon={icon} color="primary" />
                   {isEditing ? (
-                    <IonInput
-                      type="email"
-                      value={tempData.email || ""}
-                      placeholder="Email Address"
-                      onIonInput={(e) =>
-                        handleInputChange("email", e.detail.value!)
-                      }
-                      className="profile-edit-input"
-                    />
+                    <IonInput type={type as any} value={(tempData as any)[field] || ""} placeholder={label}
+                      onIonInput={(e) => handleInputChange(field, e.detail.value!)} />
                   ) : (
-                    <IonLabel>
-                      <h3>Email</h3>
-                      <p>{admin.email}</p>
-                    </IonLabel>
+                    <IonLabel><h3>{label}</h3><p>{(admin as any)[field] || "—"}</p></IonLabel>
                   )}
                 </IonItem>
-              </motion.div>
+              ))}
 
-              <motion.div whileHover={{ scale: 1.01 }}>
-                <IonItem
-                  button
-                  onClick={() => {
-                    setFieldToUpdate("password");
-                    setShowReauthModal(true);
-                  }}
-                >
-                  <IonIcon
-                    slot="start"
-                    icon={lockClosedOutline}
-                    color="medium"
-                  />
-                  <IonLabel>
-                    <h3>Password</h3>
-                    <p>••••••••</p>
-                  </IonLabel>
-                  {isEditing && <IonIcon slot="end" icon={pencilOutline} />}
-                </IonItem>
-              </motion.div>
+              <IonItem button onClick={() => { setFieldToUpdate("password"); setShowReauthModal(true); }}>
+                <IonIcon slot="start" icon={lockClosedOutline} color="primary" />
+                <IonLabel><h3>Password</h3><p>••••••••</p></IonLabel>
+                <IonIcon slot="end" icon={pencilOutline} color="medium" />
+              </IonItem>
 
-              <motion.div whileHover={{ scale: 1.01 }}>
-                <IonItem>
-                  <IonIcon slot="start" icon={callOutline} color="medium" />
-                  {isEditing ? (
-                    <IonInput
-                      type="tel"
-                      value={tempData.phone || ""}
-                      placeholder="Phone Number"
-                      onIonInput={(e) =>
-                        handleInputChange("phone", e.detail.value!)
-                      }
-                      className="profile-edit-input"
-                    />
-                  ) : (
-                    <IonLabel>
-                      <h3>Phone</h3>
-                      <p>{admin.phone}</p>
-                    </IonLabel>
-                  )}
-                </IonItem>
-              </motion.div>
-
-              <motion.div whileHover={{ scale: 1.01 }}>
-                <IonItem>
-                  <IonIcon slot="start" icon={locationOutline} color="medium" />
-                  {isEditing ? (
-                    <IonInput
-                      type="text"
-                      value={tempData.address || ""}
-                      placeholder="Address"
-                      onIonInput={(e) =>
-                        handleInputChange("address", e.detail.value!)
-                      }
-                      className="profile-edit-input"
-                    />
-                  ) : (
-                    <IonLabel>
-                      <h3>Address</h3>
-                      <p>{admin.address}</p>
-                    </IonLabel>
-                  )}
-                </IonItem>
-              </motion.div>
-
-              {admin.town && (
-                <motion.div whileHover={{ scale: 1.01 }}>
-                  <IonItem>
-                    <IonIcon
-                      slot="start"
-                      icon={locationOutline}
-                      color="medium"
-                    />
-                    {isEditing ? (
-                      <IonInput
-                        type="text"
-                        value={tempData.town || ""}
-                        placeholder="Town/City"
-                        onIonInput={(e) =>
-                          handleInputChange("town", e.detail.value!)
-                        }
-                        className="profile-edit-input"
-                      />
-                    ) : (
-                      <IonLabel>
-                        <h3>Town/City</h3>
-                        <p>{admin.town}</p>
-                      </IonLabel>
-                    )}
-                  </IonItem>
-                </motion.div>
-              )}
-
-              <motion.div whileHover={{ scale: 1.01 }}>
-                <IonItem>
-                  <IonIcon slot="start" icon={calendarOutline} color="medium" />
-                  <IonLabel>
-                    <h3>Member Since</h3>
-                    <p>{admin.createdAt}</p>
-                  </IonLabel>
-                </IonItem>
-              </motion.div>
+              <IonItem>
+                <IonIcon slot="start" icon={calendarOutline} color="primary" />
+                <IonLabel><h3>Member Since</h3><p>{admin.createdAt}</p></IonLabel>
+              </IonItem>
             </IonList>
-          </motion.div>
-        </AnimatePresence>
+          </div>
 
-        <AnimatePresence>
-          {isEditing && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="edit-actions"
-            >
-              <IonButton
-                color="primary"
-                onClick={saveChanges}
-                disabled={isLoading}
-              >
-                Save Changes
-              </IonButton>
-            </motion.div>
-          )}
-        </AnimatePresence>
+          <AnimatePresence>
+            {isEditing && (
+              <motion.div className="edit-actions" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                <IonButton expand="block" color="primary" onClick={saveChanges} disabled={isLoading}>
+                  {isLoading ? "Saving..." : "Save Changes"}
+                </IonButton>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className="profile-actions"
-        >
-          <IonButton
-            color="danger"
-            fill="outline"
-            onClick={handleLogout}
-            disabled={isLoading}
-          >
-            <IonIcon slot="start" icon={logOutOutline} />
-            Log Out
-          </IonButton>
-        </motion.div>
+          <div className="profile-actions">
+            <IonButton expand="block" color="danger" fill="outline" onClick={handleLogout} disabled={isLoading}>
+              <IonIcon slot="start" icon={logOutOutline} />
+              Log Out
+            </IonButton>
+          </div>
+        </div>
       </IonContent>
     </IonPage>
   );

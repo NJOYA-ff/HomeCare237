@@ -77,7 +77,7 @@
   --inner-padding-end: 0;
   border-radius: 8px;
   margin-bottom: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  
   transition: all 0.3s ease;
 }
 
@@ -126,7 +126,7 @@
   --inner-padding-end: 12px;
   margin-bottom: 0.75rem;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  
 }
 
 // Doctor Details
@@ -462,7 +462,7 @@ ion-chip {
   margin: 12px 16px;
   border-left: 4px solid var(--ion-color-light);
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  
 
   // Different border colors based on type
   &.sent-referral {
@@ -814,3 +814,28 @@ ion-badge {
 // ion-icon {
 //   font-size: 1.2rem;
 // }
+
+// ── Loading ──────────────────────────────────────────────────
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 50vh;
+  padding: 20px;
+
+  .loading-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba(var(--ion-color-primary-rgb), 0.2);
+    border-top-color: var(--ion-color-primary);
+    border-radius: 50%;
+    margin-bottom: 16px;
+  }
+
+  p {
+    margin: 0;
+    color: var(--ion-color-medium);
+    text-align: center;
+  }
+}

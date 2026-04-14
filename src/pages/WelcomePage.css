@@ -1,5 +1,5 @@
 .welcome-content {
-  --background: linear-gradient(135deg, #1a237e 0%, #1976d2 50%, #64b5f6 100%);
+  --background: linear-gradient(135deg, var(--ion-color-primary-shade) 0%, var(--ion-color-primary) 50%, var(--ion-color-primary-tint) 100%);
   position: fixed;
   overflow: hidden;
 }
@@ -52,7 +52,6 @@
   width: 120px;
   height: 120px;
   margin: 0 auto 20px;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
 }
 
 .welcome-title h1 {
@@ -79,13 +78,13 @@
 }
 
 .signin-button {
-  --background: linear-gradient(90deg, #1a237e 0%, #1976d2 100%);
+  --background: linear-gradient(90deg, var(--ion-color-primary-shade) 0%, var(--ion-color-primary) 100%);
   --background-activated: #0d47a1;
   --border-radius: 12px;
   height: 50px;
   font-weight: bold;
   margin-top: 20px;
-  box-shadow: 0 4px 10px rgba(25, 118, 210, 0.3);
+  
   color: white;
 }
 
@@ -131,4 +130,37 @@
   .doctor-image {
     max-width: 220px;
   }
+}
+
+/* ── Galaxy S8+ (360px) responsive ── */
+@media (max-width: 380px) {
+  .app-logo {
+    width: 72px;
+    height: 72px;
+    margin: 0 auto 12px;
+  }
+
+  .welcome-title h1 {
+    font-size: 1.1rem;
+  }
+
+  .welcome-subtitle {
+    font-size: 0.85rem;
+    margin-bottom: 18px;
+  }
+
+  .button-group {
+    max-width: 260px;
+  }
+
+  .signin-button,
+  .signup-button {
+    height: 42px;
+    font-size: 0.9rem;
+    margin-top: 12px;
+  }
+
+  .circle-1 { width: 200px; height: 200px; }
+  .circle-2 { width: 320px; height: 320px; }
+  .circle-3 { width: 140px; height: 140px; }
 }

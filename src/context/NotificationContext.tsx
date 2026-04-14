@@ -15,6 +15,9 @@ import {
   where,
   orderBy,
   onSnapshot,
+  doc,
+  updateDoc,
+  writeBatch,
 } from "firebase/firestore";
 import { db } from "../firebaseconfig";
 import { useIonToast } from "@ionic/react";
@@ -22,7 +25,7 @@ import { useIonToast } from "@ionic/react";
 interface NotificationContextType {
   notifications: NotificationPayload[];
   unreadCount: number;
-  markAsRead: (id?: number) => void;
+  markAsRead: (id?: number | string) => Promise<void>;
   clearAll: () => void;
   sendLocalNotification: (
     title: string,
@@ -118,7 +121,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
             (d) => ({
               title: d.title || "Notification",
               body: d.body || "",
-              data: { ...(d.data || d.data), docId: d.id, read: d.read },
+              data: { ...(d.data || {}), docId: d.id, read: d.read, timestamp: d.timestamp },
             })
           );
 
@@ -206,21 +209,57 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     setUnreadCount(unread);
   };
 
-  const markAsRead = (id?: number) => {
+  const markAsRead = async (id?: number | string) => {
+    const targets = notifications.filter((notification) => {
+      if (id === undefined) return true;
+      const docId = (notification.data as any)?.docId;
+      return notification.id === id || docId === id;
+    });
+
+    if (targets.length === 0) return;
+
     const updated = notifications.map((notification) => {
-      if (!id || notification.id === id) {
-        return {
-          ...notification,
-          data: {
-            ...notification.data,
-            read: true,
-          },
-        };
-      }
-      return notification;
+      const shouldMark = targets.some((target) => {
+        const targetDocId = (target.data as any)?.docId;
+        const currentDocId = (notification.data as any)?.docId;
+        if (targetDocId && currentDocId) return targetDocId === currentDocId;
+        return target.id === notification.id;
+      });
+
+      if (!shouldMark) return notification;
+
+      return {
+        ...notification,
+        data: {
+          ...notification.data,
+          read: true,
+        },
+      };
     });
 
     saveNotifications(updated);
+
+    const firestoreDocIds = targets
+      .map((n) => (n.data as any)?.docId)
+      .filter((docId): docId is string => typeof docId === "string");
+
+    if (firestoreDocIds.length === 0) return;
+
+    try {
+      if (firestoreDocIds.length === 1) {
+        await updateDoc(doc(db, "notifications", firestoreDocIds[0]), {
+          read: true,
+        });
+      } else {
+        const batch = writeBatch(db);
+        firestoreDocIds.forEach((docId) => {
+          batch.update(doc(db, "notifications", docId), { read: true });
+        });
+        await batch.commit();
+      }
+    } catch (error) {
+      console.error("Failed to persist read state in Firestore:", error);
+    }
   };
 
   const clearAll = () => {

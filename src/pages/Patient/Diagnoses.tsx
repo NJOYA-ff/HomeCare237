@@ -51,8 +51,10 @@ import {
   Text,
   View,
   StyleSheet,
+  Image,
   pdf,
 } from "@react-pdf/renderer";
+import logo from "../images/logo.jpg";
 import { Directory, Filesystem } from "@capacitor/filesystem";
 import { Capacitor } from "@capacitor/core";
 import "./Diagnoses.scss";
@@ -111,69 +113,35 @@ interface Patient {
 
 // PDF Styles
 const styles = StyleSheet.create({
-  page: {
-    flexDirection: "column",
-    backgroundColor: "#FFFFFF",
-    padding: 20,
-  },
+  page: { flexDirection: "column", backgroundColor: "#FFFFFF", padding: 30 },
   header: {
-    marginBottom: 20,
-    padding: 10,
-    backgroundColor: "#2c7da0",
-    color: "white",
-    textAlign: "center",
+    flexDirection: "row", alignItems: "center",
+    marginBottom: 20, paddingBottom: 14,
+    borderBottomWidth: 2, borderBottomColor: "#3b7dd8",
   },
+  logo: { width: 48, height: 48 },
+  headerText: { flex: 1, marginLeft: 12 },
+  headerTitle: { fontSize: 16, fontWeight: "bold", color: "#3b7dd8" },
+  headerSub: { fontSize: 9, color: "#666", marginTop: 2 },
   section: {
-    margin: 10,
-    padding: 10,
+    marginBottom: 14, padding: 12, backgroundColor: "#f7f9fc",
+    borderRadius: 4, borderLeftWidth: 3, borderLeftColor: "#3b7dd8",
   },
-  title: {
-    fontSize: 20,
-    marginBottom: 10,
-    color: "#2c7da0",
-  },
-  subtitle: {
-    fontSize: 16,
-    marginBottom: 5,
-    color: "#01497c",
-  },
-  text: {
-    fontSize: 12,
-    marginBottom: 5,
-  },
-  row: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderBottomColor: "#eeeeee",
-    padding: 5,
-  },
-  cell: {
-    flex: 1,
-    fontSize: 10,
-  },
-  headerRow: {
-    backgroundColor: "#f8f9fa",
-    fontWeight: "bold",
-  },
+  title: { fontSize: 11, fontWeight: "bold", color: "#3b7dd8", marginBottom: 8, textTransform: "uppercase" },
+  subtitle: { fontSize: 10, fontWeight: "bold", color: "#3b7dd8", marginBottom: 6 },
+  text: { fontSize: 10, marginBottom: 4, color: "#333" },
+  row: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: "#e8e8e8", padding: 5 },
+  cell: { flex: 1, fontSize: 10, color: "#333" },
+  headerRow: { backgroundColor: "#e8f0fb" },
   watermark: {
-    position: "absolute",
-    bottom: 150,
-    left: 0,
-    right: 0,
-    textAlign: "center",
-    opacity: 0.1,
-    transform: "rotate(-45deg)",
-    fontSize: 60,
-    color: "#2c5aa0",
+    position: "absolute", bottom: 150, left: 0, right: 0,
+    textAlign: "center", opacity: 0.05, transform: "rotate(-45deg)",
+    fontSize: 60, color: "#3b7dd8",
   },
   footer: {
-    position: "absolute",
-    bottom: 30,
-    left: 0,
-    right: 0,
-    textAlign: "center",
-    fontSize: 10,
-    color: "#666666",
+    position: "absolute", bottom: 20, left: 30, right: 30,
+    textAlign: "center", fontSize: 9, color: "#999",
+    borderTopWidth: 1, borderTopColor: "#e0e0e0", paddingTop: 8,
   },
 });
 
@@ -186,7 +154,11 @@ const DiagnosisPDF: React.FC<{ diagnosis: Diagnosis; patient: Patient }> = ({
     <Page size="A4" style={styles.page}>
       <Text style={styles.watermark}>Diagnosis</Text>
       <View style={styles.header}>
-        <Text>HomeCare Cameroon - Medical Report</Text>
+        <Image src={logo} style={styles.logo} />
+        <View style={styles.headerText}>
+          <Text style={styles.headerTitle}>HomeCare Cameroon</Text>
+          <Text style={styles.headerSub}>Medical Report</Text>
+        </View>
       </View>
 
       <View style={styles.section}>
@@ -330,7 +302,11 @@ const LabResultPDF: React.FC<{ labResult: LabResult; patient: Patient }> = ({
     <Page size="A4" style={styles.page}>
       <Text style={styles.watermark}>Lab Result</Text>
       <View style={styles.header}>
-        <Text>HomeCare Cameroon - Lab Results</Text>
+        <Image src={logo} style={styles.logo} />
+        <View style={styles.headerText}>
+          <Text style={styles.headerTitle}>HomeCare Cameroon</Text>
+          <Text style={styles.headerSub}>Laboratory Results</Text>
+        </View>
       </View>
 
       <View style={styles.section}>
@@ -403,7 +379,11 @@ const PrescriptionPDF: React.FC<{
     <Page size="A4" style={styles.page}>
       <Text style={styles.watermark}>Prescriptions</Text>
       <View style={styles.header}>
-        <Text>HomeCare Cameroon - Prescription</Text>
+        <Image src={logo} style={styles.logo} />
+        <View style={styles.headerText}>
+          <Text style={styles.headerTitle}>HomeCare Cameroon</Text>
+          <Text style={styles.headerSub}>Medical Prescription</Text>
+        </View>
       </View>
 
       <View style={styles.section}>
@@ -624,7 +604,7 @@ const Diagnoses: React.FC = () => {
               className="loading-spinner"
             />
             <IonText className="ion-text-center ion-padding">
-              <p>Loading your dashboard...</p>
+              <p>Loading your diagnoses...</p>
             </IonText>
           </div>
         </IonContent>
@@ -734,7 +714,7 @@ const DiagnosisCard: React.FC<{
       <IonCard className="diagnosis-card-p">
         <IonCardHeader className="card-header-p">
           <div className="card-header-content">
-            <div>
+            <div className="card-header-left">
               <IonCardTitle className="card-title-p">
                 {diagnosis.condition}
               </IonCardTitle>
@@ -744,16 +724,17 @@ const DiagnosisCard: React.FC<{
             </div>
             <IonChip
               color={diagnosis.status === "active" ? "warning" : "success"}
+              className="status-chip"
             >
               {diagnosis.status}
             </IonChip>
           </div>
         </IonCardHeader>
 
-        <IonCardContent>
+        <IonCardContent className="diag-card-body">
           <div className="doctor-info">
             <IonIcon icon={personOutline} />
-            <div>
+            <div className="doctor-info-text">
               <p className="doctor-name">{diagnosis.doctor.name}</p>
               <p className="doctor-specialty">{diagnosis.doctor.specialty}</p>
               <p className="hospital">{diagnosis.doctor.hospital}</p>
@@ -769,14 +750,13 @@ const DiagnosisCard: React.FC<{
                 <IonIcon icon={documentTextOutline} slot="start" /> Details
               </IonButton>
             )}
-
             <IonButton
               size="small"
               fill="outline"
               onClick={handleSaveFullReport}
               disabled={isSaving}
             >
-              <IonIcon icon={downloadOutline} slot="start" />{" "}
+              <IonIcon icon={downloadOutline} slot="start" />
               {isSaving ? "Saving..." : "Save"}
             </IonButton>
           </div>

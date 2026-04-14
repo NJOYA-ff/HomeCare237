@@ -1,77 +1,76 @@
-/* Main Page Styling */
-// .appointment-page {
-//   --ion-background-color: #f8f9fa;
-// }
+// ============================================================
+// Admin2.scss — Appointments + Health Units + SMS
+// ============================================================
 
-/* Header Styling */
+// ---- Appointments ----------------------------------------
 .appointment-header {
-  --background: var(--ion-color-light);
+  ion-toolbar {
+    --background: var(--ion-background-color);
+    --border-width: 0 0 1px 0;
+    --border-color: var(--ion-color-step-100);
+  }
 }
 
 .page-title {
-  font-weight: 600;
-  font-size: 1.4rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -0.2px;
 }
 
-.filter-button {
-  --color: var(--ion-color-dark);
-}
-
-/* Search Bar Styling */
 .search-toolbar {
-  --background: var(--ion-color-light);
-  // padding: 8px 12px;
+  --background: var(--ion-background-color);
+  padding: 4px 8px 8px;
 }
 
 .appointment-searchbar {
-  --background: rgba(var(--ion-color-light-rgb), 0.9);
-  --border-radius: 8px;
+  --background: var(--ion-color-step-50, rgba(0,0,0,0.04));
+  --border-radius: 10px;
   --box-shadow: none;
-  --placeholder-color: #8e8e93;
-  --color: var(--ion-color-dark);
+  --placeholder-color: var(--ion-color-medium);
   padding: 0;
 }
 
-/* Filter Section Styling */
 .filter-container {
-  background: var(--ion-color-light);
+  background: var(--ion-background-color);
   overflow: hidden;
+  border-bottom: 1px solid var(--ion-color-step-100);
 }
 
 .filter-toolbar {
-  --background: var(--ion-color-light);
-  padding: 0 12px;
+  --background: var(--ion-background-color);
+  padding: 4px 8px 8px;
 }
 
 .status-segment {
-  --background: var(--ion-color-light);
-  padding: 4px 0;
+  --background: var(--ion-color-step-50, rgba(0,0,0,0.04));
+  border-radius: 10px;
+  padding: 3px;
 }
 
 .segment-button {
-  --indicator-color: #4a7cff;
-  --color: #8e8e93;
-  --color-checked: #4a7cff;
+  --indicator-color: var(--ion-color-primary);
+  --color: var(--ion-color-medium);
+  --color-checked: var(--ion-color-primary);
+  --border-radius: 8px;
   --padding-top: 6px;
   --padding-bottom: 6px;
-  min-width: 90px;
-  font-size: 0.85rem;
+  min-width: 88px;
+  font-size: 0.82rem;
+  font-weight: 500;
 }
 
-/* Content Area Styling */
 .appointment-content {
-  --padding-top: 8px;
-  --padding-bottom: 8px;
+  --padding-top: 10px;
+  --padding-bottom: 16px;
   --padding-start: 12px;
   --padding-end: 12px;
 }
 
-/* Empty State Styling */
 .empty-state {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 70vh;
+  height: 65vh;
   text-align: center;
 }
 
@@ -79,367 +78,163 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  max-width: 80%;
+  max-width: 75%;
 }
 
 .empty-icon {
-  font-size: 64px;
-  margin-bottom: 16px;
-  color: #c7c7cc;
+  font-size: 60px;
+  color: var(--ion-color-step-300, #c7c7cc);
+  margin-bottom: 14px;
 }
 
 .empty-text {
-  color: #8e8e93;
-  font-size: 1.1rem;
-  margin-bottom: 16px;
+  color: var(--ion-color-medium);
+  font-size: 1rem;
+  margin-bottom: 14px;
 }
 
-.clear-filter-button {
-  --color: #4a7cff;
-  font-weight: 500;
-}
+.clear-filter-button { --color: var(--ion-color-primary); }
 
-/* Appointment List Styling */
-.appointment-list {
-  background: transparent;
-}
+.appointment-list { background: transparent; }
 
-.appointment-item-container {
-  margin-bottom: 12px;
-}
+.appointment-item-container { margin-bottom: 10px; }
 
 .appointment-item {
-  // --background: var(--ion-color-light);
-  --border-radius: 12px;
-  --padding-start: 12px;
+  --border-radius: 14px;
+  --padding-start: 14px;
   --padding-end: 12px;
   --inner-padding-end: 8px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s ease;
-}
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  border-radius: 14px;
+  transition: box-shadow 0.2s ease;
+  overflow: hidden;
 
-.appointment-item:active {
-  transform: scale(0.98);
+  &:active { opacity: 0.85; }
 }
 
 .patient-avatar {
-  width: 48px;
-  height: 48px;
+  width: 46px;
+  height: 46px;
   margin-right: 12px;
 }
 
-/* Appointment Details Styling */
-.appointment-details {
-  margin: 12px 0;
-}
+.appointment-details { margin: 12px 0; }
 
 .patient-name {
-  font-weight: 600;
-  font-size: 1.1rem;
+  font-weight: 700;
+  font-size: 1rem;
   color: var(--ion-color-dark);
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .service-name {
-  font-size: 0.9rem;
-  color: var(--ion-color-dark);
+  font-size: 0.85rem;
+  color: var(--ion-color-medium);
   margin-bottom: 8px;
 }
 
 .appointment-meta {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-top: 8px;
+  gap: 5px;
+  margin-top: 6px;
 }
 
 .meta-item {
   display: flex;
   align-items: center;
-  color: var(--ion-color-dark);
-  font-size: 0.85rem;
+  gap: 5px;
+  color: var(--ion-color-medium);
+  font-size: 0.82rem;
 }
 
 .meta-icon {
-  margin-right: 6px;
-  font-size: 0.9rem;
-  color: var(--ion-color-dark);
+  font-size: 0.88rem;
+  color: var(--ion-color-primary);
+  flex-shrink: 0;
 }
 
-.meta-text {
-  line-height: 1.4;
-}
-
-/* Status Badge Styling */
 .status-badge-a {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
   text-transform: capitalize;
-  padding: 4px 8px;
-  border-radius: 12px;
+  border-radius: 20px;
+  padding: 4px 10px;
+  align-self: flex-start;
 }
 
-.status-confirmed {
-  --ion-color-success: #34c759;
-  --ion-color-success-shade: #2daf4e;
+// ---- Health Units ----------------------------------------
+.health-units-header ion-toolbar {
+  --background: var(--ion-background-color);
 }
 
-.status-pending {
-  --ion-color-warning: #ff9500;
-  --ion-color-warning-shade: #e68600;
-}
-
-.status-cancelled {
-  --ion-color-danger: #ff3b30;
-  --ion-color-danger-shade: #e0352b;
-}
-
-.status-completed {
-  --ion-color-primary: #007aff;
-  --ion-color-primary-shade: #006ce0;
-}
-
-/* Animation Enhancements */
-.appointment-item-container {
-  will-change: transform, opacity;
-}
-
-/* Responsive Adjustments */
-@media (min-width: 768px) {
-  .appointment-content {
-    --padding-start: 24px;
-    --padding-end: 24px;
-  }
-
-  .appointment-item {
-    --padding-start: 16px;
-    --padding-end: 16px;
-  }
-
-  .patient-avatar {
-    width: 56px;
-    height: 56px;
-  }
-
-  .patient-name {
-    font-size: 1.2rem;
-  }
-
-  .service-name {
-    font-size: 1rem;
-  }
-
-  .meta-item {
-    font-size: 0.9rem;
-  }
-}
-
-//healh units
-/* Health Units Page Styles */
-/* Health Units Page - Professional Styling -------------------------------------------------------------------- */
-.health-units-page {
-  --ion-text-color: var(--ion-color-medium);
-}
-
-/* Header Styling */
-.health-units-header {
-  --color: white;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-}
-
-.filter-button {
-  --color: white;
-  --background-hover: rgba(255, 255, 255, 0.1);
-  position: relative;
-}
-
-.filter-badge {
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  font-size: 10px;
-  padding: 2px 4px;
-  color: #2c3e50;
-}
-
-/* Search Section */
 .search-section {
-  padding: 12px 16px;
-  background: var(--ion-color-light);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  padding: 10px 14px;
+  background: var(--ion-background-color);
+  border-bottom: 1px solid var(--ion-color-step-100);
 }
 
 .health-searchbar {
-  --background: rgba(var(--ion-color-medium-rgb), 0.3);
+  --background: var(--ion-color-step-50, rgba(0,0,0,0.04));
   --border-radius: 10px;
   --box-shadow: none;
-  --placeholder-color: #a4b0be;
-  --color: var(--ion-color-dark);
-  padding: 8px 0;
+  --placeholder-color: var(--ion-color-medium);
+  padding: 6px 0;
 }
 
-/* Filters Section */
 .filters-section {
-  background: var(--ion-color-light);
-  border-bottom: 1px solid #dfe4ea;
+  background: var(--ion-background-color);
+  border-bottom: 1px solid var(--ion-color-step-100);
   overflow: hidden;
 }
 
-.filter-grid {
-  padding: 12px;
-}
+.filter-grid { padding: 10px 14px; }
 
 .filter-item {
   --padding-start: 0;
   --inner-padding-end: 0;
   --background: transparent;
-  --border-radius: 8px;
   --border-width: 0;
   --highlight-height: 0;
-  margin-bottom: 8px;
-}
-
-.filter-item ion-label[position="stacked"] {
-  color: #57606f;
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .clear-filters {
-  --color: #57606f;
+  --color: var(--ion-color-medium);
+  font-size: 0.85rem;
   text-transform: none;
-  font-size: 14px;
-  margin-top: 8px;
 }
 
-/* Map Section */
-.map-section {
-  position: relative;
-  height: 280px;
-  background: #2c3e50;
-}
-
-.map-container {
-  height: 100%;
-  width: 100%;
-}
-
-.map {
-  height: 100%;
-  width: 100%;
-}
-
-.map-popup {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
-    Arial, sans-serif;
-}
-
-.popup-content {
-  padding: 8px;
-}
-
-.popup-content h3 {
-  margin: 0 0 4px 0;
-  font-size: 16px;
-  color: #2c3e50;
-}
-
-.popup-content p {
-  margin: 4px 0;
-  font-size: 14px;
-  color: #57606f;
-  display: flex;
-  align-items: center;
-}
-
-.popup-content ion-icon {
-  margin-right: 4px;
-}
-
-/* Results Summary */
 .results-summary {
   display: flex;
-  padding: 12px 16px;
+  padding: 10px 14px;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
-  background: var(--ion-color-light);
-  border-bottom: 1px solid #dfe4ea;
+  gap: 6px;
+  background: var(--ion-background-color);
+  border-bottom: 1px solid var(--ion-color-step-100);
 }
 
-.results-chip {
-  font-weight: 500;
-}
+.results-chip { font-weight: 600; }
+.filter-chip { font-size: 0.8rem; }
 
-.filter-chip {
-  font-size: 13px;
-}
-
-/* Loading State */
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 0;
-  color: #57606f;
-}
-
-.loading-container p {
-  margin-top: 16px;
-  font-size: 14px;
-}
-
-/* Empty State */
-.empty-state-card {
-  margin: 16px;
-  text-align: center;
-  box-shadow: none;
-  border-radius: 12px;
-  // background: white;
-}
-
-.empty-state-content {
-  padding: 20px;
-}
-
-.empty-state-icon {
-  font-size: 48px;
-  color: #a4b0be;
-  margin-bottom: 16px;
-}
-
-.empty-state-content h3 {
-  color: var(--ion-color-medium);
-  margin: 8px 0;
-}
-
-.empty-state-content p {
-  color: #57606f;
-  margin-bottom: 16px;
-}
-
-/* Health Units List */
 .health-units-list {
-  padding: 16px;
-  background-color: var(--ion-color-light);
+  padding: 14px;
+  background: var(--ion-background-color);
 }
 
 .health-unit-card {
-  border-radius: 12px;
-  margin-bottom: 20px;
+  border-radius: 14px;
+  margin-bottom: 18px;
   overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
-}
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+  transition: box-shadow 0.22s ease;
 
-.health-unit-card.expanded {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  &:hover { box-shadow: 0 6px 24px rgba(56, 128, 255, 0.14); }
 }
 
 .card-image-container {
-  height: 180px;
+  height: 170px;
   width: 100%;
   background-size: cover;
   background-position: center;
@@ -452,199 +247,123 @@
   left: 0;
   right: 0;
   padding: 12px;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+  background: linear-gradient(to top, rgba(0,0,0,0.65), transparent);
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
 }
 
 .type-badge {
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 0.75rem;
+  font-weight: 600;
   padding: 4px 8px;
-  border-radius: 4px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
-}
-
-.type-badge ion-icon {
-  margin-right: 4px;
-  font-size: 14px;
+  gap: 4px;
 }
 
 .emergency-badge {
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 0.75rem;
+  font-weight: 600;
   padding: 4px 8px;
 }
 
 .card-header {
   padding-bottom: 0;
-}
 
-.card-header ion-card-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--ion-color-dark);
-}
+  ion-card-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--ion-color-dark);
+  }
 
-.card-header ion-card-subtitle {
-  font-size: 14px;
-  color: var(--ion-color-medium);
-  display: flex;
-  align-items: center;
-  margin-top: 4px;
-}
-
-.card-header ion-card-subtitle ion-icon {
-  margin-right: 4px;
+  ion-card-subtitle {
+    font-size: 0.85rem;
+    color: var(--ion-color-medium);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 4px;
+  }
 }
 
 .rating-container {
   display: flex;
   align-items: center;
-  margin-top: 8px;
+  margin-top: 6px;
 }
 
-.rating-star {
-  font-size: 16px;
-  margin-right: 2px;
-}
+.rating-star { font-size: 15px; margin-right: 2px; }
 
 .rating-text {
-  margin-left: 8px;
-  font-size: 14px;
-  color: var(--ion-color-primary-rgb);
-  font-weight: 500;
+  margin-left: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ion-color-warning-shade);
 }
 
-.card-content {
-  padding-top: 0;
-}
-
-.basic-info {
-  margin-bottom: 12px;
-}
+.card-content { padding-top: 0; }
 
 .info-item {
   --padding-start: 0;
   --inner-padding-end: 0;
-  --min-height: 32px;
-}
+  --min-height: 30px;
 
-.info-item ion-icon {
-  font-size: 18px;
-}
-
-.info-item ion-label {
-  font-size: 14px;
+  ion-icon { font-size: 17px; }
+  ion-label { font-size: 0.85rem; }
 }
 
 .expanded-content {
   padding-top: 12px;
-  border-top: 1px solid #dfe4ea;
-  margin-top: 12px;
+  border-top: 1px solid var(--ion-color-step-100);
+  margin-top: 10px;
 }
 
 .description {
-  font-size: 14px;
+  font-size: 0.88rem;
   color: var(--ion-color-medium);
-  line-height: 1.5;
-  margin-bottom: 16px;
+  line-height: 1.55;
+  margin-bottom: 14px;
 }
 
 .services-section h4 {
-  font-size: 15px;
-  color: var(--ion-color-medium);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ion-color-dark);
   margin-bottom: 8px;
-  font-weight: 600;
 }
 
 .services-container {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 16px;
+  gap: 6px;
+  margin-bottom: 14px;
 }
 
 .service-chip {
-  --background: #f1f2f6;
+  --background: var(--ion-color-step-50, rgba(0,0,0,0.04));
   --color: var(--ion-color-medium);
-  font-size: 12px;
+  font-size: 0.78rem;
 }
 
 .facility-features {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
-  margin-bottom: 16px;
-}
+  margin-bottom: 14px;
 
-.facility-features ion-chip {
-  font-size: 12px;
-}
-
-.action-button {
-  margin-bottom: 12px;
+  ion-chip { font-size: 0.78rem; }
 }
 
 .expand-button {
-  --color: #3498db;
-  font-size: 14px;
+  --color: var(--ion-color-primary);
+  font-size: 0.85rem;
   margin: 0 -16px -16px;
-  padding-top: 12px;
-  padding-bottom: 12px;
+  padding: 10px 0;
 }
 
-/* Animations */
-.fade-in {
-  animation: fadeIn 0.3s ease-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.slide-up {
-  animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-/* Responsive Adjustments */
-@media (min-width: 768px) {
-  .health-units-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    gap: 20px;
-  }
-
-  .health-unit-card {
-    margin-bottom: 0;
-  }
-
-  .map-section {
-    height: 350px;
-  }
-}
-
-///SMS_patient----------------------------------------------------------------------------------------------------------
-
-/* Chat content area */
+// ---- SMS / Chat ----------------------------------------
 .chat-content {
   --padding-start: 8px;
   --padding-end: 8px;
@@ -652,89 +371,46 @@
   --padding-bottom: 8px;
 }
 
-/* Header styles */
-.header-content {
-  display: flex;
-  align-items: center;
-  padding: 0 10px;
-}
 .SMS_patient-title {
-  font-weight: 600;
-  font-size: 1.4rem;
+  font-weight: 700;
+  font-size: 1.1rem;
   text-align: center;
 }
-.header-avatar {
-  width: 36px;
-  height: 36px;
-  position: relative;
-  margin-right: 12px;
-  border: 3px solid var(--ion-color-primary);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
 
-.header-text {
-  flex: 1;
+.header-avatar {
+  width: 34px;
+  height: 34px;
+  border: 2px solid var(--ion-color-primary);
+  margin-right: 10px;
 }
 
 .header-status {
-  font-size: 12px;
+  font-size: 0.72rem;
   display: block;
-  margin-top: -4px;
+  margin-top: -3px;
 }
 
 .online-badge {
   position: absolute;
   bottom: 0;
   right: 0;
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
-  border: 1px solid var(--ion-color-primary-contrast);
+  border: 1px solid var(--ion-background-color);
 }
 
-/* Loading indicator */
-.loading-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-}
-
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid var(--ion-color-primary);
-  border-top-color: transparent;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-/* Message list */
 .message-list {
   background: transparent;
   padding-bottom: 80px;
 }
 
 .message-container {
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   display: flex;
-}
 
-.message-container.sent {
-  justify-content: flex-end;
-}
-
-.message-container.received {
-  justify-content: flex-start;
+  &.sent { justify-content: flex-end; }
+  &.received { justify-content: flex-start; }
 }
 
 .message-item {
@@ -744,75 +420,49 @@
   max-width: 80%;
 }
 
-.highlight-message {
-  animation: highlight 2s ease-out;
-}
-
-@keyframes highlight {
-  0% {
-    background-color: rgba(var(--ion-color-primary-rgb), 0.3);
-  }
-  100% {
-    background-color: transparent;
-  }
-}
-
-/* Message bubble */
 .message-bubble {
-  padding: 12px 16px;
-  border-radius: 20px;
+  padding: 10px 14px;
+  border-radius: 18px;
   position: relative;
-  animation: fadeIn 0.3s ease-out;
+  animation: fadeInMsg 0.25s ease-out;
 }
 
 .message-container.sent .message-bubble {
-  background-color: var(--ion-color-primary);
-  color: white;
+  background: var(--ion-color-primary);
+  color: #fff;
   border-bottom-right-radius: 4px;
 }
 
 .message-container.received .message-bubble {
-  background-color: var(--ion-color-light);
-  color: #333;
+  background: var(--ion-color-step-100, #f0f0f0);
+  color: var(--ion-color-dark);
   border-bottom-left-radius: 4px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-/* Message text */
 .message-text {
-  font-size: 14px;
-  line-height: 1.4;
+  font-size: 0.9rem;
+  line-height: 1.45;
   white-space: pre-wrap;
 }
 
-/* Message meta (time + status) */
 .message-meta {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  margin-top: 4px;
+  margin-top: 3px;
+  gap: 3px;
 }
 
 .message-time {
-  font-size: 10px;
-  opacity: 0.8;
-  margin-right: 4px;
+  font-size: 0.68rem;
+  opacity: 0.75;
 }
 
-.message-container.received .message-time {
-  color: #666;
-}
+.message-container.received .message-time { color: var(--ion-color-medium); }
 
-.message-status {
-  display: flex;
-  align-items: center;
-}
-
-/* Message images */
 .message-image-container {
-  margin: -12px -16px;
-  max-width: 250px;
-  max-height: 250px;
+  margin: -10px -14px;
+  max-width: 240px;
   overflow: hidden;
   border-radius: 12px;
 }
@@ -822,188 +472,191 @@
   height: auto;
   display: block;
   cursor: pointer;
-  transition: transform 0.3s ease;
+  transition: transform 0.25s ease;
+
+  &:hover { transform: scale(1.04); }
 }
 
-.message-image:hover {
-  transform: scale(1.05);
-}
-
-/* Message documents */
 .message-document {
   display: flex;
   align-items: center;
   padding: 8px;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255,255,255,0.18);
   border-radius: 8px;
   cursor: pointer;
-  transition: background 0.3s ease;
+  gap: 8px;
 }
 
-.message-container.sent .message-document {
-  background: rgba(0, 0, 0, 0.1);
-}
+.message-container.received .message-document { background: rgba(0,0,0,0.05); }
 
-.message-container.received .message-document {
-  background: rgba(0, 0, 0, 0.05);
-}
-
-.message-document:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-.document-icon {
-  margin-right: 8px;
-  font-size: 18px;
-}
+.document-icon { font-size: 17px; }
 
 .document-name {
-  font-size: 14px;
+  font-size: 0.85rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 180px;
+  max-width: 170px;
 }
 
-/* Avatars */
 .message-avatar {
-  width: 32px;
-  height: 32px;
-  margin-right: 8px;
+  width: 30px;
+  height: 30px;
+  margin-right: 6px;
   align-self: flex-end;
 }
 
-/* Footer and input */
-.chat-footer {
-  background: var(--ion-color-light);
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-}
+.chat-footer { background: var(--ion-background-color); }
 
 .message-input-container {
   display: flex;
   align-items: center;
   padding: 8px;
+  gap: 4px;
 }
-.input-item {
-  width: 100%;
-}
+
+.input-item { width: 100%; }
+
 .message-input {
   flex: 1;
-  background: var(--ion-color-light);
+  background: var(--ion-color-step-50, rgba(0,0,0,0.04));
   border-radius: 20px;
   padding: 10px 16px !important;
-  margin: 0 8px;
-  font-size: 14px;
-  --padding-start: 16px;
-  --padding-end: 16px;
+  margin: 0 6px;
+  font-size: 0.9rem;
+  --padding-start: 14px;
+  --padding-end: 14px;
   max-height: 120px;
   overflow-y: auto;
 }
 
-.attach-button {
-  --padding-start: 8px;
-  --padding-end: 8px;
-}
-
-.send-button {
-  --padding-start: 8px;
-  --padding-end: 8px;
-}
-
 .send-icon {
-  font-size: 24px;
+  font-size: 22px;
   color: var(--ion-color-primary);
 }
 
-/* File preview */
-.file-preview {
-  padding: 0 16px 8px;
-}
-
-/* Typing indicator */
 .typing-indicator {
   display: flex;
   align-items: center;
-  padding: 8px 16px;
-  background: #ffffff;
-  border-radius: 20px;
+  padding: 8px 14px;
+  background: var(--ion-color-step-100, #f0f0f0);
+  border-radius: 18px;
   margin-left: 8px;
-  margin-bottom: 12px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  margin-bottom: 10px;
   align-self: flex-start;
-  max-width: 180px;
+  max-width: 160px;
+  gap: 3px;
 }
 
 .typing-dot {
-  width: 8px;
-  height: 8px;
-  background-color: #666;
+  width: 7px;
+  height: 7px;
+  background: var(--ion-color-medium);
   border-radius: 50%;
-  margin: 0 2px;
-  animation: typingAnimation 1.4s infinite ease-in-out;
-}
+  animation: typingBounce 1.3s infinite ease-in-out;
 
-.typing-dot:nth-child(1) {
-  animation-delay: 0s;
-}
-
-.typing-dot:nth-child(2) {
-  animation-delay: 0.2s;
-}
-
-.typing-dot:nth-child(3) {
-  animation-delay: 0.4s;
+  &:nth-child(2) { animation-delay: 0.18s; }
+  &:nth-child(3) { animation-delay: 0.36s; }
 }
 
 .typing-text {
-  font-size: 12px;
+  font-size: 0.75rem;
+  margin-left: 6px;
+  color: var(--ion-color-medium);
+}
+
+// Recording bar
+.whatsapp-recording-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: var(--ion-background-color);
+  border: 1px solid var(--ion-color-step-150);
+  border-radius: 26px;
+  padding: 7px 8px 7px 10px;
+  transition: background 0.15s ease;
+  user-select: none;
+
+  &.cancel-ready {
+    background: rgba(235, 68, 90, 0.08);
+    border-color: rgba(235, 68, 90, 0.3);
+  }
+}
+
+.recording-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 88px;
+}
+
+.recording-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ion-color-danger);
+  animation: recordingBlink 1s infinite;
+}
+
+.recording-mic { color: var(--ion-color-danger); font-size: 15px; }
+
+.recording-time {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ion-color-dark);
+  margin: 0;
+}
+
+.recording-wave {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.recording-wave-bar {
+  width: 3px;
+  border-radius: 2px;
+  background: var(--ion-color-medium);
+  opacity: 0.8;
+  animation: wavePulse 0.9s ease-in-out infinite;
+
+  &:nth-child(2n) { animation-duration: 1.1s; }
+}
+
+.recording-slide-hint {
+  font-size: 0.7rem;
+  white-space: nowrap;
+  color: var(--ion-color-medium);
   margin-left: 8px;
-  color: #666;
 }
 
-@keyframes typingAnimation {
-  0%,
-  60%,
-  100% {
-    transform: translateY(0);
-  }
-  30% {
-    transform: translateY(-5px);
+.recording-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 4px;
+}
+
+.recording-action-btn {
+  --padding-start: 0;
+  --padding-end: 0;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  --border-radius: 50%;
+
+  &.cancel { --color: var(--ion-color-danger); }
+  &.send {
+    --background: var(--ion-color-primary);
+    --color: var(--ion-color-primary-contrast);
   }
 }
 
-/* Animations */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Search modal */
-ion-modal {
-  --width: 100%;
-  --height: 100%;
-  --border-radius: 0;
-}
-
-/* Responsive adjustments */
-@media (min-width: 768px) {
-  .message-container {
-    max-width: 60%;
-  }
-
-  ion-modal {
-    --width: 600px;
-    --height: 80%;
-    --border-radius: 16px;
-  }
-}
-// Map container styles
+// Map
 .map-container-full {
   height: 100%;
   width: 100%;
@@ -1017,62 +670,87 @@ ion-modal {
 }
 
 .map-modal-container {
-  height: 300px;
+  height: 280px;
   width: 100%;
 
-  .map-modal {
-    height: 100%;
-    width: 100%;
-  }
+  .map-modal { height: 100%; width: 100%; }
 }
 
-// Ensure the content area has proper height
-.health-units-content {
-  // --background: #f8f9fa;
-
-  .map-section-full {
-    height: calc(100vh - 200px);
-    position: relative;
-  }
+.health-units-content .map-section-full {
+  height: calc(100vh - 200px);
+  position: relative;
 }
 
-// Popup styling
-.map-popup {
-  .popup-content {
-    h3 {
-      margin: 0 0 8px 0;
-      font-size: 16px;
-      font-weight: 600;
-    }
-
-    p {
-      margin: 4px 0;
-      font-size: 14px;
-
-      ion-icon {
-        margin-right: 4px;
-      }
-    }
-
-    ion-button {
-      margin-top: 8px;
-    }
-  }
+.map-popup .popup-content {
+  h3 { margin: 0 0 6px; font-size: 0.95rem; font-weight: 700; }
+  p { margin: 4px 0; font-size: 0.85rem; }
 }
 
-// Modal content styling
 .modal-unit-info {
   padding: 16px;
 
-  h2 {
-    margin: 0 0 8px 0;
+  h2 { margin: 0 0 8px; }
+  p { margin: 8px 0; }
+}
+
+// ---- Animations ----------------------------------------
+@keyframes fadeInMsg {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30%           { transform: translateY(-5px); }
+}
+
+@keyframes recordingBlink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.2; }
+}
+
+@keyframes wavePulse {
+  0%, 100% { transform: scaleY(0.5); }
+  50%      { transform: scaleY(1); }
+}
+
+// ---- Responsive ----------------------------------------
+@media (min-width: 768px) {
+  .appointment-content {
+    --padding-start: 20px;
+    --padding-end: 20px;
   }
 
-  p {
-    margin: 8px 0;
-
-    ion-icon {
-      margin-right: 8px;
-    }
+  .health-units-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 18px;
   }
+
+  .health-unit-card { margin-bottom: 0; }
+}
+
+// ---- Dark mode ----------------------------------------
+@media (prefers-color-scheme: dark) {
+  .health-unit-card { background: var(--ion-item-background, #1a1d27); }
+  .expanded-content { border-top-color: var(--ion-color-step-150, #252839); }
+  .service-chip { --background: var(--ion-color-step-100, #1e2130); }
+  .message-container.received .message-bubble {
+    background: var(--ion-color-step-100, #1e2130);
+    color: var(--ion-color-dark);
+  }
+  .typing-indicator { background: var(--ion-color-step-100, #1e2130); }
+  .whatsapp-recording-bar { background: var(--ion-item-background, #1a1d27); }
+}
+
+body.dark {
+  .health-unit-card { background: var(--ion-item-background, #1a1d27); }
+  .expanded-content { border-top-color: var(--ion-color-step-150, #252839); }
+  .service-chip { --background: var(--ion-color-step-100, #1e2130); }
+  .message-container.received .message-bubble {
+    background: var(--ion-color-step-100, #1e2130);
+    color: var(--ion-color-dark);
+  }
+  .typing-indicator { background: var(--ion-color-step-100, #1e2130); }
+  .whatsapp-recording-bar { background: var(--ion-item-background, #1a1d27); }
 }

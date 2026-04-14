@@ -120,13 +120,13 @@ const DoctorNotifications: React.FC = () => {
   }, [notifications, sendLocalNotification]);
 
   return (
-    <IonPage>
-      <IonHeader>
-        <IonToolbar>
+    <IonPage className="notifications-page">
+      <IonHeader class="ion-no-border">
+        <IonToolbar className="patient-dashboard-toolbar notifications-toolbar">
           <IonButtons slot="start">
             <IonBackButton defaultHref="/doc/dashboard" icon={closeOutline} />
           </IonButtons>
-          <IonTitle>
+          <IonTitle className="notifications-title">
             Notifications
             {unreadCount > 0 && (
               <IonBadge color="danger" style={{ marginLeft: "8px" }}>
@@ -135,15 +135,17 @@ const DoctorNotifications: React.FC = () => {
             )}
           </IonTitle>
           <IonButtons slot="end">
-            <IonButton onClick={() => markAsRead()}>Read all</IonButton>
+            <IonButton className="read-all-btn" onClick={() => markAsRead()}>
+              Read all
+            </IonButton>
           </IonButtons>
         </IonToolbar>
       </IonHeader>
 
-      <IonContent class="ion-padding">
-        <IonList className="notification-list">
+      <IonContent className="dashboard-patient notifications-content ion-padding">
+        <IonList className="notification-list patient-surface-list">
           {notifications.length === 0 ? (
-            <IonItem lines="none">
+            <IonItem lines="none" className="empty-notification-state">
               <IonLabel className="ion-text-center">
                 <h2>No notifications yet</h2>
                 <p>Notifications will appear here</p>
@@ -153,10 +155,14 @@ const DoctorNotifications: React.FC = () => {
             notifications.map((notification, index) => (
               <IonItem
                 key={index}
-                className={
+                className={`notification-item ${
                   !(notification.data as any)?.read ? "unread" : "read"
+                }`}
+                onClick={() =>
+                  markAsRead(
+                    (notification.data as any)?.docId ?? notification.id,
+                  )
                 }
-                onClick={() => markAsRead(notification.id)}
                 detail={false}
                 lines="none"
               >
@@ -165,13 +171,8 @@ const DoctorNotifications: React.FC = () => {
                   <br />
                   <p>{notification.body}</p>
 
-                  {notification.data && (
-                    <p className="notification-data">
-                      {JSON.stringify(notification.data)}
-                    </p>
-                  )}
                 </IonLabel>
-                <IonNote slot="end">
+                <IonNote slot="end" className="notification-time">
                   {formatDate(notification.data?.timestamp as number)}
                 </IonNote>
               </IonItem>

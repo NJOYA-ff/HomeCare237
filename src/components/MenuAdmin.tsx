@@ -1,154 +1,66 @@
 import {
-  IonAvatar,
   IonContent,
-  IonIcon,
   IonItem,
   IonLabel,
   IonList,
-  IonListHeader,
   IonMenu,
   IonMenuToggle,
-  IonNote,
 } from "@ionic/react";
-import bed from "@material-design-icons/svg/outlined/hotel.svg";
-import doctor from "@material-design-icons/svg/outlined/account_box.svg";
-import dashboard from "@material-design-icons/svg/outlined/dashboard.svg";
-import calend from "@material-design-icons/svg/outlined/edit_calendar.svg";
-import termo from "@material-design-icons/svg/outlined/device_thermostat.svg";
-import health from "@material-design-icons/svg/outlined/business.svg";
-
 import { useLocation } from "react-router-dom";
 import {
-  barChartOutline,
-  chatboxEllipsesOutline,
-  chatbubbleEllipsesOutline,
-  chatbubblesOutline,
-  logOutOutline,
-  person,
-  personCircleOutline,
-} from "ionicons/icons";
-import {
-  FaTachometerAlt,
   FaUserCircle,
   FaCalendarAlt,
   FaHospital,
   FaComments,
   FaRegCommentDots,
   FaFileMedical,
+  FaTachometerAlt,
+  FaCog,
+  FaBell,
 } from "react-icons/fa";
-import "./Menu.css";
 import { MdSpaceDashboard } from "react-icons/md";
+import "./Menu.css";
+import { useSettings } from "../context/SettingsContext";
 
-interface AppPage {
-  url: string;
-  iosIcon: string;
-  mdIcon: string;
-  title: string;
-}
-
-const appPages: AppPage[] = [
-  {
-    title: "Dashboard",
-    url: "/admin/dashboard",
-    iosIcon: dashboard,
-    mdIcon: dashboard,
-  },
-  {
-    title: "Profile",
-    url: "/admin/profile",
-    iosIcon: personCircleOutline,
-    mdIcon: personCircleOutline,
-  },
-  {
-    title: "Book Appointment",
-    url: "/admin/appointments",
-    iosIcon: calend,
-    mdIcon: calend,
-  },
-  {
-    title: "Health Units",
-    url: "/admin/health_units",
-    iosIcon: health,
-    mdIcon: health,
-  },
-  {
-    title: "SMS Doctor",
-    url: "/admin/sms_doctor",
-    iosIcon: chatbubblesOutline,
-    mdIcon: chatbubblesOutline,
-  },
-  {
-    title: "SMS Patient",
-    url: "/admin/sms_patient",
-    iosIcon: chatbubbleEllipsesOutline,
-    mdIcon: chatbubbleEllipsesOutline,
-  },
-
-  {
-    title: "Diagnoses",
-    url: "/admin/diagnoses",
-    iosIcon: termo,
-    mdIcon: termo,
-  },
-
-  {
-    title: "Patients",
-    url: "/admin/patient",
-    iosIcon: bed,
-    mdIcon: bed,
-  },
-  {
-    title: "Doctors",
-    url: "/admin/doctor",
-    iosIcon: doctor,
-    mdIcon: doctor,
-  },
-  {
-    title: "Analytics",
-    url: "/admin/analytics",
-    iosIcon: barChartOutline,
-    mdIcon: barChartOutline,
-  },
+const appPages = [
+  { title: "dashboard", url: "/admin/dashboard", Icon: MdSpaceDashboard },
+  { title: "profile", url: "/admin/profile", Icon: FaUserCircle },
+  { title: "notifications", url: "/admin/notifications", Icon: FaBell },
+  { title: "appointments", url: "/admin/appointments", Icon: FaCalendarAlt },
+  { title: "healthUnits", url: "/admin/health_units", Icon: FaHospital },
+  { title: "smsDoctor", url: "/admin/sms_doctor", Icon: FaComments },
+  { title: "smsPatient", url: "/admin/sms_patient", Icon: FaRegCommentDots },
+  { title: "diagnoses", url: "/admin/diagnoses", Icon: FaFileMedical },
+  { title: "patients", url: "/admin/patient", Icon: FaUserCircle },
+  { title: "doctors", url: "/admin/doctor", Icon: FaUserCircle },
+  { title: "analytics", url: "/admin/analytics", Icon: FaTachometerAlt },
+  { title: "settings", url: "/admin/settings", Icon: FaCog },
 ];
 
 const AdminMenu: React.FC = () => {
   const location = useLocation();
+  const { t } = useSettings();
 
   return (
     <IonMenu contentId="main_3" type="overlay">
       <IonContent>
         <IonList id="inbox-list">
-          {appPages.map((appPage, index) => {
-            return (
-              <IonMenuToggle key={index} autoHide={false}>
-                <IonItem
-                  className={
-                    location.pathname === appPage.url ? "selected" : ""
-                  }
-                  routerLink={appPage.url}
-                  routerDirection="none"
-                  lines="none"
-                  detail={false}
-                >
-                  <span slot="start" className="menu-icon">
-                    {appPage.url === "/admin/dashboard" && <MdSpaceDashboard />}
-                    {appPage.url === "/admin/profile" && <FaUserCircle />}
-                    {appPage.url === "/admin/appointments" && <FaCalendarAlt />}
-                    {appPage.url === "/admin/health_units" && <FaHospital />}
-                    {appPage.url === "/admin/sms_doctor" && <FaComments />}
-                    {appPage.url === "/admin/sms_patient" && (
-                      <FaRegCommentDots />
-                    )}
-                    {appPage.url === "/admin/diagnoses" && <FaFileMedical />}
-                    {appPage.url === "/admin/patient" && <FaUserCircle />}
-                    {appPage.url === "/admin/doctor" && <FaUserCircle />}
-                    {appPage.url === "/admin/analytics" && <FaTachometerAlt />}
-                  </span>
-                  <IonLabel>{appPage.title}</IonLabel>
-                </IonItem>
-              </IonMenuToggle>
-            );
-          })}
+          {appPages.map(({ title, url, Icon }) => (
+            <IonMenuToggle key={url} autoHide={false}>
+              <IonItem
+                className={location.pathname === url ? "selected" : ""}
+                routerLink={url}
+                routerDirection="none"
+                lines="none"
+                detail={false}
+              >
+                <span slot="start" className="menu-icon">
+                  <Icon size={16} />
+                </span>
+                <IonLabel>{t(title)}</IonLabel>
+              </IonItem>
+            </IonMenuToggle>
+          ))}
         </IonList>
       </IonContent>
     </IonMenu>

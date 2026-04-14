@@ -825,7 +825,7 @@ const Admin_doctors: React.FC = () => {
         {/* Admins List Section */}
         <div className="admins-section">
           <div className="section-header">
-            <h3 className="section-title">Admins ({admins.length})</h3>
+            <IonLabel className="section-title">Admins ({admins.length})</IonLabel>
             <IonButton
               size="small"
               fill="outline"
@@ -853,54 +853,34 @@ const Admin_doctors: React.FC = () => {
                     }}
                     layout
                   >
-                    <IonItem className="admin-item" lines="none">
-                      <IonAvatar slot="start" className="admin-avatar">
-                        <IonImg src={admin.avatar} alt={admin.name} />
-                        <IonBadge
-                          color={getRoleColor(admin.role)}
-                          className="role-badge"
-                        >
-                          {admin.role.replace("_", " ").toUpperCase()}
-                        </IonBadge>
-                      </IonAvatar>
+                    <IonItem className="admin-item" lines="none"
+                      style={{ borderLeft: `4px solid ${admin.status === "active" ? "var(--ion-color-success)" : "var(--ion-color-medium)"}` }}
+                    >
+                      <div slot="start" className="p-avatar">
+                        <div className="p-initials" style={{ background: "var(--ion-color-tertiary)" }}>
+                          {admin.name.split(" ").map((p: string) => p[0]).join("").slice(0, 2).toUpperCase()}
+                        </div>
+                        <span className={`p-status-dot ${admin.status}`} />
+                      </div>
 
-                      <div className="admin-info">
-                        <div className="admin-header">
-                          <h2>{admin.name}</h2>
-                          <IonBadge
-                            color={
-                              admin.status === "active" ? "success" : "medium"
-                            }
-                            className="status-badge"
-                          >
-                            {admin.status}
+                      <div className="p-info">
+                        <div className="p-row p-row-top">
+                          <span className="p-name">{admin.name}</span>
+                          <IonBadge color={getRoleColor(admin.role)} style={{ fontSize: "0.65rem", padding: "3px 7px" }}>
+                            {admin.role.replace("_", " ")}
                           </IonBadge>
                         </div>
-                        <p className="admin-email">
-                          <IonIcon icon={mail} /> {admin.email}
-                        </p>
-                        <div className="admin-meta">
-                          <span className="admin-phone">
-                            <IonIcon icon={call} /> {admin.phone}
-                          </span>
+                        <div className="p-row p-row-contact">
+                          <span className="p-contact-item"><IonIcon icon={mail} />{admin.email}</span>
+                          {admin.phone && <span className="p-contact-item"><IonIcon icon={call} />{admin.phone}</span>}
                         </div>
                       </div>
 
-                      <div className="admin-actions">
-                        <IonButton
-                          fill="clear"
-                          color="primary"
-                          onClick={() => openEditAdminModal(admin)}
-                          className="edit-button"
-                        >
+                      <div className="p-actions" slot="end">
+                        <IonButton fill="clear" color="primary" onClick={() => openEditAdminModal(admin)} className="edit-button">
                           <IonIcon slot="icon-only" icon={create} />
                         </IonButton>
-                        <IonButton
-                          fill="clear"
-                          color="danger"
-                          onClick={() => handleDeleteClick(admin.id, "admin")}
-                          className="delete-button"
-                        >
+                        <IonButton fill="clear" color="danger" onClick={() => handleDeleteClick(admin.id, "admin")} className="delete-button">
                           <IonIcon slot="icon-only" icon={trash} />
                         </IonButton>
                       </div>
@@ -929,7 +909,7 @@ const Admin_doctors: React.FC = () => {
 
         {/* Doctors List Section */}
         <div className="doctors-section">
-          <h3 className="section-title">Doctors ({filteredDoctors.length})</h3>
+          <IonLabel className="section-title">Doctors ({filteredDoctors.length})</IonLabel>
           {filteredDoctors.length === 0 && !loading ? (
             <motion.div
               className="empty-state"
@@ -965,76 +945,42 @@ const Admin_doctors: React.FC = () => {
                     <IonItem
                       className={`doctor-item ${doctor.status}`}
                       lines="none"
+                      style={{ borderLeft: `4px solid ${doctor.status === "active" ? "var(--ion-color-success)" : doctor.status === "on leave" ? "var(--ion-color-warning)" : "var(--ion-color-medium)"}` }}
                     >
-                      <IonAvatar slot="start" className="doctor-avatar">
-                        <IonImg src={doctor.avatar} alt={doctor.name} />
-                        <IonBadge
-                          color={getStatusColor(doctor.status)}
-                          className="status-badge"
-                        >
-                          {getStatusText(doctor.status)}
-                        </IonBadge>
-                      </IonAvatar>
+                      <div slot="start" className="p-avatar">
+                        <div className="p-initials" style={{ background: "var(--ion-color-secondary)" }}>
+                          {doctor.name.split(" ").map((p: string) => p[0]).join("").slice(0, 2).toUpperCase()}
+                        </div>
+                        <span className={`p-status-dot ${doctor.status === "active" ? "active" : doctor.status === "on leave" ? "on-leave" : "inactive"}`} />
+                      </div>
 
-                      <IonGrid className="doctor-info1">
-                        <IonGrid className="doctor-header1">
-                          <IonTitle>{doctor.name}</IonTitle>
-                          <IonBadge
-                            color="success"
-                            className="auth-badge"
-                            style={{ display: doctor.uid ? "flex" : "none" }}
-                          >
-                            Has Account
-                          </IonBadge>
-                        </IonGrid>
+                      <div className="p-info">
+                        {/* Row 1: name + status + account badge */}
+                        <div className="p-row p-row-top">
+                          <span className="p-name">{doctor.name}</span>
+                          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                            {doctor.uid && <IonBadge color="success" style={{ fontSize: "0.62rem", padding: "2px 6px" }}>✓ Account</IonBadge>}
+                            <IonBadge color={getStatusColor(doctor.status)} style={{ fontSize: "0.62rem", padding: "2px 6px" }}>{getStatusText(doctor.status)}</IonBadge>
+                          </div>
+                        </div>
+                        {/* Row 2: specialization + experience + rating */}
+                        <div className="p-row p-row-spec">
+                          <span className="p-spec"><IonIcon icon={school} />{doctor.specialization}</span>
+                          <span className="p-meta-item"><IonIcon icon={calendar} />{doctor.yearsOfExperience} yrs</span>
+                          {doctor.rating && <span className="p-rating"><IonIcon icon={star} />{doctor.rating.toFixed(1)}</span>}
+                        </div>
+                        {/* Row 3: email + phone */}
+                        <div className="p-row p-row-contact">
+                          <span className="p-contact-item"><IonIcon icon={mail} />{doctor.email}</span>
+                          <span className="p-contact-item"><IonIcon icon={call} />{doctor.phone}</span>
+                        </div>
+                      </div>
 
-                        <IonGrid className="doctor-meta">
-                          <IonGrid className="meta-row">
-                            <IonText className="doctor-specialization">
-                              <IonIcon icon={school} />
-                              {doctor.specialization}
-                            </IonText>
-                            <IonText className="doctor-experience">
-                              <IonIcon icon={calendar} />
-                              {doctor.yearsOfExperience} yrs
-                            </IonText>
-                          </IonGrid>
-
-                          <IonGrid className="meta-row">
-                            <IonText className="doctor-email">
-                              <IonIcon icon={mail} /> {doctor.email}
-                            </IonText>
-                          </IonGrid>
-
-                          <IonGrid className="meta-row">
-                            <IonText className="doctor-phone">
-                              <IonIcon icon={call} /> {doctor.phone}
-                            </IonText>{" "}
-                            {doctor.rating && (
-                              <IonText className="doctor-rating">
-                                <IonIcon icon={star} color="warning" />{" "}
-                                {doctor.rating.toFixed(1)}
-                              </IonText>
-                            )}
-                          </IonGrid>
-                        </IonGrid>
-                      </IonGrid>
-
-                      <div className="doctor-actions">
-                        <IonButton
-                          fill="clear"
-                          color="primary"
-                          onClick={() => openEditModal(doctor)}
-                          className="edit-button"
-                        >
+                      <div className="p-actions" slot="end">
+                        <IonButton fill="clear" color="primary" onClick={() => openEditModal(doctor)} className="edit-button">
                           <IonIcon slot="icon-only" icon={create} />
                         </IonButton>
-                        <IonButton
-                          fill="clear"
-                          color="danger"
-                          onClick={() => handleDeleteClick(doctor.id, "doctor")}
-                          className="delete-button"
-                        >
+                        <IonButton fill="clear" color="danger" onClick={() => handleDeleteClick(doctor.id, "doctor")} className="delete-button">
                           <IonIcon slot="icon-only" icon={trash} />
                         </IonButton>
                       </div>

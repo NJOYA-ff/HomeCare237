@@ -24,6 +24,7 @@ import {
   IonItem,
   IonList,
   IonBackButton,
+  IonText,
 } from "@ionic/react";
 import { db, auth } from "../../firebaseconfig";
 import {
@@ -52,6 +53,8 @@ import {
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import "./Patients.scss";
+import { motion } from "framer-motion";
+
 
 // Define patient interface
 interface Patient {
@@ -363,62 +366,16 @@ const Patients: React.FC = () => {
       </IonHeader>
       <IonContent fullscreen>
         {loading ? (
-          <IonCard className="activity-card">
-            <IonCardHeader>
-              <IonCardTitle>
-                <IonSkeletonText animated style={{ width: "120px" }} />
-              </IonCardTitle>
-              <IonCardSubtitle>
-                <IonSkeletonText animated style={{ width: "90px" }} />
-              </IonCardSubtitle>
-            </IonCardHeader>
-            <IonCardContent>
-              <IonList lines="none" className="patient-list">
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <IonItem key={index} className="patient-item">
-                    <div
-                      style={{
-                        width: "48px",
-                        height: "48px",
-                        borderRadius: "50%",
-                        margin: "12px 16px",
-                        flexShrink: 0,
-                      }}
-                    >
-                      <IonSkeletonText
-                        animated
-                        style={{
-                          width: "48px",
-                          height: "48px",
-                          borderRadius: "50%",
-                        }}
-                      />
-                    </div>
-                    <IonLabel>
-                      <IonSkeletonText
-                        animated
-                        style={{ width: "60%", height: "16px" }}
-                      />
-                      <IonSkeletonText
-                        animated
-                        style={{ width: "40%", height: "14px", marginTop: "6px" }}
-                      />
-                    </IonLabel>
-                    <div className="patient-status">
-                      <IonSkeletonText
-                        animated
-                        style={{ width: "70px", height: "24px" }}
-                      />
-                      <IonSkeletonText
-                        animated
-                        style={{ width: "80px", height: "12px", marginTop: "6px" }}
-                      />
-                    </div>
-                  </IonItem>
-                ))}
-              </IonList>
-            </IonCardContent>
-          </IonCard>
+          <div className="loading-container">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              className="loading-spinner"
+            />
+            <IonText className="ion-text-center ion-padding">
+              <p>Loading patients...</p>
+            </IonText>
+          </div>
         ) : (
           // Show patient list
           <>

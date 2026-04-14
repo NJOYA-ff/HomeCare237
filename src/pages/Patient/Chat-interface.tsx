@@ -28,8 +28,9 @@ const VoiceflowChat: React.FC<VoiceflowChatProps> = ({
       const styleEl = document.createElement("style");
       styleEl.id = styleId;
       styleEl.innerHTML = `
+        /* Hide default launcher */
         .vfrc-launcher,
-        .vfrc-launcher-button ._1u16jol1 ,
+        .vfrc-launcher-button ._1u16jol1,
         .vfrc-launcher--chat,
         .vfrc-widget .vfrc-launcher,
         button[title="Open chat agent"] {
@@ -37,6 +38,43 @@ const VoiceflowChat: React.FC<VoiceflowChatProps> = ({
           visibility: hidden !important;
           opacity: 0 !important;
           pointer-events: none !important;
+        }
+
+        /* Safe area + position */
+        .vfrc-chat-window {
+          bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important;
+          right: 12px !important;
+          max-height: calc(100dvh - 160px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
+          border-radius: 16px !important;
+          overflow: hidden !important;
+          box-shadow: 0 8px 32px rgba(59, 125, 216, 0.25) !important;
+        }
+
+        /* Header bar */
+        .vfrc-header {
+          background: #3b7dd8 !important;
+          background: linear-gradient(90deg, #346ebe 0%, #3b7dd8 100%) !important;
+        }
+
+        /* Send button */
+        .vfrc-chat-input--button,
+        .vfrc-send-button {
+          background: #3b7dd8 !important;
+          color: #fff !important;
+        }
+
+        /* User message bubbles */
+        .vfrc-message--USER .vfrc-bubble {
+          background: #3b7dd8 !important;
+          color: #fff !important;
+        }
+
+        /* System/bot buttons */
+        .vfrc-system-response .vfrc-button,
+        .vfrc-button--primary {
+          background: #3b7dd8 !important;
+          border-color: #3b7dd8 !important;
+          color: #fff !important;
         }
       `;
       document.head.appendChild(styleEl);

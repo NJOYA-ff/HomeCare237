@@ -43,7 +43,6 @@ import {
   IonSearchbar,
   IonChip,
   IonAlert,
-  IonLoading,
   IonSegment,
   IonSegmentButton,
   IonList,
@@ -97,6 +96,8 @@ import {
 } from "ionicons/icons";
 import brainOutline from "@material-design-icons/svg/two-tone/healing.svg";
 import "./Refer_patients.scss";
+import { motion } from "framer-motion";
+
 import {
   FaStethoscope,
   FaHeartbeat,
@@ -962,7 +963,18 @@ const Refer_patient: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent className="referral-content">
-        <IonLoading isOpen={isLoading} message="Processing..." />
+        {isLoading && (
+          <div className="loading-container">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              className="loading-spinner"
+            />
+            <IonText className="ion-text-center ion-padding">
+              <p>Processing...</p>
+            </IonText>
+          </div>
+        )}
 
         <IonAlert
           isOpen={showCancelAlert}

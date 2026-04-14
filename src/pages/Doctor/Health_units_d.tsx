@@ -36,6 +36,7 @@ import {
   IonTitle as ModalTitle,
   IonContent as ModalContent,
   IonButtons as ModalButtons,
+  IonText,
 } from "@ionic/react";
 import {
   locationOutline,
@@ -910,8 +911,14 @@ const Health_units_d: React.FC = () => {
         {/* Loading State */}
         {isLoading && (
           <div className="loading-container">
-            <IonSpinner name="crescent" color="primary" />
-            <p>Finding health facilities near you...</p>
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              className="loading-spinner"
+            />
+            <IonText className="ion-text-center ion-padding">
+              <p>Finding health facilities near you...</p>
+            </IonText>
           </div>
         )}
 

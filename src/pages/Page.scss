@@ -16,7 +16,7 @@ ion-content {
 
 /* General Styles */
 .signup-content {
-  --background: linear-gradient(135deg, #1a237e 0%, #1976d2 50%, #64b5f6 100%);
+  --background: linear-gradient(135deg, var(--ion-color-primary-shade) 0%, var(--ion-color-primary) 50%, var(--ion-color-primary-tint) 100%);
   position: fixed;
   overflow: scroll;
   --color: azure;
@@ -60,14 +60,14 @@ ion-content {
 .form-item {
   --border-radius: 12px;
   --border-color: #e0e0e0;
-  --highlight-color-focused: #1976d2;
+  --highlight-color-focused: var(--ion-color-primary);
   margin-bottom: 16px;
   --padding-start: 8px;
 }
 
 .input-icon {
   margin-right: 10px;
-  color: #1976d2;
+  color: var(--ion-color-primary);
 }
 
 .profile-avatar {
@@ -76,13 +76,13 @@ ion-content {
   margin: 0 auto 15px;
   cursor: pointer;
   border: 3px solid #64b5f6;
-  box-shadow: 0 4px 10px rgba(25, 118, 210, 0.2);
+  
   transition: all 0.3s ease;
 }
 
 .profile-avatar:hover {
   transform: scale(1.05);
-  box-shadow: 0 6px 15px rgba(25, 118, 210, 0.3);
+  
 }
 
 .avatar-placeholder {
@@ -92,7 +92,7 @@ ion-content {
   align-items: center;
   justify-content: center;
   background: #e3f2fd;
-  color: #1976d2;
+  color: var(--ion-color-primary);
 }
 
 .photo-upload-container {
@@ -103,20 +103,19 @@ ion-content {
 }
 
 .photo-label {
-  color: #1976d2;
+  color: var(--ion-color-primary);
   font-size: 0.9rem;
   margin-top: 5px;
   cursor: pointer;
 }
 
 .submit-button {
-  --background: linear-gradient(90deg, #1a237e 0%, #1976d2 100%);
+  --background: linear-gradient(90deg, var(--ion-color-primary-shade) 0%, var(--ion-color-primary) 100%);
   --background-activated: #0d47a1;
   --border-radius: 12px;
-  height: 50px;
+  height: 44px;
   font-weight: bold;
   margin-top: 20px;
-  --box-shadow: 0 4px 10px rgba(25, 118, 210, 0.3);
   color: white;
 }
 
@@ -161,7 +160,7 @@ ion-content {
 
 /* Signin */
 .signin-content {
-  --background: linear-gradient(135deg, #1a237e 0%, #1976d2 50%, #64b5f6 100%);
+  --background: linear-gradient(135deg, var(--ion-color-primary-shade) 0%, var(--ion-color-primary) 50%, var(--ion-color-primary-tint) 100%);
   position: fixed;
   overflow: scroll;
   --color: azure;
@@ -189,14 +188,14 @@ ion-content {
 .form-item {
   --border-radius: 12px;
   --border-color: #e0e0e0;
-  --highlight-color-focused: #1976d2;
+  --highlight-color-focused: var(--ion-color-primary);
   margin-bottom: 16px;
   --padding-start: 8px;
 }
 
 .input-icon {
   margin-right: 10px;
-  color: #1976d2;
+  color: var(--ion-color-primary);
 }
 
 /* App Logo */
@@ -211,13 +210,13 @@ ion-content {
   width: 70px;
   height: 70px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #1a237e 0%, #1976d2 100%);
+  background: linear-gradient(135deg, var(--ion-color-primary-shade) 0%, var(--ion-color-primary) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   margin-bottom: 10px;
-  box-shadow: 0 4px 15px rgba(25, 118, 210, 0.3);
+  
 }
 
 .logo-text {
@@ -229,13 +228,12 @@ ion-content {
 
 /* Submit Button */
 .submit-button {
-  --background: linear-gradient(90deg, #1a237e 0%, #1976d2 100%);
+  --background: linear-gradient(90deg, var(--ion-color-primary-shade) 0%, var(--ion-color-primary) 100%);
   --background-activated: #0d47a1;
   --border-radius: 12px;
-  height: 50px;
+  height: 44px;
   font-weight: bold;
   margin-top: 10px;
-  --box-shadow: 0 4px 10px rgba(25, 118, 210, 0.3);
   color: white;
 }
 
@@ -268,7 +266,7 @@ ion-content {
 }
 
 .forgot-password ion-button {
-  --color: #1976d2;
+  --color: var(--ion-color-primary);
   font-size: 0.8rem;
 }
 
@@ -278,7 +276,7 @@ ion-content {
   justify-content: center;
   align-items: center;
   margin-top: 20px;
-  color: #666;
+  color: var(--ion-color-medium, #666);
 }
 
 .signup-button2 {
@@ -325,7 +323,7 @@ ion-content {
 
 /* PasswordRecovery */
 .recovery-content {
-  --background: linear-gradient(135deg, #1a237e 0%, #1976d2 50%, #64b5f6 100%);
+  --background: linear-gradient(135deg, var(--ion-color-primary-shade) 0%, var(--ion-color-primary) 50%, var(--ion-color-primary-tint) 100%);
   position: fixed;
   overflow: scroll;
   --color: azure;
@@ -355,7 +353,7 @@ ion-content {
   border-radius: 25px 25px 0 0;
   padding: 20px;
   margin-top: 20px;
-  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.1);
+  
   position: fixed;
   bottom: 0;
   right: 0;
@@ -391,14 +389,14 @@ ion-content {
 .form-item {
   --border-radius: 12px;
   --border-color: #e0e0e0;
-  --highlight-color-focused: #1976d2;
+  --highlight-color-focused: var(--ion-color-primary);
   margin-bottom: 16px;
   --padding-start: 8px;
 }
 
 .input-icon {
   margin-right: 10px;
-  color: #1976d2;
+  color: var(--ion-color-primary);
 }
 
 /* Recovery Illustration */
@@ -413,18 +411,18 @@ ion-content {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #1a237e 0%, #1976d2 100%);
+  background: linear-gradient(135deg, var(--ion-color-primary-shade) 0%, var(--ion-color-primary) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   margin-bottom: 15px;
-  box-shadow: 0 4px 15px rgba(25, 118, 210, 0.3);
+  
 }
 
 .illustration-text {
   text-align: center;
-  color: #555;
+  color: var(--ion-color-medium, #555);
   font-size: 0.95rem;
   line-height: 1.4;
   max-width: 300px;
@@ -433,13 +431,13 @@ ion-content {
 
 /* Submit Button */
 .submit-button {
-  --background: linear-gradient(90deg, #1a237e 0%, #1976d2 100%);
+  --background: linear-gradient(90deg, var(--ion-color-primary-shade) 0%, var(--ion-color-primary) 100%);
   --background-activated: #0d47a1;
   --border-radius: 12px;
-  height: 50px;
+  height: 44px;
   font-weight: bold;
   margin-top: 20px;
-  box-shadow: 0 4px 10px rgba(25, 118, 210, 0.3);
+  
   color: white;
 }
 
@@ -493,13 +491,13 @@ ion-content {
 .success-title {
   font-size: 1.4rem;
   font-weight: bold;
-  color: #1a237e;
+  color: var(--ion-color-primary-shade);
   margin-bottom: 10px;
   display: block;
 }
 
 .success-message {
-  color: #666;
+  color: var(--ion-color-medium, #666);
   font-size: 0.95rem;
   line-height: 1.4;
   max-width: 350px;
@@ -508,9 +506,9 @@ ion-content {
 
 .login-button {
   --border-radius: 12px;
-  --border-color: #1976d2;
-  --color: #1976d2;
-  height: 50px;
+  --border-color: var(--ion-color-primary);
+  --color: var(--ion-color-primary);
+  height: 44px;
   font-weight: bold;
   --border-width: 2px;
 }
@@ -636,4 +634,29 @@ ion-content {
   margin: 0 1rem;
   color: #ffff;
   font-size: 0.9rem;
+}
+
+/* ── Galaxy S8+ (360px) responsive ── */
+@media (max-width: 380px) {
+  .logo-circle {
+    width: 52px;
+    height: 52px;
+  }
+
+  .logo-text {
+    font-size: 1.1rem;
+  }
+
+  .app-logo {
+    margin-bottom: 16px;
+  }
+
+  .submit-button {
+    height: 38px;
+    font-size: 0.88rem;
+  }
+
+  .signup-button2 {
+    font-size: 0.85rem;
+  }
 }

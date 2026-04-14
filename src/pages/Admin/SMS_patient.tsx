@@ -1,3 +1,4 @@
+import { avatarColor } from "../../utils/avatarColor";
 import React, { useState, useRef, useEffect } from "react";
 import {
   IonContent,
@@ -31,6 +32,7 @@ import {
   IonImg,
   useIonActionSheet,
   IonBackButton,
+  IonFooter,
 } from "@ionic/react";
 import {
   attach,
@@ -40,6 +42,7 @@ import {
   document,
   image,
   pause,
+  mic,
   checkmarkDone,
   checkmark,
   arrowBack,
@@ -145,6 +148,7 @@ const SMS_patient: React.FC = () => {
   const [isRecordingLocked, setIsRecordingLocked] = useState(false);
   const [recordingAmplitude, setRecordingAmplitude] = useState<number[]>([]);
   const [showCancelRecording, setShowCancelRecording] = useState(false);
+  const [recordingSlideX, setRecordingSlideX] = useState(0);
 
   // Firebase states
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -165,9 +169,19 @@ const SMS_patient: React.FC = () => {
   const messageInputRef = useRef<HTMLIonTextareaElement>(null);
   const progressIntervalRef = useRef<any>(null);
   const recordButtonRef = useRef<HTMLIonButtonElement>(null);
-  const recordContainerRef = useRef<HTMLIonGridElement>(null);
+  const recordContainerRef = useRef<HTMLDivElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
+  const recordingGestureRef = useRef({
+    active: false,
+    startX: 0,
+    startY: 0,
+    lastDeltaX: 0,
+    lastDeltaY: 0,
+    pointerId: 0,
+    locked: false,
+  });
+  const recordingStopActionRef = useRef<"send" | "cancel">("send");
 
   const [animateCards, setAnimateCards] = useState(false);
   const [presentToast] = useIonToast();
@@ -375,7 +389,7 @@ const SMS_patient: React.FC = () => {
     }
     setAnimateCards(false);
     if (isRecording) {
-      stopRecordingAndSend();
+      stopRecordingWithoutSend();
     }
     pauseAllAudio();
   });
@@ -664,6 +678,12 @@ const SMS_patient: React.FC = () => {
       mediaRecorder.start();
       setIsRecording(true);
       setRecordingTime(0);
+      setRecordingAmplitude([]);
+      setRecordingSlideX(0);
+      setShowCancelRecording(false);
+      setShowLockRecord(true);
+      setIsRecordingLocked(false);
+      recordingStopActionRef.current = "send";
 
       // Recording timer
       recordingIntervalRef.current = setInterval(() => {
@@ -690,8 +710,20 @@ const SMS_patient: React.FC = () => {
     }
   };
 
+  const stopRecordingWithoutSend = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      recordingStopActionRef.current = "cancel";
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+      }
+    }
+  };
+
   const stopRecordingAndSend = async () => {
     if (mediaRecorderRef.current && isRecording) {
+      recordingStopActionRef.current = "send";
       mediaRecorderRef.current.stop();
       mediaRecorderRef.current.stream
         .getTracks()
@@ -706,48 +738,57 @@ const SMS_patient: React.FC = () => {
   const setupRecordingStopHandler = () => {
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, {
-          type: "audio/webm",
-        });
-        const audioUrl = URL.createObjectURL(audioBlob);
+        const stopAction = recordingStopActionRef.current;
 
-        const attachment: Attachment = {
-          id: Math.random().toString(36).substring(7),
-          type: "audio",
-          url: audioUrl,
-          name: `voice_note_${Date.now()}.webm`,
-          duration: recordingTime,
-          isPlaying: false,
-          currentTime: 0,
-        };
-
-        setAttachments((prev) => [...prev, attachment]);
-
-        // Auto-send the recording
-        if (selectedChat && currentUser) {
-          const uploadedAttachment = await uploadFile(attachment);
-
-          await addDoc(collection(db, "chats", selectedChat.id, "messages"), {
-            text: "",
-            sender: "admin",
-            senderId: currentUser.uid,
-            timestamp: serverTimestamp(),
-            status: "sent",
-            chatId: selectedChat.id,
-            attachments: [uploadedAttachment],
+        if (stopAction === "send") {
+          const audioBlob = new Blob(audioChunksRef.current, {
+            type: "audio/webm",
           });
+          const audioUrl = URL.createObjectURL(audioBlob);
 
-          await updateDoc(doc(db, "chats", selectedChat.id), {
-            lastMessage: "Voice message",
-            lastMessageTime: serverTimestamp(),
-            unreadCount: selectedChat.unreadCount + 1,
-          });
+          const attachment: Attachment = {
+            id: Math.random().toString(36).substring(7),
+            type: "audio",
+            url: audioUrl,
+            name: `voice_note_${Date.now()}.webm`,
+            duration: recordingTime,
+            isPlaying: false,
+            currentTime: 0,
+          };
+
+          // Auto-send the recording
+          if (selectedChat && currentUser) {
+            const uploadedAttachment = await uploadFile(attachment);
+
+            await addDoc(collection(db, "chats", selectedChat.id, "messages"), {
+              text: "",
+              sender: "admin",
+              senderId: currentUser.uid,
+              timestamp: serverTimestamp(),
+              status: "sent",
+              chatId: selectedChat.id,
+              attachments: [uploadedAttachment],
+            });
+
+            await updateDoc(doc(db, "chats", selectedChat.id), {
+              lastMessage: "Voice message",
+              lastMessageTime: serverTimestamp(),
+              unreadCount: selectedChat.unreadCount + 1,
+            });
+          }
+
+          URL.revokeObjectURL(audioUrl);
         }
 
         setRecordingTime(0);
         setIsRecording(false);
         setIsRecordingLocked(false);
         setShowLockRecord(false);
+        setShowCancelRecording(false);
+        setRecordingSlideX(0);
+        recordingGestureRef.current.active = false;
+        recordingGestureRef.current.locked = false;
+        recordingStopActionRef.current = "send";
 
         if (amplitudeIntervalRef.current) {
           clearInterval(amplitudeIntervalRef.current);
@@ -758,6 +799,90 @@ const SMS_patient: React.FC = () => {
           audioContextRef.current = null;
         }
       };
+    }
+  };
+
+  const CANCEL_THRESHOLD = -110;
+  const LOCK_THRESHOLD = -90;
+
+  const handleRecordPointerDown = async (
+    e: React.PointerEvent<HTMLIonButtonElement>,
+  ) => {
+    if (newMessage.trim() !== "" || attachments.length > 0 || isRecording) return;
+
+    recordingGestureRef.current = {
+      active: true,
+      startX: e.clientX,
+      startY: e.clientY,
+      lastDeltaX: 0,
+      lastDeltaY: 0,
+      pointerId: e.pointerId,
+      locked: false,
+    };
+
+    setShowCancelRecording(false);
+    setShowLockRecord(true);
+    setRecordingSlideX(0);
+
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch (err) {
+      console.warn("Pointer capture failed:", err);
+    }
+
+    await startRecording();
+  };
+
+  const handleRecordPointerMove = (
+    e: React.PointerEvent<HTMLIonButtonElement>,
+  ) => {
+    if (!recordingGestureRef.current.active || !isRecording || isRecordingLocked)
+      return;
+
+    const deltaX = e.clientX - recordingGestureRef.current.startX;
+    const deltaY = e.clientY - recordingGestureRef.current.startY;
+    recordingGestureRef.current.lastDeltaX = deltaX;
+    recordingGestureRef.current.lastDeltaY = deltaY;
+
+    const clampedX = Math.max(-120, Math.min(0, deltaX));
+    setRecordingSlideX(clampedX);
+    setShowCancelRecording(deltaX <= CANCEL_THRESHOLD);
+
+    if (deltaY <= LOCK_THRESHOLD) {
+      recordingGestureRef.current.locked = true;
+      setIsRecordingLocked(true);
+      setShowLockRecord(false);
+      setShowCancelRecording(false);
+      setRecordingSlideX(0);
+    }
+  };
+
+  const handleRecordPointerUp = (
+    e: React.PointerEvent<HTMLIonButtonElement>,
+  ) => {
+    if (!recordingGestureRef.current.active) return;
+
+    recordingGestureRef.current.active = false;
+    try {
+      e.currentTarget.releasePointerCapture(recordingGestureRef.current.pointerId);
+    } catch (err) {
+      console.warn("Pointer release failed:", err);
+    }
+
+    if (!isRecording) return;
+
+    const shouldCancel =
+      recordingGestureRef.current.lastDeltaX <= CANCEL_THRESHOLD ||
+      showCancelRecording;
+
+    if (isRecordingLocked || recordingGestureRef.current.locked) {
+      return;
+    }
+
+    if (shouldCancel) {
+      stopRecordingWithoutSend();
+    } else {
+      stopRecordingAndSend();
     }
   };
 
@@ -914,82 +1039,51 @@ const SMS_patient: React.FC = () => {
 
   const renderMessage = (msg: Message) => {
     const isAdmin = msg.sender === "admin";
+    const isPatient = msg.sender === "patient";
 
     return (
       <div
         key={msg.id}
-        className={`message-wrapper ${
-          isAdmin ? "admin-wrapper" : "patient-wrapper"
-        }`}
+        className={`message-wrapper ${isAdmin ? "doctor-wrapper" : "patient-wrapper"}`}
       >
-        <div
-          className={`message ${
-            isAdmin ? "admin-message-d" : "patient-message-d"
-          }`}
-        >
+        <div className={`message ${isAdmin ? "doctor-message-d" : "patient-message-d"}`}>
           <div className="message-content">
-            {msg.sender !== "admin" && (
-              <p className="sender-name">
-                {msg.sender === "patient" ? "Patient" : "Admin"}
-              </p>
-            )}
+            {isAdmin && <div className="admin-badge"><IonChip color="warning">Admin</IonChip></div>}
             <p>{msg.text}</p>
-
             {msg.attachments && msg.attachments.length > 0 && (
-              <div className="attachments-container">
-                {msg.attachments.map((att) => (
-                  <div key={att.id} className="attachment-item">
+              <div className="message-attachments">
+                {msg.attachments.map((att, index: number) => (
+                  <div key={index} className="attachment">
                     {att.type === "image" && (
-                      <div
-                        className="attachment-image"
-                        onClick={() => {
-                          setSelectedImage(att.url);
-                          setShowImageModal(true);
-                        }}
-                      >
-                        <img src={att.url} alt="Attachment" />
+                      <div className="image-attachment" onClick={() => { setSelectedImage(att.url); setShowImageModal(true); }}>
+                        <IonThumbnail><IonImg src={att.url} alt={att.name} /></IonThumbnail>
+                        <div className="attachment-details">
+                          <IonLabel>{att.name}</IonLabel>
+                          <IonButton fill="clear" size="small" onClick={(e) => { e.stopPropagation(); downloadFile(att); }}><IonIcon icon={downloadOutline} /></IonButton>
+                        </div>
                       </div>
                     )}
                     {att.type === "document" && (
-                      <div
-                        className="attachment-document"
-                        onClick={() => {
-                          setSelectedDocument(att);
-                          setShowDocumentModal(true);
-                        }}
-                      >
-                        <IonIcon icon={documentText} className="doc-icon" />
-                        <span className="doc-name">{att.name}</span>
+                      <div className="document-attachment" onClick={() => { setSelectedDocument(att); setShowDocumentModal(true); }}>
+                        <IonIcon icon={document} size="large" />
+                        <div className="attachment-details">
+                          <IonLabel>{att.name}</IonLabel>
+                          <IonButton fill="clear" size="small" onClick={(e) => { e.stopPropagation(); downloadFile(att); }}><IonIcon icon={downloadOutline} /></IonButton>
+                        </div>
                       </div>
                     )}
                     {att.type === "audio" && (
-                      <div className="attachment-audio">
-                        <IonButton
-                          fill="clear"
-                          size="small"
-                          onClick={() =>
-                            att.isPlaying ? pauseAudio(att) : playAudio(att)
-                          }
-                        >
-                          <IonIcon
-                            icon={att.isPlaying ? pause : play}
-                            slot="start"
-                          />
-                          {formatTime(att.duration || 0)}
-                        </IonButton>
-                        {att.isPlaying && att.duration && (
+                      <div className="audio-attachment">
+                        <div className="audio-player">
+                          <IonButton fill="clear" className="play-pause-btn" onClick={() => att.isPlaying ? pauseAudio(att) : playAudio(att)}>
+                            <IonIcon icon={att.isPlaying ? pause : play} size="large" />
+                          </IonButton>
                           <div className="audio-progress">
-                            <div
-                              className="audio-progress-bar"
-                              style={{
-                                width: `${
-                                  (att.currentTime || 0 / (att.duration || 1)) *
-                                  100
-                                }%`,
-                              }}
-                            />
+                            <IonProgressBar value={att.currentTime && att.duration ? att.currentTime / att.duration : 0} className="audio-progress-bar" />
+                            <div className="audio-time"><span>{formatTime(att.currentTime || 0)} / {formatTime(att.duration || 0)}</span></div>
                           </div>
-                        )}
+                          <IonButton fill="clear" size="small" className="download-btn" onClick={() => downloadFile(att)}><IonIcon icon={downloadOutline} /></IonButton>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -998,13 +1092,11 @@ const SMS_patient: React.FC = () => {
             )}
           </div>
           <div className="message-meta">
-            <span className="message-time">
-              {formatMessageTime(msg.timestamp)}
-            </span>
+            <span className="message-time">{formatMessageTime(msg.timestamp)}</span>
             {isAdmin && msg.status && (
               <IonIcon
                 icon={msg.status === "read" ? checkmarkDone : checkmark}
-                className={`status-icon ${msg.status}`}
+                style={{ color: msg.status === "read" ? "var(--ion-color-tertiary)" : "var(--ion-color-medium)", fontSize: "16px" }}
               />
             )}
           </div>
@@ -1027,7 +1119,7 @@ const SMS_patient: React.FC = () => {
   }
 
   return (
-    <IonPage className="consult-page">
+    <IonPage className={`consult-page${selectedPatient ? " chat-open" : ""}`}>
       <IonHeader class="ion-no-border" className="consult-header">
         <IonToolbar>
           {selectedPatient ? (
@@ -1038,35 +1130,21 @@ const SMS_patient: React.FC = () => {
                 </IonButton>
               </IonButtons>
               <div className="patient-header-info">
-                <IonAvatar className="header-avatar-c">
-                  <img
-                    src={
-                      selectedPatient.image ||
-                      "https://ionicframework.com/docs/img/demos/avatar.svg"
-                    }
-                    alt={selectedPatient.name}
-                  />
-                </IonAvatar>
+                <div className="initials-avatar header-avatar-c" style={{background: avatarColor(selectedPatient.name)}}>{selectedPatient.name.split(" ").map((p: string) => p[0]).join("").slice(0,2).toUpperCase()}</div>
                 <div className="header-details">
                   <IonTitle>{selectedPatient.name}</IonTitle>
                   <IonText>
-                    <span
-                      className={
-                        selectedPatient.online ? "online-status" : "last-seen"
-                      }
-                    >
-                      {selectedPatient.online ? "Online" : "Offline"}
-                    </span>
+                    {selectedPatient.online ? (
+                      <span className="online-status">Online</span>
+                    ) : (
+                      <span className="last-seen">Last seen {selectedPatient.lastConsultation}</span>
+                    )}
                   </IonText>
                 </div>
               </div>
               <IonButtons slot="end">
-                <IonButton className="call-button">
-                  <IonIcon icon={callOutline} />
-                </IonButton>
-                <IonButton className="call-button">
-                  <IonIcon icon={videocamOutline} />
-                </IonButton>
+                <IonButton className="call-button"><IonIcon icon={callOutline} /></IonButton>
+                <IonButton className="call-button"><IonIcon icon={videocamOutline} /></IonButton>
               </IonButtons>
             </>
           ) : (
@@ -1085,77 +1163,51 @@ const SMS_patient: React.FC = () => {
               value={searchText}
               onIonInput={(e) => setSearchText(e.detail.value!)}
               placeholder="Search patients or conditions"
-              className="patient-searchbar"
+              className="doctor-search"
             />
           </IonToolbar>
         )}
       </IonHeader>
 
-      <IonContent fullscreen ref={contentRef} className="consult-content">
+      <IonContent ref={contentRef} className="consult-content">
         {!selectedPatient ? (
           <>
             {loading ? (
               <div className="loading-container">
                 <IonSpinner name="crescent" />
+                <IonText><p>Loading patients...</p></IonText>
               </div>
             ) : (
-              <div className="patients-list-c">
-                {filteredPatients.map((patient) => (
-                  <IonItem
-                    key={patient.id}
-                    className="patient-card-c"
-                    button
-                    onClick={() => handleSelectPatient(patient)}
-                    lines="none"
-                  >
-                    <IonGrid className="patient-grid-c">
-                      <div className="avatar-container-c">
-                        <IonAvatar className="patient-avatar">
-                          <img
-                            src={
-                              patient.image ||
-                              "https://ionicframework.com/docs/img/demos/avatar.svg"
-                            }
-                            alt={patient.name}
-                          />
-                        </IonAvatar>
-                        <div
-                          className={`online-indicator ${
-                            patient.online ? "online" : "offline"
-                          }`}
-                        ></div>
+              <div className="wa-patient-list">
+                {filteredPatients.map((patient) => {
+                  const existingChat = chatSessions.find(c => c.patientId === patient.id);
+                  const lastMsg = existingChat?.lastMessage || patient.condition || "";
+                  const lastTime = existingChat?.lastMessageTime ? formatMessageTime(existingChat.lastMessageTime) : "";
+                  const unread = existingChat?.unreadCount || 0;
+                  return (
+                    <IonItem key={patient.id} className="wa-patient-item" button lines="full" onClick={() => handleSelectPatient(patient)}>
+                      <div className="avatar-container-c" slot="start">
+                        <div className="initials-avatar wa-avatar" style={{ background: avatarColor(patient.name) }}>
+                          {patient.name.split(" ").map((p: string) => p[0]).join("").slice(0, 2).toUpperCase()}
+                        </div>
+                        <span className={`wa-online-dot ${patient.online ? "online" : ""}`} />
                       </div>
-
-                      <IonCardTitle className="patient-name-c">
-                        {patient.name}
-                      </IonCardTitle>
-                      <IonCardSubtitle className="patient-condition-c">
-                        {patient.condition}
-                      </IonCardSubtitle>
-
-                      <div className="patient-details-c">
-                        <IonChip color="primary" className="age-chip">
-                          <IonLabel>{patient.age} years</IonLabel>
-                        </IonChip>
-
-                        <IonChip className="gender-chip">
-                          <IonLabel>{patient.gender}</IonLabel>
-                        </IonChip>
+                      <div className="wa-info">
+                        <div className="wa-top">
+                          <span className="wa-name">{patient.name}</span>
+                          {lastTime && <span className="wa-time">{lastTime}</span>}
+                        </div>
+                        <div className="wa-meta">
+                          {patient.gender}{patient.condition ? ` · ${patient.condition}` : ""}
+                        </div>
+                        <div className="wa-bottom">
+                          <span className="wa-preview">{lastMsg}</span>
+                          {unread > 0 && <span className="wa-unread">{unread}</span>}
+                        </div>
                       </div>
-
-                      <div className="patient-footer">
-                        <IonText className="blood-type-text">
-                          <IonIcon icon={medical} />
-                          {patient.bloodType}
-                        </IonText>
-                        <IonText className="last-consult-text">
-                          <IonIcon icon={timeOutline} />
-                          {patient.lastConsultation}
-                        </IonText>
-                      </div>
-                    </IonGrid>
-                  </IonItem>
-                ))}
+                    </IonItem>
+                  );
+                })}
               </div>
             )}
           </>
@@ -1201,12 +1253,7 @@ const SMS_patient: React.FC = () => {
 
                 {isTyping && (
                   <div className="typing-indicator">
-                    <IonAvatar className="typing-avatar">
-                      <img
-                        src="https://ionicframework.com/docs/img/demos/avatar.svg"
-                        alt={selectedPatient.name}
-                      />
-                    </IonAvatar>
+                    <div className="initials-avatar typing-avatar" style={{background: avatarColor(selectedPatient.name)}}>{selectedPatient.name.split(" ").map((p: string) => p[0]).join("").slice(0,2).toUpperCase()}</div>
                     <div className="typing-bubble">
                       <div className="typing-dots">
                         <span></span>
@@ -1218,203 +1265,6 @@ const SMS_patient: React.FC = () => {
                 )}
               </div>
             </div>
-
-            <IonGrid className="message-input-container1">
-              {attachments.length > 0 && (
-                <div className="attachments-preview">
-                  {attachments.map((attachment) => (
-                    <div key={attachment.id} className="attachment-preview">
-                      {attachment.type === "image" && (
-                        <>
-                          <IonThumbnail>
-                            <img src={attachment.url} alt={attachment.name} />
-                          </IonThumbnail>
-                          <div className="attachment-info">
-                            <IonText>{attachment.name}</IonText>
-                            {attachment.uploadProgress !== undefined && (
-                              <IonProgressBar
-                                value={attachment.uploadProgress / 100}
-                                className="upload-progress"
-                              />
-                            )}
-                          </div>
-                          <IonButton
-                            fill="clear"
-                            color="danger"
-                            size="small"
-                            onClick={() => removeAttachment(attachment.id)}
-                            className="remove-attachment-btn"
-                          >
-                            <IonIcon icon={trashOutline} />
-                          </IonButton>
-                        </>
-                      )}
-
-                      {attachment.type === "document" && (
-                        <>
-                          <IonIcon icon={document} className="document-icon" />
-                          <div className="attachment-info">
-                            <IonText>{attachment.name}</IonText>
-                            {attachment.uploadProgress !== undefined && (
-                              <IonProgressBar
-                                value={attachment.uploadProgress / 100}
-                                className="upload-progress"
-                              />
-                            )}
-                          </div>
-                          <IonButton
-                            fill="clear"
-                            color="danger"
-                            size="small"
-                            onClick={() => removeAttachment(attachment.id)}
-                            className="remove-attachment-btn"
-                          >
-                            <IonIcon icon={trashOutline} />
-                          </IonButton>
-                        </>
-                      )}
-
-                      {attachment.type === "audio" && (
-                        <>
-                          <IonIcon icon={play} className="audio-icon" />
-                          <div className="attachment-info">
-                            <IonText>
-                              Voice note (
-                              {formatTime(attachment?.duration || 0)})
-                            </IonText>
-                            {attachment.uploadProgress !== undefined && (
-                              <IonProgressBar
-                                value={attachment.uploadProgress / 100}
-                                className="upload-progress"
-                              />
-                            )}
-                          </div>
-                          <IonButton
-                            fill="clear"
-                            color="danger"
-                            size="small"
-                            onClick={() => removeAttachment(attachment.id)}
-                            className="remove-attachment-btn"
-                          >
-                            <IonIcon icon={trashOutline} />
-                          </IonButton>
-                        </>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <IonGrid className="input-grid">
-                <IonRow className="ion-align-items-center input-row">
-                  <IonCol size="1" className="attachment-col">
-                    <IonButton
-                      fill="clear"
-                      color="medium"
-                      onClick={openAttachmentActionSheet}
-                      className="attachment-btn"
-                    >
-                      <IonIcon icon={attach} color="primary" />
-                    </IonButton>
-                  </IonCol>
-                  <IonCol size="10" className="text-input-col">
-                    <IonItem lines="none" color={"light"}>
-                      <IonTextarea
-                        ref={messageInputRef}
-                        value={newMessage}
-                        placeholder="Type your message here..."
-                        onIonInput={(e) => setNewMessage(e.detail.value!)}
-                        rows={1}
-                        onKeyPress={handleKeyPress}
-                        autoGrow
-                        className="message-textarea"
-                      />
-                    </IonItem>
-                  </IonCol>
-                  <IonCol size="1" className="send-col">
-                    {newMessage.trim() === "" && attachments.length === 0 ? (
-                      <IonButton
-                        ref={recordButtonRef}
-                        fill="clear"
-                        color="primary"
-                        className="record-btn"
-                        onClick={
-                          isRecording ? stopRecordingAndSend : startRecording
-                        }
-                      >
-                        <IonIcon icon={micOutline} />
-                      </IonButton>
-                    ) : (
-                      <IonButton
-                        fill="clear"
-                        color="primary"
-                        onClick={handleSendMessage}
-                        disabled={isSending}
-                        className="send-btn"
-                      >
-                        {isSending ? (
-                          <IonSpinner name="crescent" />
-                        ) : (
-                          <IonIcon icon={sendOutline} />
-                        )}
-                      </IonButton>
-                    )}
-                  </IonCol>
-                </IonRow>
-              </IonGrid>
-            </IonGrid>
-
-            {/* Recording UI */}
-            {isRecording && (
-              <IonGrid className="recording-overlay" ref={recordContainerRef}>
-                <IonRow className="ion-justify-content-center ion-align-items-center recording-container">
-                  <IonCol size="12" className="ion-text-center">
-                    <div className="recording-visualization">
-                      {recordingAmplitude.map((amp, index) => (
-                        <div
-                          key={index}
-                          className="amplitude-bar"
-                          style={{ height: `${amp * 100}%` }}
-                        />
-                      ))}
-                    </div>
-                    <IonText className="recording-time">
-                      {formatTime(recordingTime)}
-                    </IonText>
-                    <IonText className="recording-text">
-                      {isRecordingLocked
-                        ? "Recording locked - Tap to send"
-                        : "Recording... Slide up to lock"}
-                    </IonText>
-                    <div className="recording-actions">
-                      <IonButton
-                        fill="clear"
-                        color="danger"
-                        onClick={() => {
-                          setIsRecording(false);
-                          setRecordingTime(0);
-                          if (mediaRecorderRef.current) {
-                            mediaRecorderRef.current.stop();
-                            mediaRecorderRef.current.stream
-                              .getTracks()
-                              .forEach((track) => track.stop());
-                          }
-                        }}
-                      >
-                        <IonIcon icon={trashOutline} />
-                      </IonButton>
-                      <IonButton
-                        fill="clear"
-                        color="primary"
-                        onClick={stopRecordingAndSend}
-                      >
-                        <IonIcon icon={sendOutline} />
-                      </IonButton>
-                    </div>
-                  </IonCol>
-                </IonRow>
-              </IonGrid>
-            )}
           </>
         )}
 
@@ -1429,101 +1279,148 @@ const SMS_patient: React.FC = () => {
         />
 
         {/* Image Preview Modal */}
-        <IonModal
-          isOpen={showImageModal}
-          onDidDismiss={() => setShowImageModal(false)}
-          className="image-preview-modal"
-        >
+        <IonModal isOpen={showImageModal} onDidDismiss={() => setShowImageModal(false)} className="image-preview-modal">
           <IonHeader>
             <IonToolbar>
               <IonTitle>Image Preview</IonTitle>
               <IonButtons slot="end">
-                <IonButton
-                  onClick={() => setShowImageModal(false)}
-                  className="modal-close-btn"
-                >
-                  <IonIcon icon={close} />
-                </IonButton>
-                <IonButton
-                  onClick={() =>
-                    downloadFile({
-                      id: "temp",
-                      type: "image",
-                      url: selectedImage,
-                      name: "image.jpg",
-                    } as Attachment)
-                  }
-                >
-                  <IonIcon icon={downloadOutline} />
-                </IonButton>
+                <IonButton onClick={() => setShowImageModal(false)} className="modal-close-btn"><IonIcon icon={close} /></IonButton>
+                <IonButton onClick={() => downloadFile({ id: "temp", type: "image", url: selectedImage, name: "image.jpg" } as Attachment)}><IonIcon icon={downloadOutline} /></IonButton>
               </IonButtons>
             </IonToolbar>
           </IonHeader>
           <IonContent>
             <div className="image-container">
-              <img
-                src={selectedImage}
-                alt="Preview"
-                className="preview-image"
-              />
+              <img src={selectedImage} alt="Preview" className="preview-image" />
             </div>
           </IonContent>
         </IonModal>
 
         {/* Document Preview Modal */}
-        <IonModal
-          isOpen={showDocumentModal}
-          onDidDismiss={() => setShowDocumentModal(false)}
-          className="document-preview-modal"
-        >
+        <IonModal isOpen={showDocumentModal} onDidDismiss={() => setShowDocumentModal(false)} className="document-preview-modal">
           <IonHeader>
             <IonToolbar>
               <IonTitle>{selectedDocument?.name}</IonTitle>
               <IonButtons slot="end">
-                <IonButton
-                  onClick={() => setShowDocumentModal(false)}
-                  className="modal-close-btn"
-                >
-                  <IonIcon icon={close} />
-                </IonButton>
-                <IonButton
-                  onClick={() =>
-                    selectedDocument && downloadFile(selectedDocument)
-                  }
-                >
-                  <IonIcon icon={downloadOutline} />
-                </IonButton>
+                <IonButton onClick={() => setShowDocumentModal(false)} className="modal-close-btn"><IonIcon icon={close} /></IonButton>
+                <IonButton onClick={() => selectedDocument && downloadFile(selectedDocument)}><IonIcon icon={downloadOutline} /></IonButton>
               </IonButtons>
             </IonToolbar>
           </IonHeader>
           <IonContent>
             <div className="document-container">
               {selectedDocument && (
-                <iframe
-                  src={selectedDocument.url}
-                  title="Document preview"
-                  width="100%"
-                  height="100%"
-                  className="document-iframe"
-                >
-                  <p>
-                    Your browser does not support PDF viewing. Please download
-                    the PDF to view it.
-                  </p>
+                <iframe src={selectedDocument.url} title="Document preview" width="100%" height="100%" className="document-iframe">
+                  <p>Your browser does not support PDF viewing. Please download the PDF to view it.</p>
                 </iframe>
               )}
             </div>
           </IonContent>
         </IonModal>
 
-        <IonAlert
-          isOpen={showAlert}
-          onDidDismiss={() => setShowAlert(false)}
-          header={"Microphone Access"}
-          message={alertMessage}
-          buttons={["OK"]}
-        />
+        <IonAlert isOpen={showAlert} onDidDismiss={() => setShowAlert(false)} header={"Microphone Access"} message={alertMessage} buttons={["OK"]} />
       </IonContent>
+      {selectedPatient && (
+        <IonFooter>
+          <IonToolbar className="message-input-container1">
+            <IonGrid className="message-input-container1">
+              {attachments.length > 0 && (
+                <div className="attachments-preview">
+                  {attachments.map((attachment) => (
+                    <div key={attachment.id} className="attachment-preview">
+                      {attachment.type === "image" && (
+                        <>
+                          <IonThumbnail><img src={attachment.url} alt={attachment.name} /></IonThumbnail>
+                          <div className="attachment-info">
+                            <IonText>{attachment.name}</IonText>
+                            {attachment.uploadProgress !== undefined && <IonProgressBar value={attachment.uploadProgress / 100} className="upload-progress" />}
+                          </div>
+                          <IonButton fill="clear" color="danger" size="small" onClick={() => removeAttachment(attachment.id)} className="remove-attachment-btn"><IonIcon icon={trashOutline} /></IonButton>
+                        </>
+                      )}
+                      {attachment.type === "document" && (
+                        <>
+                          <IonIcon icon={document} className="document-icon" />
+                          <div className="attachment-info">
+                            <IonText>{attachment.name}</IonText>
+                            {attachment.uploadProgress !== undefined && <IonProgressBar value={attachment.uploadProgress / 100} className="upload-progress" />}
+                          </div>
+                          <IonButton fill="clear" color="danger" size="small" onClick={() => removeAttachment(attachment.id)} className="remove-attachment-btn"><IonIcon icon={trashOutline} /></IonButton>
+                        </>
+                      )}
+                      {attachment.type === "audio" && (
+                        <>
+                          <IonIcon icon={play} className="audio-icon" />
+                          <div className="attachment-info">
+                            <IonText>Voice note ({formatTime(attachment?.duration || 0)})</IonText>
+                            {attachment.uploadProgress !== undefined && <IonProgressBar value={attachment.uploadProgress / 100} className="upload-progress" />}
+                          </div>
+                          <IonButton fill="clear" color="danger" size="small" onClick={() => removeAttachment(attachment.id)} className="remove-attachment-btn"><IonIcon icon={trashOutline} /></IonButton>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <IonGrid className="input-grid">
+                {!isRecording ? (
+                  <IonRow className="ion-align-items-center input-row">
+                    <IonCol size="1" className="attachment-col">
+                      <IonButton fill="clear" color="medium" onClick={openAttachmentActionSheet} className="attachment-btn">
+                        <IonIcon icon={attach} color="primary" />
+                      </IonButton>
+                    </IonCol>
+                    <IonCol size="10" className="text-input-col">
+                      <IonItem lines="none" color={"light"}>
+                        <IonTextarea ref={messageInputRef} value={newMessage} placeholder="Type your message here..." onIonInput={(e) => setNewMessage(e.detail.value!)} rows={1} onKeyPress={handleKeyPress} autoGrow className="message-textarea" />
+                      </IonItem>
+                    </IonCol>
+                    <IonCol size="1" className="send-col">
+                      {newMessage.trim() === "" && attachments.length === 0 ? (
+                        <IonButton ref={recordButtonRef} fill="clear" color="primary" className="record-btn" onPointerDown={handleRecordPointerDown} onPointerMove={handleRecordPointerMove} onPointerUp={handleRecordPointerUp} onPointerCancel={handleRecordPointerUp}>
+                          <IonIcon icon={micOutline} />
+                        </IonButton>
+                      ) : (
+                        <IonButton fill="clear" color="primary" onClick={handleSendMessage} disabled={isSending} className="send-btn">
+                          {isSending ? <IonSpinner name="crescent" /> : <IonIcon icon={sendOutline} />}
+                        </IonButton>
+                      )}
+                    </IonCol>
+                  </IonRow>
+                ) : (
+                  <IonRow className="recording-row">
+                    <IonCol size="12">
+                      <div className={`whatsapp-recording-bar ${showCancelRecording ? "cancel-ready" : ""}`} ref={recordContainerRef} style={{ transform: `translateX(${recordingSlideX}px)` }}>
+                        <div className="recording-left">
+                          <span className="recording-live-dot"></span>
+                          <IonIcon icon={mic} className="recording-mic" />
+                          <IonText className="recording-time">{formatTime(recordingTime)}</IonText>
+                        </div>
+                        <div className="recording-wave">
+                          {(recordingAmplitude.length > 0 ? recordingAmplitude : [0.1, 0.25, 0.35, 0.5, 0.3, 0.2, 0.4]).map((amp, index) => (
+                            <span key={index} className="recording-wave-bar" style={{ height: `${Math.max(18, amp * 34)}px` }} />
+                          ))}
+                          <IonText className="recording-slide-hint">
+                            {showCancelRecording && !isRecordingLocked ? "Release to cancel" : isRecordingLocked ? "Locked" : showLockRecord ? "Slide up to lock" : "Slide left to cancel"}
+                          </IonText>
+                        </div>
+                        <div className="recording-actions">
+                          <IonButton fill="clear" color="danger" className="recording-action-btn cancel" onClick={() => { stopRecordingWithoutSend(); }}>
+                            <IonIcon icon={trashOutline} />
+                          </IonButton>
+                          <IonButton fill="solid" color="primary" className="recording-action-btn send" onClick={stopRecordingAndSend}>
+                            <IonIcon icon={sendOutline} />
+                          </IonButton>
+                        </div>
+                      </div>
+                    </IonCol>
+                  </IonRow>
+                )}
+              </IonGrid>
+            </IonGrid>
+          </IonToolbar>
+        </IonFooter>
+      )}
     </IonPage>
   );
 };

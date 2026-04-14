@@ -1,126 +1,58 @@
 import {
-  IonAvatar,
   IonContent,
-  IonIcon,
   IonItem,
   IonLabel,
   IonList,
-  IonListHeader,
   IonMenu,
   IonMenuToggle,
-  IonNote,
 } from "@ionic/react";
-
 import { useLocation } from "react-router-dom";
 import {
-  businessOutline,
-  chatbubblesOutline,
-  logOutOutline,
-  medkitOutline,
-  person,
-  personCircleOutline,
-  receiptOutline,
-} from "ionicons/icons";
-import {
-  FaTachometerAlt,
   FaUserCircle,
   FaCalendarAlt,
   FaComments,
   FaFileMedical,
   FaHospital,
+  FaCog,
 } from "react-icons/fa";
-import dashboard from "@material-design-icons/svg/outlined/dashboard.svg";
-import calend from "@material-design-icons/svg/outlined/edit_calendar.svg";
-import termo from "@material-design-icons/svg/outlined/device_thermostat.svg";
+import { MdSpaceDashboard } from "react-icons/md";
 import "./Menu.css";
-import { MdSpaceBar, MdSpaceDashboard } from "react-icons/md";
+import { useSettings } from "../context/SettingsContext";
 
-interface AppPage {
-  url: string;
-  iosIcon: string;
-  mdIcon: string;
-  title: string;
-}
-
-const appPages: AppPage[] = [
-  {
-    title: "Dashboard",
-    url: "/patient/dashboard",
-    iosIcon: dashboard,
-    mdIcon: dashboard,
-  },
-  {
-    title: "Profile",
-    url: "/patient/profile",
-    iosIcon: personCircleOutline,
-    mdIcon: personCircleOutline,
-  },
-  {
-    title: "Book Appointment",
-    url: "/patient/book_appointment",
-    iosIcon: calend,
-    mdIcon: calend,
-  },
-  {
-    title: "Consult",
-    url: "/patient/consult",
-    iosIcon: chatbubblesOutline,
-    mdIcon: chatbubblesOutline,
-  },
-
-  {
-    title: "Diagnoses",
-    url: "/patient/diagnoses",
-    iosIcon: termo,
-    mdIcon: termo,
-  },
-
-  {
-    title: "Health Units",
-    url: "/patient/health_units_p",
-    iosIcon: businessOutline,
-    mdIcon: businessOutline,
-  },
+const appPages = [
+  { title: "dashboard", url: "/patient/dashboard", Icon: MdSpaceDashboard },
+  { title: "profile", url: "/patient/profile", Icon: FaUserCircle },
+  { title: "appointments", url: "/patient/book_appointment", Icon: FaCalendarAlt },
+  { title: "consult", url: "/patient/consult", Icon: FaComments },
+  { title: "diagnoses", url: "/patient/diagnoses", Icon: FaFileMedical },
+  { title: "healthUnits", url: "/patient/health_units_p", Icon: FaHospital },
+  { title: "settings", url: "/patient/settings", Icon: FaCog },
 ];
 
 const PatientMenu: React.FC = () => {
   const location = useLocation();
+  const { t } = useSettings();
 
   return (
     <IonMenu contentId="main" type="overlay">
       <IonContent>
         <IonList id="inbox-list">
-          {appPages.map((appPage, index) => {
-            return (
-              <IonMenuToggle key={index} autoHide={false}>
-                <IonItem
-                  className={
-                    location.pathname === appPage.url ? "selected" : ""
-                  }
-                  routerLink={appPage.url}
-                  routerDirection="none"
-                  lines="none"
-                  detail={false}
-                >
-                  <span slot="start" className="menu-icon">
-                    {appPage.url === "/patient/dashboard" && (
-                      <MdSpaceDashboard />
-                    )}
-                    {appPage.url === "/patient/profile" && <FaUserCircle />}
-                    {appPage.url === "/patient/book_appointment" && (
-                      <FaCalendarAlt />
-                    )}
-                    {appPage.url === "/patient/consult" && <FaComments />}
-                    {appPage.url === "/patient/diagnoses" && <FaFileMedical />}
-                    {appPage.url === "/patient/health_units_p" && (
-                      <FaHospital />
-                    )}
-                  </span>
-                  <IonLabel className="menu-label">{appPage.title}</IonLabel>
-                </IonItem>
-              </IonMenuToggle>
-            );
-          })}
+          {appPages.map(({ title, url, Icon }) => (
+            <IonMenuToggle key={url} autoHide={false}>
+              <IonItem
+                className={location.pathname === url ? "selected" : ""}
+                routerLink={url}
+                routerDirection="none"
+                lines="none"
+                detail={false}
+              >
+                <span slot="start" className="menu-icon">
+                  <Icon size={16} />
+                </span>
+                <IonLabel>{t(title)}</IonLabel>
+              </IonItem>
+            </IonMenuToggle>
+          ))}
         </IonList>
       </IonContent>
     </IonMenu>

@@ -1,6 +1,6 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 const config: CapacitorConfig = {
-  appId: "io.ionic.starter",
+  appId: "io.homecare237.starter",
   appName: "HomeCare237",
   webDir: "dist",
   android: {

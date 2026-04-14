@@ -15,7 +15,7 @@
   .specialties-card {
     margin: 0;
     border-radius: 26px;
-    box-shadow: 0 12px 26px rgba(78, 85, 150, 0.14);
+    
     border: 1px solid #e5e8f9;
     --background: #fefeff;
   }
@@ -37,12 +37,12 @@
     border: 1px solid #e7eafb;
     box-shadow: none;
     background: var(--background);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.2s ease;
   }
 
   .specialty-doctor-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 10px 20px rgba(78, 85, 150, 0.12);
+    
   }
 
   .doctor-row {
@@ -131,7 +131,7 @@
     .specialty-doctor-card {
       --background: var(--background);
       border: 1px solid #2a2f57;
-      box-shadow: 0 12px 26px rgba(5, 7, 20, 0.55);
+      
     }
 
     .specialties-title,

@@ -69,8 +69,12 @@ import {
   Text,
   View,
   StyleSheet,
+  Image,
 } from "@react-pdf/renderer";
+import logo from "../images/logo.jpg";
 import "./Doc_diagnoses.scss";
+import { motion } from "framer-motion";
+
 
 // TypeScript interfaces
 interface Patient {
@@ -124,71 +128,37 @@ interface Diagnosis {
   updatedAt?: string;
 }
 
-// PDF Styles (keep the same styles as before)
+// PDF Styles
 const styles = StyleSheet.create({
-  page: {
-    flexDirection: "column",
-    backgroundColor: "#FFFFFF",
-    padding: 20,
-  },
+  page: { flexDirection: "column", backgroundColor: "#FFFFFF", padding: 30 },
   header: {
-    marginBottom: 20,
-    padding: 10,
-    backgroundColor: "#2c7da0",
-    color: "white",
-    textAlign: "center",
+    flexDirection: "row", alignItems: "center",
+    marginBottom: 20, paddingBottom: 14,
+    borderBottomWidth: 2, borderBottomColor: "#3b7dd8",
   },
+  logo: { width: 48, height: 48 },
+  headerText: { flex: 1, marginLeft: 12 },
+  headerTitle: { fontSize: 16, fontWeight: "bold", color: "#3b7dd8" },
+  headerSub: { fontSize: 9, color: "#666", marginTop: 2 },
   section: {
-    margin: 10,
-    padding: 10,
+    marginBottom: 14, padding: 12, backgroundColor: "#f7f9fc",
+    borderRadius: 4, borderLeftWidth: 3, borderLeftColor: "#3b7dd8",
   },
-  title: {
-    fontSize: 20,
-    marginBottom: 10,
-    color: "#2c7da0",
-  },
-  subtitle: {
-    fontSize: 16,
-    marginBottom: 5,
-    color: "#01497c",
-  },
-  text: {
-    fontSize: 12,
-    marginBottom: 5,
-  },
-  row: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderBottomColor: "#eeeeee",
-    padding: 5,
-  },
-  cell: {
-    flex: 1,
-    fontSize: 10,
-  },
-  headerRow: {
-    backgroundColor: "#f8f9fa",
-    fontWeight: "bold",
-  },
+  title: { fontSize: 11, fontWeight: "bold", color: "#3b7dd8", marginBottom: 8, textTransform: "uppercase" },
+  subtitle: { fontSize: 10, fontWeight: "bold", color: "#3b7dd8", marginBottom: 6 },
+  text: { fontSize: 10, marginBottom: 4, color: "#333" },
+  row: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: "#e8e8e8", padding: 5 },
+  cell: { flex: 1, fontSize: 10, color: "#333" },
+  headerRow: { backgroundColor: "#e8f0fb" },
   watermark: {
-    position: "absolute",
-    bottom: 150,
-    left: 0,
-    right: 0,
-    textAlign: "center",
-    opacity: 0.1,
-    transform: "rotate(-45deg)",
-    fontSize: 60,
-    color: "#2c5aa0",
+    position: "absolute", bottom: 150, left: 0, right: 0,
+    textAlign: "center", opacity: 0.05, transform: "rotate(-45deg)",
+    fontSize: 60, color: "#3b7dd8",
   },
   footer: {
-    position: "absolute",
-    bottom: 30,
-    left: 0,
-    right: 0,
-    textAlign: "center",
-    fontSize: 10,
-    color: "#666666",
+    position: "absolute", bottom: 20, left: 30, right: 30,
+    textAlign: "center", fontSize: 9, color: "#999",
+    borderTopWidth: 1, borderTopColor: "#e0e0e0", paddingTop: 8,
   },
 });
 
@@ -201,7 +171,11 @@ const DiagnosisPDF: React.FC<{ diagnosis: Diagnosis; patient: Patient }> = ({
     <Page size="A4" style={styles.page}>
       <Text style={styles.watermark}>Diagnosis</Text>
       <View style={styles.header}>
-        <Text>HomeCare Cameroon - Medical Report</Text>
+        <Image src={logo} style={styles.logo} />
+        <View style={styles.headerText}>
+          <Text style={styles.headerTitle}>HomeCare Cameroon</Text>
+          <Text style={styles.headerSub}>Medical Report</Text>
+        </View>
       </View>
 
       <View style={styles.section}>
@@ -345,7 +319,11 @@ const LabResultPDF: React.FC<{ labResult: LabResult; patient: Patient }> = ({
     <Page size="A4" style={styles.page}>
       <Text style={styles.watermark}>Lab Result</Text>
       <View style={styles.header}>
-        <Text>HomeCare Cameroon - Lab Results</Text>
+        <Image src={logo} style={styles.logo} />
+        <View style={styles.headerText}>
+          <Text style={styles.headerTitle}>HomeCare Cameroon</Text>
+          <Text style={styles.headerSub}>Laboratory Results</Text>
+        </View>
       </View>
 
       <View style={styles.section}>
@@ -418,7 +396,11 @@ const PrescriptionPDF: React.FC<{
     <Page size="A4" style={styles.page}>
       <Text style={styles.watermark}>Prescriptions</Text>
       <View style={styles.header}>
-        <Text>HomeCare Cameroon - Prescription</Text>
+        <Image src={logo} style={styles.logo} />
+        <View style={styles.headerText}>
+          <Text style={styles.headerTitle}>HomeCare Cameroon</Text>
+          <Text style={styles.headerSub}>Medical Prescription</Text>
+        </View>
       </View>
 
       <View style={styles.section}>
@@ -905,9 +887,13 @@ const DoctorDiagnoses: React.FC = () => {
                 </IonCardHeader>
                 <IonCardContent className="diagnoses">
                   {loading ? (
-                    <div className="loading-state">
-                      <IonSpinner name="crescent" />
-                      <p>Loading patients...</p>
+                    <div className="loading-container">
+                      <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              className="loading-spinner"
+            />
+                      <IonText className="ion-text-center ion-padding"><p>Loading patients...</p></IonText>
                     </div>
                   ) : selectedPatient ? (
                     <div className="selected-patient">
@@ -958,10 +944,14 @@ const DoctorDiagnoses: React.FC = () => {
                     </IonCardHeader>
                     <IonCardContent className="diagnoses">
                       {loadingHistory ? (
-                        <div className="loading-state">
-                          <IonSpinner name="crescent" />
-                          <p>Loading patient history...</p>
-                        </div>
+                        <div className="loading-container">
+                      <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              className="loading-spinner"
+            />
+                      <IonText className="ion-text-center ion-padding"><p>Loading patient history...</p></IonText>
+                    </div>
                       ) : (
                         <IonAccordionGroup>
                           {/* Existing Diagnoses Accordion */}
@@ -1037,7 +1027,11 @@ const DoctorDiagnoses: React.FC = () => {
                                             disabled={loading}
                                           >
                                             {loading ? (
-                                              <IonSpinner name="crescent" />
+                                              <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              className="loading-spinner"
+            />
                                             ) : (
                                               <IonIcon icon={downloadOutline} />
                                             )}
@@ -1124,7 +1118,11 @@ const DoctorDiagnoses: React.FC = () => {
                                             disabled={loading}
                                           >
                                             {loading ? (
-                                              <IonSpinner name="crescent" />
+                                              <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              className="loading-spinner"
+            />
                                             ) : (
                                               <IonIcon icon={downloadOutline} />
                                             )}
@@ -1568,7 +1566,11 @@ const DoctorDiagnoses: React.FC = () => {
                                         disabled={loading}
                                       >
                                         {loading ? (
-                                          <IonSpinner name="crescent" />
+                                          <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              className="loading-spinner"
+            />
                                         ) : (
                                           <>
                                             <IonIcon
@@ -1625,7 +1627,11 @@ const DoctorDiagnoses: React.FC = () => {
                                           disabled={loading}
                                         >
                                           {loading ? (
-                                            <IonSpinner name="crescent" />
+                                            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              className="loading-spinner"
+            />
                                           ) : (
                                             <>
                                               <IonIcon
@@ -1661,7 +1667,11 @@ const DoctorDiagnoses: React.FC = () => {
                               {({ loading }) => (
                                 <IonButton expand="block" disabled={loading}>
                                   {loading ? (
-                                    <IonSpinner name="crescent" />
+                                    <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              className="loading-spinner"
+            />
                                   ) : (
                                     <>
                                       <IonIcon

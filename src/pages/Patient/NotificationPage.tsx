@@ -161,7 +161,11 @@ const NotificationsPage: React.FC = () => {
                 className={`notification-item ${
                   !(notification.data as any)?.read ? "unread" : "read"
                 }`}
-                onClick={() => markAsRead(notification.id)}
+                onClick={() =>
+                  markAsRead(
+                    (notification.data as any)?.docId ?? notification.id,
+                  )
+                }
                 detail={false}
                 lines="none"
               >
@@ -170,11 +174,6 @@ const NotificationsPage: React.FC = () => {
                   <br />
                   <p>{notification.body}</p>
 
-                  {notification.data && (
-                    <p className="notification-data">
-                      {JSON.stringify(notification.data)}
-                    </p>
-                  )}
                 </IonLabel>
                 <IonNote slot="end" className="notification-time">
                   {formatDate(notification.data?.timestamp as number)}

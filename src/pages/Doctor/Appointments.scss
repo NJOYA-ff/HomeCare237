@@ -16,7 +16,7 @@
 .appointment-card {
   margin: 10px;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  
   animation: fadeInUp 0.3s ease forwards;
   opacity: 0;
 
@@ -180,7 +180,7 @@ ion-badge {
 // Dark mode compatibility
 @media (prefers-color-scheme: dark) {
   .appointment-card {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    
   }
 }
 .patient-details {
@@ -198,4 +198,29 @@ ion-badge {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+// ── Loading ──────────────────────────────────────────────────
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 50vh;
+  padding: 20px;
+
+  .loading-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba(var(--ion-color-primary-rgb), 0.2);
+    border-top-color: var(--ion-color-primary);
+    border-radius: 50%;
+    margin-bottom: 16px;
+  }
+
+  p {
+    margin: 0;
+    color: var(--ion-color-medium);
+    text-align: center;
+  }
 }

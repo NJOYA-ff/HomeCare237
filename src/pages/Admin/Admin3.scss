@@ -1,41 +1,599 @@
-/* Main container styles */
-.diagnoses-container {
-  padding: 16px;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
+// ============================================================
+// Admin3.scss — Patients, Doctors, Diagnoses
+// ============================================================
+
+// ---- Shared card layout (patients, doctors, admins) ----
+.p-avatar {
+  position: relative;
+  margin-right: 12px;
+  flex-shrink: 0;
+
+  .p-initials {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 800;
+    font-size: 1rem;
+    letter-spacing: 0.5px;
+  }
+
+  .p-status-dot {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid var(--ion-background-color);
+
+    &.active   { background: var(--ion-color-success); }
+    &.inactive { background: var(--ion-color-medium); }
+    &.on-leave { background: var(--ion-color-warning); }
+  }
 }
 
-/* Diagnosis card styles */
-.diagnosis-card {
-  transition: all 0.3s ease;
-  cursor: pointer;
-  border-radius: 12px;
+.p-info {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.p-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.p-row-top {
+  justify-content: space-between;
+  flex-wrap: nowrap;
+}
+
+.p-name {
+  font-size: 0.97rem;
+  font-weight: 700;
+  color: var(--ion-color-dark);
+  white-space: nowrap;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+.p-spec {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ion-color-primary);
+  ion-icon { font-size: 13px; flex-shrink: 0; }
+}
+
+.p-rating {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ion-color-warning-shade);
+  ion-icon { font-size: 12px; }
+}
+
+.p-contact-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  color: var(--ion-color-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 48%;
+  ion-icon { font-size: 12px; flex-shrink: 0; color: var(--ion-color-primary); }
+}
+
+.p-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  color: var(--ion-color-medium);
+  ion-icon { font-size: 12px; flex-shrink: 0; }
+}
+
+.p-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-left: 4px;
+
+  ion-button {
+    --padding-start: 6px;
+    --padding-end: 6px;
+    width: 32px;
+    height: 32px;
+    ion-icon { font-size: 16px; }
+  }
+}
+
+// ---- Item containers ----
+.patient-item,
+.doctor-item,
+.admin-item {
+  --padding-start: 14px;
+  --padding-end: 8px;
+  --inner-padding-end: 0;
+  border-radius: 14px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  overflow: hidden;
+
+  &:hover { box-shadow: 0 5px 18px rgba(56,128,255,0.12); transform: translateY(-1px); }
+}
+
+
+
+// ---- Shared tokens ----------------------------------------
+$radius: 14px;
+$radius-sm: 8px;
+$shadow: 0 2px 10px rgba(0, 0, 0, 0.07);
+$shadow-hover: 0 6px 22px rgba(56, 128, 255, 0.13);
+$transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+
+// ---- Header -----------------------------------------------
+.header-toolbar-p {
+  --background: var(--ion-background-color);
+  --border-width: 0 0 1px 0;
+  --border-color: var(--ion-color-step-100);
+
+  .patient-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+  }
+}
+
+.header-toolbar {
+  --background: var(--ion-background-color);
+  --border-width: 0 0 1px 0;
+  --border-color: var(--ion-color-step-100);
+
+  .doctors-title {
+    font-weight: 700;
+    text-align: center;
+    font-size: 1.1rem;
+  }
+}
+
+.filter-toolbar {
+  --background: var(--ion-background-color);
+  --border-width: 0 0 1px 0;
+  --border-color: var(--ion-color-step-100);
+  padding: 6px 0 10px;
+}
+
+.filter-grid { padding: 0 12px; }
+
+.search-bar {
+  padding: 0;
+  --background: var(--ion-color-step-50, rgba(0,0,0,0.04));
+  --border-radius: 10px;
+  --box-shadow: none;
+}
+
+.status-filter {
+  --background: var(--ion-color-step-50, rgba(0,0,0,0.04));
+  --border-radius: 10px;
+  width: 100%;
+}
+
+// ---- Content ----------------------------------------------
+.content {
+  --padding-start: 12px;
+  --padding-end: 12px;
+  --padding-top: 10px;
+  --padding-bottom: 24px;
+}
+
+// ---- Empty state ------------------------------------------
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+
+  .empty-icon {
+    font-size: 58px;
+    color: var(--ion-color-step-300, #c7c7cc);
+    margin-bottom: 16px;
+  }
+
+  h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--ion-color-dark);
+    margin-bottom: 6px;
+  }
+
+  p {
+    color: var(--ion-color-medium);
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+    max-width: 280px;
+  }
+
+  .empty-action { --border-radius: 20px; }
+}
+
+// ---- Patient list -----------------------------------------
+.patient-list {
+  background: transparent;
+  padding: 4px 0;
+}
+
+.patient-item {
+  --padding-start: 14px;
+  --padding-end: 12px;
+  --inner-padding-end: 0;
+  border-radius: $radius;
+  margin-bottom: 10px;
+  box-shadow: $shadow;
+  transition: $transition;
+
+  &:hover { box-shadow: $shadow-hover; transform: translateY(-2px); }
+}
+
+.patient-avatar {
+  width: 54px;
+  height: 54px;
+  margin-right: 14px;
+  position: relative;
+
+  ion-img { border-radius: 50%; }
+}
+
+.patient-info {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 0;
+}
+
+.patient-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  gap: 6px;
+
+  .patient-name {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--ion-color-dark);
+    flex: 1;
+    min-width: 100px;
+  }
+
+  .patient-chips {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+}
+
+.patient-contact {
+  margin-bottom: 8px;
+
+  .contact-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 4px;
+
+    ion-icon { font-size: 14px; min-width: 14px; color: var(--ion-color-primary); }
+
+    .contact-text {
+      font-size: 0.82rem;
+      color: var(--ion-color-medium);
+      line-height: 1.3;
+    }
+  }
+}
+
+.patient-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--ion-color-step-100);
+
+  .footer-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+
+    ion-icon { font-size: 13px; color: var(--ion-color-medium); }
+
+    .footer-text {
+      font-size: 0.78rem;
+      color: var(--ion-color-medium);
+      font-style: italic;
+    }
+  }
+}
+
+.patient-actions {
+  display: flex;
+  gap: 4px;
+  margin-left: 6px;
+
+  ion-button {
+    --padding-start: 7px;
+    --padding-end: 7px;
+    --border-radius: 8px;
+    width: 34px;
+    height: 34px;
+
+    ion-icon { font-size: 17px; }
+  }
+
+  .edit-button {
+    --background: rgba(var(--ion-color-primary-rgb), 0.1);
+    --color: var(--ion-color-primary);
+  }
+
+  .delete-button {
+    --background: rgba(var(--ion-color-danger-rgb), 0.1);
+    --color: var(--ion-color-danger);
+  }
+}
+
+// ---- Doctor sections --------------------------------------
+.admins-section,
+.doctors-section {
+  padding: 14px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.section-title {
+  font-size: 0.9em !important;
+  color: var(--ion-color-medium);
   margin: 0;
-  border: 1px solid rgba(0, 0, 0, 0.05);
+
+  &::after { display: none; }
+}
+
+.add-admin-btn {
+  --border-radius: 8px;
+  font-size: 0.8rem;
+}
+
+.admin-list,
+.doctor-list {
+  background: transparent;
+  padding: 0;
+}
+
+.admin-item,
+.doctor-item {
+  --border-radius: $radius;
+  --padding-start: 14px;
+  --padding-end: 12px;
+  --inner-padding-end: 0;
+  border-radius: $radius;
+  margin-bottom: 10px;
+  box-shadow: $shadow;
+  transition: $transition;
+
+  &:hover { box-shadow: $shadow-hover; }
+}
+
+.admin-avatar,
+.doctor-avatar {
+  width: 48px;
+  height: 48px;
+  position: relative;
+  margin-right: 12px;
+}
+
+.role-badge,
+.status-badge {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  font-size: 0.6rem;
+  padding: 2px 5px;
+  border-radius: 6px;
+  border: 1px solid var(--ion-background-color);
+}
+
+.admin-info,
+.doctor-info1 {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-header,
+.doctor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+
+  h2 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--ion-color-dark);
+    margin: 0;
+    flex: 1;
+  }
+}
+
+.admin-email,
+.doctor-email {
+  font-size: 0.82rem;
+  color: var(--ion-color-medium);
+  margin: 0 0 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.admin-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-phone,
+.doctor-phone {
+  font-size: 0.78rem;
+  color: var(--ion-color-medium);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  ion-icon { font-size: 0.85rem; color: var(--ion-color-success); }
+}
+
+.admin-actions,
+.doctor-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-left: 6px;
+}
+
+.doctor-specialization {
+  font-size: 0.82rem;
+  color: var(--ion-color-primary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.doctor-rating {
+  font-size: 0.78rem;
+  color: var(--ion-color-warning-shade);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: 600;
+}
+
+.doctor-experience { color: var(--ion-color-medium); }
+
+.doctor-details { font-size: 0.78rem; color: var(--ion-color-medium); }
+
+.detail-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 3px;
+  flex-wrap: wrap;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+
+  &.address {
+    max-width: 190px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &.license {
+    font-size: 0.72rem;
+    color: var(--ion-color-dark);
+    background: var(--ion-color-step-100);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+}
+
+.auth-badge,
+.auth-chip {
+  font-size: 0.68rem;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.edit-button,
+.delete-button {
+  --padding-start: 7px;
+  --padding-end: 7px;
+  --padding-top: 7px;
+  --padding-bottom: 7px;
+  min-height: 30px;
+
+  ion-icon { font-size: 1rem; }
+}
+
+// ---- Diagnoses --------------------------------------------
+.diagnoses-container {
+  padding: 14px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 18px;
+}
+
+.diagnosis-card {
+  transition: $transition;
+  cursor: pointer;
+  border-radius: $radius;
+  overflow: hidden;
+  box-shadow: $shadow;
+  margin: 0;
+  border-left: 4px solid var(--ion-color-primary);
 
   &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+    transform: translateY(-4px);
+    box-shadow: $shadow-hover;
   }
 
   ion-card-header {
     padding: 16px;
-    background: var(--ion-color-tertiary);
-    color: white;
+    background: rgba(var(--ion-color-primary-rgb), 0.06);
+    border-bottom: 1px solid var(--ion-color-step-100);
 
     ion-card-title {
-      font-size: 1.2rem;
-      font-weight: 600;
+      font-size: 1.05rem;
+      font-weight: 700;
       display: flex;
       align-items: center;
       gap: 8px;
+      color: var(--ion-color-dark);
     }
 
     ion-card-subtitle {
-      color: rgba(255, 255, 255, 0.8);
+      color: var(--ion-color-medium);
       margin-top: 4px;
       display: flex;
       align-items: center;
@@ -45,45 +603,42 @@
         margin: 8px 0;
 
         ion-badge {
-          background: rgba(var(--ion-color-danger-rgb), 0.2);
-          font-weight: 500;
-          padding: 6px 10px;
+          font-weight: 600;
+          padding: 5px 10px;
           border-radius: 8px;
         }
       }
     }
   }
 
-  ion-card-content {
-    padding: 16px;
-  }
+  ion-card-content { padding: 14px; }
 }
 
 .diagnosis-description {
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   color: var(--ion-color-medium);
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 .stats-container {
   display: flex;
-  gap: 10px;
-  margin-top: 12px;
+  gap: 8px;
+  margin-top: 10px;
 
   .stat-badge {
     display: flex;
     align-items: center;
     gap: 4px;
-    font-size: 0.8rem;
-    padding: 6px 10px;
+    font-size: 0.78rem;
+    padding: 5px 10px;
     border-radius: 20px;
-    background: rgba(0, 0, 0, 0.05);
+    background: var(--ion-color-step-50, rgba(0,0,0,0.04));
 
     &.lab-count {
       background: rgba(var(--ion-color-primary-rgb), 0.1);
@@ -95,41 +650,14 @@
       color: var(--ion-color-success);
     }
 
-    ion-icon {
-      font-size: 0.9rem;
-    }
+    ion-icon { font-size: 0.85rem; }
   }
 }
 
-/* Loading styles */
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 50vh;
-  gap: 16px;
-
-  ion-spinner {
-    width: 48px;
-    height: 48px;
-    --color: var(--ion-color-primary);
-  }
-
-  p {
-    color: var(--ion-color-medium);
-    font-size: 0.9rem;
-  }
-}
-
-/* Diagnosis details overlay */
 .diagnosis-details-overlay {
   position: fixed;
-  top: 4;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
+  inset: 0;
+  background: rgba(0,0,0,0.6);
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -139,13 +667,13 @@
 }
 
 .diagnosis-details-container {
-  background-color: var(--ion-color-light);
+  background: var(--ion-background-color);
   width: 100%;
-  max-width: 800px;
+  max-width: 780px;
   max-height: 90vh;
-  border-radius: 16px;
+  border-radius: $radius;
   overflow: hidden;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
   display: flex;
   flex-direction: column;
   position: relative;
@@ -156,27 +684,27 @@
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  background-color: var(--ion-color-tertiary);
-  color: var(--ion-color-dark);
+  background: var(--ion-item-background);
+  border-bottom: 1px solid var(--ion-color-step-100);
   position: sticky;
   top: 0;
   z-index: 10;
 
   h2 {
     margin: 0;
-    font-size: 1.2rem;
+    font-size: 1.05rem;
+    font-weight: 700;
     display: flex;
     align-items: center;
     gap: 8px;
-    font-weight: 600;
+    color: var(--ion-color-dark);
   }
 
   .close-button {
-    --color: var(--ion-color-light);
-    --background-hover: rgba(255, 255, 255, 0.1);
+    --color: var(--ion-color-medium);
     --border-radius: 50%;
-    width: 56px;
-    height: 56px;
+    width: 36px;
+    height: 36px;
   }
 }
 
@@ -187,922 +715,119 @@
 
   h3 {
     color: var(--ion-color-primary);
-    margin: 24px 0 16px;
-    font-size: 1.1rem;
+    margin: 20px 0 14px;
+    font-size: 1rem;
+    font-weight: 700;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
 
-    ion-icon {
-      font-size: 1.2rem;
-    }
+    ion-icon { font-size: 1.1rem; }
   }
 }
 
-/* Section styles */
 .info-card,
 .lab-result-card,
 .prescription-card {
-  border-radius: 12px;
+  border-radius: $radius-sm;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  margin-bottom: 16px;
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: $shadow;
+  margin-bottom: 14px;
 
   ion-card-header {
-    padding: 12px 16px;
+    padding: 12px 14px;
 
-    ion-card-title {
-      font-size: 1.1rem;
-    }
-
-    ion-card-subtitle {
-      font-size: 0.85rem;
-    }
+    ion-card-title { font-size: 1rem; font-weight: 700; }
+    ion-card-subtitle { font-size: 0.82rem; }
   }
 
-  ion-card-content {
-    padding: 16px;
-  }
+  ion-card-content { padding: 14px; }
 }
 
-.lab-result-card {
-  border-left: 4px solid var(--ion-color-primary);
-}
+.lab-result-card { border-left: 4px solid var(--ion-color-primary); }
+.prescription-card { border-left: 4px solid var(--ion-color-success); }
 
-.prescription-card {
-  border-left: 4px solid var(--ion-color-success);
-}
-
-/* Grid layouts */
 .info-grid,
 .prescription-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 10px;
 
   .info-item,
   .prescription-item {
-    &.full-width {
-      grid-column: 1 / -1;
-    }
+    &.full-width { grid-column: 1 / -1; }
 
     ion-label {
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       color: var(--ion-color-medium);
-      margin-bottom: 4px;
+      margin-bottom: 3px;
       display: block;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
     }
 
-    p {
-      margin: 0;
-      font-size: 0.95rem;
-      line-height: 1.4;
-    }
+    p { margin: 0; font-size: 0.9rem; line-height: 1.4; }
   }
 }
 
 .lab-results-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
   gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 
   .lab-result-item {
     display: flex;
     justify-content: space-between;
     padding: 10px;
-    background-color: var(--ion-color-light);
-    border-radius: 8px;
+    background: var(--ion-color-step-50, rgba(0,0,0,0.03));
+    border-radius: $radius-sm;
     align-items: center;
 
-    .lab-result-key {
-      font-weight: 500;
-      font-size: 0.9rem;
-    }
-
-    .lab-result-value {
-      color: var(--ion-color-primary);
-      font-weight: 600;
-      font-size: 0.95rem;
-    }
+    .lab-result-key { font-weight: 600; font-size: 0.85rem; }
+    .lab-result-value { color: var(--ion-color-primary); font-weight: 700; font-size: 0.9rem; }
   }
 }
 
 .lab-notes,
 .prescription-details {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px dashed #eee;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--ion-color-step-150);
 
   p {
     margin: 0;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     line-height: 1.5;
 
-    strong {
-      color: var(--ion-color-primary);
-    }
+    strong { color: var(--ion-color-primary); }
   }
 }
 
-/* Download button */
 .download-button-container {
-  margin-top: 16px;
+  margin-top: 14px;
   display: flex;
   justify-content: flex-end;
 
   ion-button {
-    --border-width: 1px;
-    --border-style: solid;
-    --border-color: var(--ion-color-primary);
-    --padding-start: 12px;
-    --padding-end: 12px;
-    --padding-top: 8px;
-    --padding-bottom: 8px;
+    --border-radius: 8px;
     font-size: 0.85rem;
   }
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .diagnoses-container {
-    grid-template-columns: 1fr;
-  }
-
-  .diagnosis-details-container {
-    width: 95%;
-    max-height: 85vh;
-  }
-
-  .info-grid,
-  .prescription-grid,
-  .lab-results-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .diagnosis-card {
-    ion-card-header {
-      padding: 12px;
-
-      ion-card-title {
-        font-size: 1.1rem;
-      }
-    }
-  }
-}
-
-/* Animation classes */
-.fade-in {
-  animation: fadeIn 0.3s ease forwards;
-}
-
-.slide-up {
-  animation: slideUp 0.3s ease forwards;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.05);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-.pulse {
-  animation: pulse 1.5s ease infinite;
-}
-/* src/pages/AdminPatients.css ------------------------------------------------------------------*/
-/* General Styles */
-.content {
-  // --background: #f8f9fa;
-  --padding-start: 10px;
-  --padding-end: 10px;
-  --padding-top: 10px;
-  --padding-bottom: 10px;
-}
-
-/* Header Styles */
-
-.filter-toolbar {
-  --background: white;
-  padding: 10px 0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.filter-grid {
-  padding: 0 10px;
-}
-
-.status-filter {
-  --color: white;
-  --placeholder-color: rgba(219, 217, 217, 0.7);
-  width: 100%;
-  max-width: 300px;
-  --border-radius: 8px;
-}
-
-/* Empty State */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 70vh;
-  text-align: center;
-  padding: 20px;
-}
-
-.empty-icon {
-  font-size: 64px;
-  color: var(--ion-color-medium-shade);
-  margin-bottom: 16px;
-}
-
-.empty-state h3 {
-  color: var(--ion-color-dark);
-  margin-bottom: 8px;
-  font-weight: 600;
-  font-size: 1.2rem;
-}
-
-.empty-state p {
-  color: var(--ion-color-medium);
-  margin-bottom: 24px;
-  font-size: 0.9rem;
-}
-
-.empty-action {
-  --box-shadow: 0 4px 12px rgba(var(--ion-color-primary-rgb), 0.2);
-  --padding-start: 24px;
-  --padding-end: 24px;
-}
-
-/* Patient List */
-.patient-list {
-  background: transparent;
-  padding: 0;
-}
-
-.patient-item {
-  --padding-start: 12px;
-  --padding-end: 12px;
-  --inner-padding-end: 0;
-  border-radius: 12px;
-  margin-bottom: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
-}
-
-.patient-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-}
-
-.patient-avatar {
-  width: 60px;
-  height: 60px;
-  position: relative;
-  margin-right: 16px;
-  transition: transform 0.3s ease;
-}
-
-.patient-avatar img {
-  border: 2px solid var(--ion-color-light);
-  object-fit: cover;
-}
-
-.patient-item:hover .patient-avatar {
-  transform: scale(1.05);
-}
-
-.status-badge {
-  position: absolute;
-  bottom: -8px;
-  right: -8px;
-  font-size: 10px;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.patient-info {
-  flex: 1;
-  padding: 8px 0;
-}
-
-.patient-info h2 {
-  font-weight: 600;
-  margin-bottom: 4px;
-  color: var(--ion-color-dark);
-  font-size: 1.1rem;
-}
-
-.patient-email {
-  margin: 0 0 6px 0;
-  font-size: 0.85rem;
-  color: var(--ion-color-medium);
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.patient-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  font-size: 0.8rem;
-  color: var(--ion-color-medium);
-}
-
-.patient-meta ion-icon {
-  margin-right: 4px;
-  vertical-align: middle;
-  color: var(--ion-color-primary);
-}
-
-.patient-actions {
-  display: flex;
-  align-items: center;
-  margin-left: 8px;
-}
-
-.edit-button,
-.delete-button {
-  --padding-start: 6px;
-  --padding-end: 6px;
-  --ripple-color: transparent;
-}
-
-.edit-button {
-  --color: var(--ion-color-primary);
-}
-
-.delete-button {
-  --color: var(--ion-color-danger);
-}
-
-/* Patient Form Modal */
-
-.form-item:focus-within {
-  box-shadow: 0 4px 12px rgba(var(--ion-color-primary-rgb), 0.15);
-  border-left: 3px solid var(--ion-color-primary);
-}
-
-.date-picker {
-  width: 100%;
-  padding: 12px 0;
-  border-radius: 8px;
-}
-
-.action-button {
-  --border-radius: 8px;
-  --padding-start: 24px;
-  --padding-end: 24px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  transition: all 0.3s ease;
-}
-
-.action-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-/* FAB Button */
-.fab-button {
-  margin-bottom: 20px;
-  margin-right: 20px;
-}
-
-.fab-button ion-fab-button {
-  --background: linear-gradient(
-    135deg,
-    var(--ion-color-primary) 0%,
-    #3880ff 100%
-  );
-  --background-activated: var(--ion-color-primary-shade);
-  --background-hover: var(--ion-color-primary-tint);
-  --box-shadow: 0 4px 16px rgba(var(--ion-color-primary-rgb), 0.3);
-  --color: white;
-  transition: all 0.3s ease;
-}
-
-.fab-button ion-fab-button:hover {
-  transform: scale(1.1);
-}
-
-/* Alert Dialog */
-.alert-button-cancel {
-  color: var(--ion-color-medium);
-}
-
-.alert-button-confirm {
-  color: var(--ion-color-danger);
-}
-
-/* Animations */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .patient-item {
-    --padding-start: 10px;
-    --padding-end: 10px;
-  }
-
-  .patient-avatar {
-    width: 50px;
-    height: 50px;
-    margin-right: 12px;
-  }
-
-  .patient-info h2 {
-    font-size: 1rem;
-  }
-
-  .patient-email {
-    font-size: 0.8rem;
-  }
-
-  .patient-meta {
-    flex-direction: column;
-    gap: 4px;
-    font-size: 0.75rem;
-  }
-
-  .form-actions {
-    justify-content: space-between;
-    gap: 8px;
-  }
-
-  .action-button {
-    --padding-start: 16px;
-    --padding-end: 16px;
-    flex: 1;
-  }
-
-  .patient-modal {
-    --width: 95%;
-    --border-radius: 12px;
-  }
-}
-
-/* Admin Doctors Page Styling ---------------------------------------------------------------------------*/
-.header-toolbar {
-  --background: #3880ff;
-  --color: white;
-
-  .doctors-title {
-    font-weight: 600;
-    text-align: center;
-  }
-}
-
-.filter-toolbar {
-  --background: var(--ion-color-light);
-  padding: 8px 0;
-
-  .filter-grid {
-    padding: 0;
-  }
-
-  .search-bar {
-    padding: 0;
-    --box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    --border-radius: 8px;
-  }
-
-  .status-filter {
-    width: 100%;
-    --border-radius: 8px;
-    --padding-start: 8px;
-    --padding-end: 8px;
-  }
-}
-
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 70vh;
-  text-align: center;
-  padding: 20px;
-
-  .empty-icon {
-    font-size: 64px;
-    color: #3880ff;
-    margin-bottom: 16px;
-  }
-
-  h3 {
-    font-size: 20px;
-    font-weight: 600;
-    margin-bottom: 8px;
-    color: #2c3e50;
-  }
-
-  p {
-    color: #7f8c8d;
-    margin-bottom: 20px;
-  }
-
-  .empty-action {
-    --border-radius: 8px;
-  }
-}
-
-.doctors-title {
-  font-weight: 600;
-  font-size: 1.2rem;
-}
-
-.filter-grid {
-  padding: 8px 16px;
-}
-
-.search-bar {
-  padding: 0;
-  --background: var(--ion-color-light-tint);
-  --border-radius: 8px;
-}
-
-.status-filter {
-  --background: var(--ion-color-light-tint);
-  --border-radius: 8px;
-}
-
-/* Section Styles */
-.admins-section,
-.doctors-section {
-  padding: 16px;
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.section-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--ion-color-dark);
-  margin: 0;
-}
-
-.add-admin-btn {
-  --border-radius: 8px;
-  font-size: 0.8rem;
-}
-
-/* List Styles */
-.admin-list,
-.doctor-list {
-  background: transparent;
-  padding: 0;
-}
-
-/* Admin Item Styles */
-.admin-item {
-  --border-radius: 12px;
-  --padding-start: 12px;
-  --padding-end: 12px;
-  --inner-padding-end: 0;
-  border-radius: 12px;
-  margin-bottom: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  border: 1px solid var(--ion-color-light-shade);
-}
-
-.admin-avatar {
-  width: 50px;
-  height: 50px;
-  position: relative;
-  margin-right: 12px;
-}
-
-.role-badge {
-  position: absolute;
-  bottom: -4px;
-  right: -4px;
-  font-size: 0.6rem;
-  padding: 2px 6px;
-  border-radius: 8px;
-  border: 1px solid var(--ion-color-light);
-}
-
-.admin-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.admin-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 4px;
-}
-
-.admin-header h2 {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--ion-color-dark);
-  margin: 0;
-  flex: 1;
-}
-
-.status-badge {
-  font-size: 0.7rem;
-  margin-left: 8px;
-}
-
-.admin-email {
-  font-size: 0.875rem;
-  color: var(--ion-color-medium);
-  margin: 0 0 8px 0;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.admin-meta {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.admin-phone {
-  font-size: 0.8rem;
-  color: var(--ion-color-medium);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.admin-phone ion-icon {
-  font-size: 0.9rem;
-  color: var(--ion-color-success);
-}
-
-.admin-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-left: 8px;
-}
-
-/* Doctor Item Styles */
-.doctor-item {
-  --border-radius: 12px;
-  --padding-start: 12px;
-  --padding-end: 12px;
-  --inner-padding-end: 0;
-  margin-bottom: 8px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  border: 1px solid var(--ion-color-light-shade);
-}
-
-.doctor-avatar {
-  width: 50px;
-  height: 50px;
-  position: relative;
-  margin-right: 12px;
-}
-
-.doctor-info1 {
-  flex: 1;
-  min-width: 0;
-}
-// Admin3.scss
-
-.patient-list {
-  --ion-item-background: transparent;
-  padding: 8px;
-}
-
-.patient-item {
-  --padding-start: 12px;
-  --padding-end: 12px;
-
-  margin-bottom: 12px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  border: 1px solid var(--ion-color-light-shade);
-}
-
-.patient-avatar {
-  width: 56px;
-  height: 56px;
-  margin-right: 16px;
-
-  ion-img {
-    border-radius: 50%;
-  }
-}
-
-.patient-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.patient-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 8px;
-  flex-wrap: wrap;
-  gap: 8px;
-
-  .patient-name {
-    margin: 0;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--ion-color-dark);
-    flex: 1;
-    min-width: 120px;
-  }
-}
-
-.patient-contact {
-  margin-bottom: 8px;
-
-  .contact-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: 4px;
-    gap: 8px;
-
-    &:last-child {
-      margin-bottom: 0;
-    }
-
-    ion-icon {
-      font-size: 16px;
-      min-width: 16px;
-    }
-
-    .contact-text {
-      font-size: 0.875rem;
-      color: var(--ion-color-medium);
-      line-height: 1.3;
-
-      &.address-text {
-        color: var(--ion-color-medium);
-        font-weight: 400;
-      }
-    }
-  }
-}
-
-.patient-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding-top: 6px;
-  border-top: 1px solid var(--ion-color-light-shade);
-
-  .footer-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-
-    ion-icon {
-      font-size: 14px;
-      color: var(--ion-color-medium);
-    }
-
-    .footer-text {
-      font-size: 0.8rem;
-      color: var(--ion-color-medium);
-      font-style: italic;
-    }
-  }
-
-  .auth-chip {
-    margin: 0;
-    height: 24px;
-    font-size: 0.7rem;
-
-    ion-label {
-      margin: 0;
-      font-weight: 500;
-    }
-  }
-}
-
-.patient-actions {
-  display: flex;
-  gap: 4px;
-  margin-left: 8px;
-
-  ion-button {
-    --padding-start: 8px;
-    --padding-end: 8px;
-    --border-radius: 8px;
-    width: 36px;
-    height: 36px;
-
-    ion-icon {
-      font-size: 18px;
-    }
-  }
-
-  .edit-button {
-    --background: var(--ion-color-primary-tint);
-    --background-hover: var(--ion-color-primary);
-  }
-
-  .delete-button {
-    --background: var(--ion-color-danger-tint);
-    --background-hover: var(--ion-color-danger);
-  }
-}
-
-// Empty state styles
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-  text-align: center;
-
-  .empty-icon {
-    font-size: 64px;
-    color: var(--ion-color-medium);
-    margin-bottom: 20px;
-  }
-
-  h3 {
-    color: var(--ion-color-dark);
-    margin-bottom: 8px;
-    font-weight: 600;
-  }
-
-  p {
-    color: var(--ion-color-medium);
-    margin-bottom: 24px;
-    max-width: 300px;
-  }
-
-  .empty-action {
-    --border-radius: 20px;
-  }
-}
-
-// Header and filter styles
-
-// Modal form styles
+// ---- Modal form -------------------------------------------
 .form-item {
   --padding-start: 0;
   --inner-padding-end: 0;
-  margin-bottom: 16px;
+  --border-radius: $radius-sm;
+  margin-bottom: 14px;
+  border-radius: $radius-sm;
 
-  ion-label[position="floating"],
-  ion-label[position="stacked"] {
+  ion-label {
     color: var(--ion-color-medium);
-    font-weight: 500;
+    font-size: 0.85rem;
+    font-weight: 600;
   }
 
   ion-input,
@@ -1111,421 +836,98 @@
   ion-datetime {
     --padding-start: 0;
     --padding-end: 0;
-    margin-top: 8px;
+    margin-top: 6px;
   }
 
-  .date-picker {
-    width: 100%;
-  }
+  .date-picker { width: 100%; }
 }
 
 .form-actions {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   justify-content: flex-end;
-  margin-top: 32px;
-  padding-top: 16px;
-  border-top: 1px solid var(--ion-color-light-shade);
+  margin-top: 28px;
+  padding-top: 14px;
+  border-top: 1px solid var(--ion-color-step-100);
 
   .action-button {
-    --border-radius: 8px;
-    min-width: 120px;
-    font-weight: 500;
+    --border-radius: $radius-sm;
+    min-width: 110px;
+    font-weight: 600;
   }
 }
 
-// FAB button
+// ---- FAB --------------------------------------------------
 .fab-button {
+  margin-bottom: 20px;
+  margin-right: 20px;
+
   ion-fab-button {
     --background: var(--ion-color-primary);
     --background-activated: var(--ion-color-primary-shade);
     --background-hover: var(--ion-color-primary-tint);
-    --box-shadow: 0 4px 16px rgba(var(--ion-color-primary-rgb), 0.3);
-
-    ion-icon {
-      font-size: 24px;
-    }
+    --color: #fff;
+    --box-shadow: none;
   }
 }
 
-// Responsive design
+// ---- Alert ------------------------------------------------
+.alert-button-cancel { color: var(--ion-color-medium); }
+.alert-button-confirm { color: var(--ion-color-danger); }
+
+// ---- Responsive -------------------------------------------
 @media (max-width: 768px) {
-  .patient-header {
-    flex-direction: column;
-    align-items: flex-start;
+  .diagnoses-container { grid-template-columns: 1fr; }
 
-    .patient-chips {
-      width: 100%;
-      justify-content: flex-start;
-    }
+  .diagnosis-details-container {
+    width: 96%;
+    max-height: 88vh;
   }
 
-  .patient-footer {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-  }
+  .info-grid,
+  .prescription-grid,
+  .lab-results-grid { grid-template-columns: 1fr; }
+
+  .patient-header { flex-direction: column; align-items: flex-start; }
+
+  .patient-footer { flex-direction: column; align-items: flex-start; }
 
   .patient-actions {
     margin-left: 0;
-    margin-top: 8px;
+    margin-top: 6px;
     width: 100%;
     justify-content: flex-end;
   }
 
   .form-actions {
     flex-direction: column;
-
-    .action-button {
-      min-width: 100%;
-    }
+    .action-button { min-width: 100%; }
   }
+
+  .admins-section,
+  .doctors-section { padding: 10px; }
+
+  .detail-row { flex-direction: column; align-items: flex-start; gap: 3px; }
 }
 
 @media (max-width: 480px) {
-  .patient-item {
-    --padding-start: 8px;
-    --padding-end: 8px;
-  }
-
-  .patient-avatar {
-    width: 48px;
-    height: 48px;
-    margin-right: 12px;
-  }
-
-  .patient-name {
-    font-size: 1rem;
-  }
-
-  .patient-chips {
-    .age-chip,
-    .sex-chip {
-      height: 24px;
-      font-size: 0.7rem;
-
-      ion-icon {
-        font-size: 12px;
-      }
-    }
-  }
-
-  .contact-text {
-    font-size: 0.8rem;
-  }
+  .patient-item { --padding-start: 10px; --padding-end: 10px; }
+  .patient-avatar { width: 46px; height: 46px; margin-right: 10px; }
 }
 
-// Animation enhancements
-.patient-item {
-  transition: all 0.3s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  }
+// ---- Dark mode --------------------------------------------
+@media (prefers-color-scheme: dark) {
+  .diagnosis-card { background: var(--ion-item-background, #1a1d27); }
+  .diagnosis-details-container { background: var(--ion-item-background, #1a1d27); }
+  .lab-result-item { background: var(--ion-color-step-100, #1e2130); }
+  .info-card, .lab-result-card, .prescription-card { background: var(--ion-item-background, #1a1d27); }
+  .stat-badge { background: var(--ion-color-step-100, #1e2130); }
 }
 
-// Status indicators
-.patient-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 500;
-
-  &.status-active {
-    background: var(--ion-color-success-tint);
-    color: var(--ion-color-success-shade);
-  }
-
-  &.status-inactive {
-    background: var(--ion-color-medium-tint);
-    color: var(--ion-color-medium-shade);
-  }
-}
-.doctor-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 4px;
-}
-.doctor-email,
-.doctor-phone,
-.doctor-experience {
-  color: var(--ion-color-medium);
-  ion-icon {
-    padding-right: 3px;
-  }
-}
-.doctor-header h2 {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--ion-color-dark);
-}
-
-.doctor-rating {
-  font-size: 0.8rem;
-  color: var(--ion-color-warning);
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  font-weight: 500;
-}
-
-.doctor-specialization {
-  font-size: 0.875rem;
-  color: var(--ion-color-primary);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-bottom: 8px;
-  font-weight: 500;
-}
-
-.doctor-details {
-  font-size: 0.8rem;
-  color: var(--ion-color-medium);
-}
-
-.detail-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 4px;
-  flex-wrap: wrap;
-}
-
-.detail-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-
-  &.address {
-    max-width: 200px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &.license {
-    font-size: 0.75rem;
-    color: var(--ion-color-dark);
-    background: var(--ion-color-light-shade);
-    padding: 2px 6px;
-    border-radius: 4px;
-  }
-}
-
-.auth-badge {
-  font-size: 0.7rem;
-  padding: 2px 6px;
-  border-radius: 6px;
-}
-
-.doctor-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-left: 8px;
-}
-
-/* Action Buttons */
-.edit-button,
-.delete-button {
-  --padding-start: 8px;
-  --padding-end: 8px;
-  --padding-top: 8px;
-  --padding-bottom: 8px;
-  min-height: 32px;
-}
-
-.edit-button ion-icon,
-.delete-button ion-icon {
-  font-size: 1.1rem;
-}
-
-/* Empty States */
-.empty-state {
-  text-align: center;
-  padding: 60px 20px;
-  color: var(--ion-color-medium);
-  background: var(--ion-color-light-tint);
-  border-radius: 12px;
-  margin: 16px;
-}
-
-.empty-icon {
-  font-size: 3rem;
-  color: var(--ion-color-primary);
-  margin-bottom: 16px;
-}
-
-.empty-state h3 {
-  font-size: 1.25rem;
-  color: var(--ion-color-dark);
-  margin: 0 0 8px 0;
-}
-
-.empty-state p {
-  font-size: 0.9rem;
-  margin: 0 0 20px 0;
-}
-
-.empty-action {
-  --border-radius: 8px;
-  font-weight: 500;
-}
-
-/* Modal Styles */
-.form-item {
-  --border-radius: 8px;
-  margin-bottom: 16px;
-}
-
-.date-picker {
-  width: 100%;
-}
-
-.form-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 24px;
-}
-
-.action-button {
-  flex: 1;
-  --border-radius: 8px;
-}
-
-/* Alert Styles */
-.alert-button-cancel {
-  color: var(--ion-color-medium);
-}
-
-.alert-button-confirm {
-  color: var(--ion-color-danger);
-}
-
-/* Responsive Design */
-@media (max-width: 360px) {
-  .admins-section,
-  .doctors-section {
-    padding: 12px;
-  }
-
-  .section-header {
-    flex-direction: column;
-    gap: 8px;
-    align-items: flex-start;
-  }
-
-  .admin-actions,
-  .doctor-actions {
-    flex-direction: row;
-  }
-
-  .detail-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-  }
-}
-
-/* Animation enhancements */
-.motion-div {
-  width: 100%;
-}
-
-/* Status badge positioning */
-.status-badge {
-  position: absolute;
-  bottom: -4px;
-  right: -4px;
-  font-size: 0.6rem;
-  padding: 2px 6px;
-  border-radius: 8px;
-  border: 1px solid var(--ion-color-light);
-}
-
-/* Modal Styling */
-
-.form-item {
-  --padding-start: 0;
-  --inner-padding-end: 0;
-  --border-radius: 8px;
-  margin-bottom: 16px;
-  border-radius: 8px;
-
-  ion-label {
-    color: var(--ion-color-medium);
-    font-size: 14px;
-  }
-
-  ion-input,
-  ion-select,
-  ion-textarea,
-  ion-datetime {
-    --padding-start: 12px;
-    --padding-end: 12px;
-    --placeholder-color: #bdc3c7;
-    --placeholder-opacity: 1;
-    border-radius: 8px;
-    margin-top: 8px;
-  }
-
-  .date-picker {
-    width: 100%;
-  }
-}
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 20px;
-
-  .action-button {
-    --border-radius: 8px;
-    margin: 0;
-  }
-}
-
-.fab-button {
-  ion-fab-button {
-    --background: #3880ff;
-    --background-activated: #4d8cff;
-    --background-hover: #4d8cff;
-    --box-shadow: 0 4px 12px rgba(56, 128, 255, 0.3);
-  }
-}
-
-/* Animation Classes */
-.fade-in {
-  animation: fadeIn 0.3s ease-in-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.slide-up {
-  animation: slideUp 0.3s ease-out;
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+body.dark {
+  .diagnosis-card { background: var(--ion-item-background, #1a1d27); }
+  .diagnosis-details-container { background: var(--ion-item-background, #1a1d27); }
+  .lab-result-item { background: var(--ion-color-step-100, #1e2130); }
+  .info-card, .lab-result-card, .prescription-card { background: var(--ion-item-background, #1a1d27); }
+  .stat-badge { background: var(--ion-color-step-100, #1e2130); }
 }

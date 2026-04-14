@@ -223,19 +223,18 @@ const Admin_patient: React.FC = () => {
   }, [searchTerm, statusFilter, patients]);
 
   // Calculate age from date of birth
-  const calculateAge = (dob: string): number => {
+  const resolveAge = (dob: string): number => {
+    if (!dob) return 0;
+    // If it's a plain number (age stored directly), return it
+    const asNumber = Number(dob);
+    if (!isNaN(asNumber) && asNumber > 0 && asNumber < 150) return asNumber;
+    // Otherwise treat as date of birth
     const birthDate = new Date(dob);
+    if (isNaN(birthDate.getTime())) return 0;
     const today = new Date();
     let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-
-    if (
-      monthDiff < 0 ||
-      (monthDiff === 0 && today.getDate() < birthDate.getDate())
-    ) {
-      age--;
-    }
-
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
     return age;
   };
 
@@ -580,84 +579,50 @@ const Admin_patient: React.FC = () => {
                     <IonItem
                       className={`patient-item ${patient.status}`}
                       lines="none"
+                      style={{ borderLeft: `4px solid ${patient.status === "active" ? "var(--ion-color-success)" : "var(--ion-color-medium)"}` }}
                     >
-                      <IonAvatar slot="start" className="patient-avatar">
-                        <IonImg src={patient.avatar} alt={patient.name} />
-                      </IonAvatar>
+                      {/* Avatar with status dot */}
+                      <div slot="start" className="p-avatar">
+                        <div className="p-initials" style={{ background: sexInfo.color === "danger" ? "var(--ion-color-danger)" : sexInfo.color === "primary" ? "var(--ion-color-primary)" : "var(--ion-color-medium)" }}>
+                          {patient.name.split(" ").map((p: string) => p[0]).join("").slice(0, 2).toUpperCase()}
+                        </div>
+                        <span className={`p-status-dot ${patient.status}`} />
+                      </div>
 
-                      <div className="patient-info">
-                        <div className="patient-header">
-                          <h2 className="patient-name">{patient.name}</h2>
-                          <div className="patient-chips">
-                            <IonChip color="medium" className="age-chip">
-                              <IonIcon icon={person} />
-                              <IonLabel>
-                                {calculateAge(patient.dob)} yrs
-                              </IonLabel>
+                      {/* Main info */}
+                      <div className="p-info">
+                        {/* Row 1: name + age/sex chips */}
+                        <div className="p-row p-row-top">
+                          <span className="p-name">{patient.name}</span>
+                          <div className="p-chips">
+                            <IonChip color="medium" style={{ height: 22, fontSize: "0.72rem", margin: 0 }}>
+                              <IonIcon icon={person} style={{ fontSize: 12 }} />
+                              <IonLabel>{resolveAge(patient.dob)} yrs</IonLabel>
                             </IonChip>
-                            <IonChip
-                              color={sexInfo.color as any}
-                              className="sex-chip"
-                            >
-                              <IonIcon icon={sexInfo.icon} />
-                              <IonLabel>
-                                {patient.sex.charAt(0).toUpperCase() +
-                                  patient.sex.slice(1)}
-                              </IonLabel>
+                            <IonChip color={sexInfo.color as any} style={{ height: 22, fontSize: "0.72rem", margin: 0 }}>
+                              <IonIcon icon={sexInfo.icon} style={{ fontSize: 12 }} />
+                              <IonLabel>{patient.sex.charAt(0).toUpperCase() + patient.sex.slice(1)}</IonLabel>
                             </IonChip>
                           </div>
                         </div>
-
-                        <div className="patient-contact">
-                          <div className="contact-item">
-                            <IonIcon icon={mail} color="medium" />
-                            <span className="contact-text">
-                              {patient.email}
-                            </span>
-                          </div>
-                          <div className="contact-item">
-                            <IonIcon icon={call} color="medium" />
-                            <span className="contact-text">
-                              {patient.phone}
-                            </span>
-                          </div>
-                          {patient.address && (
-                            <div className="contact-item">
-                              <IonIcon icon={location} color="medium" />
-                              <span className="contact-text address-text">
-                                {patient.address}
-                              </span>
-                            </div>
-                          )}
+                        {/* Row 2: email + phone inline */}
+                        <div className="p-row p-row-contact">
+                          <span className="p-contact-item"><IonIcon icon={mail} />{patient.email}</span>
+                          <span className="p-contact-item"><IonIcon icon={call} />{patient.phone}</span>
                         </div>
-
-                        <div className="patient-footer">
-                          {patient.lastVisit && (
-                            <div className="footer-item">
-                              <IonIcon icon={calendar} color="medium" />
-                              <span className="footer-text">
-                                Last visit: {formatDate(patient.lastVisit)}
-                              </span>
-                            </div>
-                          )}
+                        {/* Row 3: address + last visit */}
+                        <div className="p-row p-row-meta">
+                          {patient.address && <span className="p-meta-item"><IonIcon icon={location} />{patient.address}</span>}
+                          {patient.lastVisit && <span className="p-meta-item"><IonIcon icon={calendar} />Last: {formatDate(patient.lastVisit)}</span>}
                         </div>
                       </div>
 
-                      <div className="patient-actions">
-                        <IonButton
-                          fill="clear"
-                          color="primary"
-                          onClick={() => openEditModal(patient)}
-                          className="edit-button"
-                        >
+                      {/* Actions */}
+                      <div className="p-actions" slot="end">
+                        <IonButton fill="clear" color="primary" onClick={() => openEditModal(patient)} className="edit-button">
                           <IonIcon slot="icon-only" icon={create} />
                         </IonButton>
-                        <IonButton
-                          fill="clear"
-                          color="danger"
-                          onClick={() => handleDeleteClick(patient.id)}
-                          className="delete-button"
-                        >
+                        <IonButton fill="clear" color="danger" onClick={() => handleDeleteClick(patient.id)} className="delete-button">
                           <IonIcon slot="icon-only" icon={trash} />
                         </IonButton>
                       </div>

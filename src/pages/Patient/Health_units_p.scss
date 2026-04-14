@@ -34,7 +34,7 @@
     border: 1px solid #e5e8f9;
     border-radius: 20px;
     background: #fefeff;
-    box-shadow: 0 10px 20px rgba(78, 85, 150, 0.1);
+    
   }
 
   .filter-item {
@@ -63,7 +63,7 @@
   }
 
   .filter-chip {
-    --background: #ffffff;
+    --background: var(--ion-card-background, #ffffff);
     --color: #6e7696;
     border: 1px solid #e6e9fb;
   }
@@ -73,7 +73,7 @@
     border: 1px solid #e5e8f9;
     border-radius: 24px;
     background: #fefeff;
-    box-shadow: 0 12px 26px rgba(78, 85, 150, 0.14);
+    
     overflow: hidden;
   }
 
@@ -94,11 +94,11 @@
     border-radius: 24px;
     border: 1px solid #e5e8f9;
     background: #fefeff;
-    box-shadow: 0 12px 26px rgba(78, 85, 150, 0.14);
+    
   }
 
   .health-unit-card.expanded {
-    box-shadow: 0 16px 28px rgba(78, 85, 150, 0.18);
+    
   }
 
   .card-image-container {
@@ -157,13 +157,12 @@
     border-radius: 20px;
     border: 1px solid #e5e8f9;
     background: #fefeff;
-    box-shadow: 0 10px 22px rgba(78, 85, 150, 0.12);
+    
   }
 
   .map-controls ion-fab-button {
-    --background: #ffffff;
+    --background: var(--ion-card-background, #ffffff);
     --color: #4b55e5;
-    --box-shadow: 0 8px 16px rgba(78, 85, 150, 0.2);
   }
 }
 
@@ -197,7 +196,7 @@
     .empty-state-card {
       background: var(--background);
       border: 1px solid #2a2f57;
-      box-shadow: 0 12px 26px rgba(5, 7, 20, 0.55);
+      
     }
 
     .filter-item {
@@ -247,7 +246,6 @@
     .map-controls ion-fab-button {
       --background: #1e2241;
       --color: #aeb5ff;
-      --box-shadow: 0 12px 24px rgba(5, 7, 20, 0.55);
     }
   }
 }

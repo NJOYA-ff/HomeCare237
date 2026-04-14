@@ -1,230 +1,116 @@
+/* ===== SIDE MENU ===== */
 ion-menu ion-content {
-  --background: var(--ion-item-background, var(--ion-background-color, #fff));
+  --background: var(--ion-item-background, #fff);
 }
 
-ion-menu.md ion-content {
-  --padding-start: 8px;
-  --padding-end: 8px;
-  --padding-top: 20px;
-  --padding-bottom: 20px;
+ion-menu ion-list {
+  padding: 12px 0;
+  background: transparent;
 }
 
-ion-menu.md ion-list {
-  padding: 20px 0;
+ion-menu ion-item {
+  --background: transparent;
+  --padding-start: 14px;
+  --padding-end: 14px;
+  --min-height: 44px;
+  --border-radius: 8px;
+  --box-shadow: none;
+  --inner-box-shadow: none;
+  margin: 2px 8px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--ion-color-medium);
 }
 
-ion-menu.md ion-note {
-  margin-bottom: 30px;
-}
-
-ion-menu.md ion-list-header,
-ion-menu.md ion-note {
-  padding-left: 10px;
-}
-
-ion-menu.md ion-list#inbox-list {
-  border-bottom: 1px solid var(--ion-background-color-step-150, #d7d8da);
-}
-
-ion-menu.md ion-list#inbox-list ion-list-header {
-  font-size: 22px;
-  font-weight: 600;
-  min-height: 20px;
-}
-
-ion-menu.md ion-list#labels-list ion-list-header {
-  font-size: 16px;
-  margin-bottom: 18px;
-  color: #757575;
-  min-height: 26px;
-}
-
-ion-menu.md ion-item {
-  --padding-start: 10px;
-  --padding-end: 10px;
-  border-radius: 4px;
-}
-
-ion-menu.md ion-item.selected {
-  --background: rgba(var(--ion-color-primary-rgb), 0.14);
-  border-left: solid var(--ion-color-primary) 3px;
-}
-
-ion-menu.md ion-item.selected ion-icon {
+ion-menu ion-item.selected {
+  --background: rgba(var(--ion-color-primary-rgb), 0.1);
   color: var(--ion-color-primary);
-}
-ion-tabs.md ion-tab-button.tab-selected {
-  --background: rgba(var(--ion-color-primary-rgb), 0.14);
+  border-left: 3px solid var(--ion-color-primary);
 }
 
-ion-tabs.md ion-tab-button.tab-selected ion-icon {
-  color: var(--ion-color-primary);
+ion-menu ion-item ion-label {
+  font-weight: 500;
+  font-size: 14px;
 }
 
-/* iOS variant to match ion-menu.ios behavior */
-ion-tabs.ios ion-tab-button.tab-selected {
-  --background: rgba(var(--ion-color-primary-rgb), 0.14);
-}
-
-ion-tabs.ios ion-tab-button.tab-selected ion-icon {
-  color: var(--ion-color-primary);
-}
-ion-menu.md ion-item ion-icon {
-  color: #616e7e;
-}
 .menu-icon {
-  color: #616e7e;
+  font-size: 16px;
+  color: var(--ion-color-medium);
+  margin-right: 10px;
+  display: flex;
+  align-items: center;
 }
+
 .selected .menu-icon {
   color: var(--ion-color-primary);
-}
-ion-menu.md ion-item {
-  color: #616e7e;
-}
-ion-menu.md ion-item.selected {
-  color: var(--ion-color-primary);
-}
-ion-menu.md ion-item ion-label {
-  font-weight: 500;
-}
-
-ion-menu.ios ion-content {
-  --padding-bottom: 20px;
-}
-
-ion-menu.ios ion-list {
-  padding: 20px 0 0 0;
-}
-
-ion-menu.ios ion-note {
-  line-height: 24px;
-  margin-bottom: 20px;
-}
-
-ion-menu.ios ion-item {
-  --padding-start: 16px;
-  --padding-end: 16px;
-  --min-height: 50px;
-}
-
-ion-menu.ios ion-item ion-icon {
-  font-size: 24px;
-  color: #73849a;
-}
-
-ion-menu.ios ion-item .selected ion-icon {
-  color: var(--ion-color-primary);
-}
-
-ion-menu.ios ion-list#labels-list ion-list-header {
-  margin-bottom: 8px;
-}
-
-ion-menu.ios ion-list-header,
-ion-menu.ios ion-note {
-  padding-left: 16px;
-  padding-right: 16px;
-}
-
-ion-menu.ios ion-note {
-  margin-bottom: 8px;
-}
-
-ion-note {
-  display: inline-block;
-  font-size: 16px;
-  color: var(--ion-color-medium-shade);
 }
 
 ion-item.selected {
   --color: var(--ion-color-primary);
 }
+
+/* Split pane sizing */
 ion-split-pane {
   --side-width: 200px;
   --side-max-width: 200px;
 }
-/* For mobile devices */
+
 @media (max-width: 768px) {
   ion-split-pane {
-    --side-width: 150px;
-    --side-max-width: 150px;
+    --side-width: 180px;
+    --side-max-width: 180px;
   }
 }
 
-/* For very small screens */
-@media (max-width: 480px) {
-  ion-split-pane {
-    --side-width: 120px;
-    --side-max-width: 120px;
-  }
-}
-ion-tab-button {
-  --padding-start: 0;
-  --padding-end: 0;
-  --padding-top: 8px;
-  --padding-bottom: 8px;
-}
-
-ion-tab-button.tab-selected {
-  position: relative;
-}
-
-.ion-tab-button-inner {
-  padding: 4px 0;
-}
-
-@media (min-width: 768px) {
-  ion-tab-bar {
-    max-width: 400px;
-    margin: 0 auto;
-    border-radius: 20px 20px 0 0;
-    margin-bottom: 10px;
-  }
-}
+/* ===== BOTTOM TAB BAR ===== */
 .custom-tab-bar {
   width: calc(100% - 24px);
-  max-width: 360px;
-  margin: 0 auto calc(12px + env(safe-area-inset-bottom, 0px));
-  height: 66px;
-  padding: 0 10px;
-  border: 1px solid #dfe4fb;
-  border-radius: 24px;
-  background: linear-gradient(180deg, #fefeff 0%, #eef1ff 100%);
-  box-shadow: 0 10px 24px rgba(67, 76, 146, 0.2);
+  max-width: 380px;
+  margin: 0 auto calc(10px + env(safe-area-inset-bottom, 0px));
+  height: 60px;
+  padding: 0 8px;
+  border: 1px solid var(--ion-color-step-100, #e8e8e8);
+  border-radius: 20px;
+  background: var(--ion-item-background, #fff);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.10), 0 -1px 6px rgba(0, 0, 0, 0.06) !important;
 }
 
 .custom-tab-button {
   --background: transparent;
   --background-activated: transparent;
   --background-focused: transparent;
-  --color: #8d93a8;
-  --color-selected: #5881ea;
+  --color: var(--ion-color-medium);
+  --color-selected: var(--ion-color-primary);
   --ripple-color: transparent;
   --padding-start: 0;
   --padding-end: 0;
-  min-height: 64px;
+  --box-shadow: none;
+  min-height: 58px;
 }
 
 .custom-tab-button::part(native) {
   padding: 0;
+  box-shadow: none;
 }
 
 .tab-content {
   width: 100%;
   display: flex;
+  flex-direction: column;
   justify-content: center;
+  align-items: center;
+  gap: 2px;
 }
 
 .custom-tab-bar .icon-container {
-  width: 42px;
-  height: 42px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #8d93a8;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease,
-    color 0.2s ease;
+  color: var(--ion-color-medium);
+  transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
 }
 
 .custom-tab-bar .icon-inactive {
@@ -234,10 +120,10 @@ ion-tab-button.tab-selected {
 }
 
 .custom-tab-bar .icon-container.is-active {
-  transform: translateY(-12px);
+  transform: translateY(-4px);
   color: #ffffff;
-  background: linear-gradient(140deg, #6b86ff 0%, #4b77e5 100%);
-  box-shadow: 0 10px 24px rgba(77, 86, 228, 0.45);
+  background: var(--ion-color-primary);
+  box-shadow: 0 4px 12px rgba(var(--ion-color-primary-rgb), 0.5);
 }
 
 .custom-tab-bar .icon-container.is-active .icon-inactive {
@@ -245,57 +131,43 @@ ion-tab-button.tab-selected {
 }
 
 .tab-label {
-  display: none;
+  font-size: 10px;
+  color: var(--ion-color-medium);
+  line-height: 1;
+  transition: color 0.2s ease, transform 0.2s ease;
 }
 
-/* Responsive design */
+.tab-label.is-active {
+  color: var(--ion-color-primary);
+  font-weight: 600;
+  transform: translateY(-4px);
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .custom-tab-bar {
+    border-color: var(--ion-color-step-150, #252839);
+    background: var(--ion-item-background, #1a1d27);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.35), 0 -1px 6px rgba(0, 0, 0, 0.2) !important;
+  }
+}
+
+body.dark .custom-tab-bar {
+  border-color: var(--ion-color-step-150, #252839);
+  background: var(--ion-item-background, #1a1d27);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.35), 0 -1px 6px rgba(0, 0, 0, 0.2) !important;
+}
+
 @media (max-width: 360px) {
   .custom-tab-bar {
     width: calc(100% - 16px);
-    height: 62px;
-    padding: 0 8px;
-    border-radius: 22px;
+    height: 56px;
+    padding: 0 4px;
+    border-radius: 18px;
   }
 
   .custom-tab-bar .icon-container {
-    width: 38px;
-    height: 38px;
-  }
-}
-
-@media (max-width: 320px) {
-  .custom-tab-bar {
-    width: calc(100% - 12px);
-    padding: 0 6px;
-  }
-
-  .custom-tab-bar .icon-container {
-    width: 36px;
-    height: 36px;
-  }
-}
-.tab-icons {
-  margin-right: 5px;
-}
-
-@media (prefers-color-scheme: dark) {
-  .custom-tab-bar {
-    border: 1px solid #2a2f57;
-    background: var(--background);
-    box-shadow: 0 10px 24px rgba(5, 7, 20, 0.6);
-  }
-
-  .custom-tab-button {
-    --color: #9aa0bc;
-    --color-selected: #aeb5ff;
-  }
-
-  .custom-tab-bar .icon-container {
-    color: #9aa0bc;
-  }
-
-  .custom-tab-bar .icon-container.is-active {
-    background: linear-gradient(140deg, #6b86ff 0%, #4b77e5 100%);
-    box-shadow: 0 10px 24px rgba(13, 18, 52, 0.7);
+    width: 34px;
+    height: 34px;
   }
 }

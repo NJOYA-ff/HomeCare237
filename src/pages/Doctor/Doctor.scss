@@ -11,14 +11,14 @@
 }
 
 @mixin card-shadow {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  
 }
 
 @mixin subtle-hover {
   transition: all 0.3s ease;
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    
   }
 }
 
@@ -36,7 +36,7 @@
 
 // Header Styles - Fixed positioning
 .dashboard-header {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  
   position: relative;
 
   ion-toolbar {
@@ -102,8 +102,8 @@
     margin: 0;
     overflow: visible;
     height: 100%;
-    @include card-shadow;
-    @include subtle-hover;
+    
+    
 
     ion-card-content {
       text-align: center;
@@ -198,7 +198,6 @@
   ion-searchbar {
     padding: 0;
     --border-radius: 12px;
-    --box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   }
 
   .filter-section {
@@ -206,7 +205,7 @@
     padding: 16px;
     background: var(--ion-color-light);
     border-radius: 12px;
-    @include card-shadow;
+    
 
     h4 {
       margin: 0 0 12px 0;
@@ -245,8 +244,8 @@
       --padding-start: 12px;
       --inner-padding-end: 12px;
       margin-bottom: 12px;
-      @include card-shadow;
-      @include subtle-hover;
+      
+      
 
       .patient-avatar {
         width: 48px;
@@ -343,8 +342,8 @@
       height: 100%;
       display: flex;
       flex-direction: column;
-      @include card-shadow;
-      @include subtle-hover;
+      
+      
 
       .patient-card-header {
         display: flex;
@@ -444,7 +443,6 @@
 // Modal Styles
 ion-modal {
   --border-radius: 16px;
-  --box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 
   ion-toolbar {
     // --background: var(--ion-color-light);
@@ -550,6 +548,15 @@ ion-modal {
   align-items: center;
   height: 50vh;
   padding: 20px;
+
+  .loading-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba(var(--ion-color-primary-rgb), 0.2);
+    border-top-color: var(--ion-color-primary);
+    border-radius: 50%;
+    margin-bottom: 16px;
+  }
 
   ion-progress-bar {
     width: 80%;
@@ -722,7 +729,7 @@ ion-modal {
   background: var(--ion-color-light);
   border-radius: 15px;
   margin-bottom: 20px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  
 }
 
 .avatar-container {
@@ -736,7 +743,7 @@ ion-modal {
   height: 100px;
   margin: 0 auto;
   border: 3px solid var(--ion-color-primary);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  
 }
 
 .avatar-overlay {
@@ -819,7 +826,7 @@ ion-modal {
   border-radius: 15px;
   overflow: hidden;
   margin-bottom: 20px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  
 }
 
 .profile-d-item ion-item {
@@ -945,7 +952,7 @@ ion-modal {
 
 .activity-card {
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  
   height: 100%;
 
   ion-card-header {
@@ -969,7 +976,7 @@ ion-modal {
     --inner-padding-end: 0;
     border-radius: 8px;
     margin-bottom: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    
 
     ion-avatar {
       width: 48px;
@@ -1042,4 +1049,25 @@ ion-modal {
 
 .meta-text {
   line-height: 1.4;
+}
+
+// ===== DARK MODE =====
+@media (prefers-color-scheme: dark) {
+  .profile-header,
+  .profile-stats,
+  .profile-details {
+    background: var(--ion-item-background, #1a1d27);
+  }
+  .profile-name { color: var(--ion-text-color); }
+  .stat-value { color: var(--ion-text-color); }
+}
+
+body.dark {
+  .profile-header,
+  .profile-stats,
+  .profile-details {
+    background: var(--ion-item-background, #1a1d27);
+  }
+  .profile-name { color: var(--ion-text-color); }
+  .stat-value { color: var(--ion-text-color); }
 }

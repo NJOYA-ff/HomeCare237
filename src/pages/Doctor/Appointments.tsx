@@ -20,7 +20,6 @@ import {
   IonSegmentButton,
   IonList,
   IonText,
-  IonLoading,
   useIonViewWillEnter,
   IonAlert,
   IonChip,
@@ -60,6 +59,8 @@ import twilioMs from "../../components/Services/twilioServiceMs";
 import { useNotifications } from "../../context/NotificationContext";
 import "./Appointments.scss";
 import { getAuth } from "firebase/auth";
+import { motion } from "framer-motion";
+
 
 // Define the Emergency Contact type
 interface EmergencyContact {
@@ -838,7 +839,18 @@ const Appointments: React.FC = () => {
       </IonHeader>
 
       <IonContent fullscreen>
-        <IonLoading isOpen={isLoading} message={"Loading appointments..."} />
+        {isLoading && (
+          <div className="loading-container">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              className="loading-spinner"
+            />
+            <IonText className="ion-text-center ion-padding">
+              <p>Loading appointments...</p>
+            </IonText>
+          </div>
+        )}
 
         <IonAlert
           isOpen={showAlert}

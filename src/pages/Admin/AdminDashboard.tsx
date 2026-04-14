@@ -23,7 +23,10 @@ import {
   IonMenuButton,
   IonProgressBar,
   IonChip,
+  IonButton,
 } from "@ionic/react";
+import { useHistory } from "react-router-dom";
+import { useNotifications } from "../../context/NotificationContext";
 import {
   collection,
   getDocs,
@@ -112,6 +115,8 @@ type CustomVariants = Variants & {
 };
 
 const AdminDashboard: React.FC = () => {
+  const history = useHistory();
+  const { unreadCount } = useNotifications();
   const [stats, setStats] = useState({
     patients: 0,
     caregivers: 0,
@@ -386,17 +391,23 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <IonPage className="dashboard-page">
-      <IonHeader className="dashboard-header-a" class="ion-no-border">
+      <IonHeader class="ion-no-border">
         <IonToolbar>
           <IonButtons slot="start">
             <IonMenuButton>
               <FiMenu size={20} />{" "}
             </IonMenuButton>
           </IonButtons>
-          <IonTitle className="header-title">Admin Dashboard</IonTitle>
+          <IonTitle>Admin Dashboard</IonTitle>
           <IonButtons slot="end">
-            <IonBadge color="danger">{stats.alerts}</IonBadge>
-            <IonIcon icon={notifications} className="header-icon" />
+            <IonButton onClick={() => history.push("/admin/notifications")} style={{ position: "relative" }}>
+              <IonIcon icon={notifications} className="header-icon" />
+              {unreadCount > 0 && (
+                <IonBadge color="danger" style={{ position: "absolute", top: 4, right: 4, fontSize: "0.6rem", minWidth: 16, height: 16, borderRadius: 8, padding: "0 4px" }}>
+                  {unreadCount}
+                </IonBadge>
+              )}
+            </IonButton>
           </IonButtons>
         </IonToolbar>
       </IonHeader>
@@ -463,7 +474,7 @@ const AdminDashboard: React.FC = () => {
                       url: "/admin/#",
                     },
                   ].map((stat, index) => (
-                    <IonCol size="12" sizeSm="6" sizeLg="2.4" key={stat.title}>
+                    <IonCol size="6" sizeLg="2.4" key={stat.title}>
                       <motion.div
                         variants={cardVariants}
                         custom={index}
@@ -476,10 +487,10 @@ const AdminDashboard: React.FC = () => {
                           routerLink={stat.url}
                         >
                           <IonCardHeader>
-                            <IonCardSubtitle>
+                            <div className="stat-icon-wrap">
                               <IonIcon icon={stat.icon} />
-                              <span>{stat.title}</span>
-                            </IonCardSubtitle>
+                            </div>
+                            <IonCardSubtitle>{stat.title}</IonCardSubtitle>
                             <IonCardTitle>{stat.value}</IonCardTitle>
                           </IonCardHeader>
                         </IonCard>

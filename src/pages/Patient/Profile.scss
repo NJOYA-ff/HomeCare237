@@ -15,7 +15,7 @@
   margin-bottom: 20px;
   padding: 20px;
   border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  
 }
 
 .avatar-container {
@@ -28,7 +28,7 @@
   width: 100px;
   height: 100px;
   border: 4px solid var(--ion-color-light);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  
 }
 
 .avatar-overlay {
@@ -52,7 +52,7 @@
   margin: 0 0 10px 0;
   font-size: 1.8rem;
   font-weight: 700;
-  color: #2c3e50;
+  color: var(--ion-text-color, #2c3e50);
 }
 
 .profile-meta {
@@ -95,7 +95,7 @@
   // background: white;
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  
   margin-bottom: 20px;
 }
 
@@ -145,7 +145,7 @@
   padding: 16px;
   // background: white;
   border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  
   margin-bottom: 20px;
   text-align: center;
 }
@@ -217,8 +217,8 @@ ion-item:active {
 /* Dashboard-aligned theme overrides */
 .profile-page {
   .toolbar-profile {
-    --background: transparent;
-    --color: #191d38;
+    --background: var(--ion-toolbar-background);
+    --color: var(--ion-text-color);
     border-bottom: 0;
   }
 
@@ -235,7 +235,7 @@ ion-item:active {
   .edit-actions {
     background: #fefeff;
     border: 1px solid #e5e8f9;
-    box-shadow: 0 12px 26px rgba(78, 85, 150, 0.14);
+    
     border-radius: 24px;
   }
 
@@ -296,7 +296,7 @@ ion-item:active {
     }
 
     .toolbar-profile {
-      --color: #f0f2ff;
+      --color: var(--ion-text-color);
     }
 
     .profile-header,
@@ -304,7 +304,7 @@ ion-item:active {
     .edit-actions {
       background: var(--background);
       border: 1px solid #2a2f57;
-      box-shadow: 0 12px 26px rgba(5, 7, 20, 0.55);
+      
     }
 
     .profile-name,

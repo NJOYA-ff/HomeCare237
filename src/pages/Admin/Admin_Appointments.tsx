@@ -321,64 +321,55 @@ const Admin_Appointments: React.FC = () => {
             </div>
           </motion.div>
         ) : (
-          <IonList className="appointment-list" lines="full">
+          <IonList className="appointment-list" lines="none">
             <AnimatePresence>
               {filteredAppointments.map((appointment) => (
                 <motion.div
                   key={appointment.id}
                   className="appointment-item-container"
                   layout
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, x: -100 }}
-                  transition={{ duration: 0.3 }}
+                  exit={{ opacity: 0, x: -80 }}
+                  transition={{ duration: 0.25 }}
                 >
-                  <IonItem className="appointment-item" detail>
-                    <IonAvatar className="patient-avatar" slot="start">
-                      <img
-                        src={appointment.patientImage}
-                        alt={appointment.patientName}
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src =
-                            "https://ionicframework.com/docs/img/demos/avatar.svg";
-                        }}
-                      />
-                    </IonAvatar>
+                  <IonItem className="appointment-item" lines="none"
+                    style={{ borderLeft: `4px solid var(--ion-color-${getStatusColor(appointment.status)})` }}>
+                    <div slot="start" style={{
+                      width: 44, height: 44, borderRadius: "50%", flexShrink: 0,
+                      background: `var(--ion-color-${getStatusColor(appointment.status)})`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      color: "#fff", fontWeight: 700, fontSize: "0.95rem", marginRight: 12,
+                    }}>
+                      {safeString(appointment.patientName).split(" ").map((p: string) => p[0]).join("").slice(0, 2).toUpperCase() || "?"}
+                    </div>
                     <IonLabel className="appointment-details">
-                      <h2 className="patient-name">
-                        {safeString(appointment.patientName)}
-                      </h2>
-                      <p className="service-name">
-                        {safeString(appointment.service)}
-                      </p>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 2 }}>
+                        <h2 className="patient-name">{safeString(appointment.patientName)}</h2>
+                        <IonChip className={`status-badge-a status-${appointment.status}`}
+                          color={getStatusColor(appointment.status)}
+                          style={{ margin: 0, height: 24, fontSize: "0.72rem" }}>
+                          {formatStatus(appointment.status)}
+                        </IonChip>
+                      </div>
+                      <p className="service-name">{safeString(appointment.service)}</p>
                       <div className="appointment-meta">
-                        <IonNote className="meta-item">
+                        <span className="meta-item">
                           <IonIcon className="meta-icon" icon={calendar} />
-                          <span className="meta-text">
-                            {safeString(appointment.date)}
-                          </span>
-                        </IonNote>
-                        <IonNote className="meta-item">
+                          <span className="meta-text">{safeString(appointment.date)}</span>
+                        </span>
+                        <span className="meta-item">
                           <IonIcon className="meta-icon" icon={time} />
-                          <span className="meta-text">
-                            {safeString(appointment.time)} (
-                            {safeString(appointment.duration)})
+                          <span className="meta-text">{safeString(appointment.time)} · {safeString(appointment.duration)}</span>
+                        </span>
+                        {appointment.address && (
+                          <span className="meta-item">
+                            <IonIcon className="meta-icon" icon={location} />
+                            <span className="meta-text">{safeString(appointment.address)}</span>
                           </span>
-                        </IonNote>
-                        <IonNote className="meta-item">
-                          <IonIcon className="meta-icon" icon={location} />
-                          <span className="meta-text">
-                            {safeString(appointment.address)}
-                          </span>
-                        </IonNote>
+                        )}
                       </div>
                     </IonLabel>
-                    <IonChip
-                      className={`status-badge-a status-${appointment.status}`}
-                      color={getStatusColor(appointment.status)}
-                    >
-                      {formatStatus(appointment.status)}
-                    </IonChip>
                   </IonItem>
                 </motion.div>
               ))}

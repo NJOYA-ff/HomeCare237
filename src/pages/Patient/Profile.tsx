@@ -1285,10 +1285,12 @@ const Profile: React.FC = () => {
           className="profile-actions"
         >
           <IonButton
+            expand="block"
             color="danger"
             fill="outline"
             className="profile-logout-btn"
             onClick={() => setShowLogOutAlert(true)}
+            disabled={isLoading}
           >
             <IonIcon slot="start" icon={logOutOutline} />
             Log Out

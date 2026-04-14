@@ -7,6 +7,8 @@ import {
 import { IonReactRouter } from "@ionic/react-router";
 import { Redirect, Route } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { SettingsProvider } from "./context/SettingsContext";
+import SettingsPage from "./pages/Settings/SettingsPage";
 
 /* Core CSS required for Ionic components to work properly */
 import "@ionic/react/css/core.css";
@@ -41,6 +43,7 @@ import Admin_Appointments from "./pages/Admin/Admin_Appointments";
 import SMS_patient from "./pages/Admin/SMS_patient";
 import Admin_patient from "./pages/Admin/Admin_patient";
 import Admin_diagnoses from "./pages/Admin/Admin_Diagnoses";
+import AdminNotifications from "./pages/Admin/AdminNotifications";
 import Analytics from "./pages/Admin/Analytics";
 import WelcomePage from "./pages/WelcomePage";
 import AdminMenu from "./components/MenuAdmin";
@@ -76,6 +79,7 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import Refer_patient from "./pages/Doctor/Refer_Patients";
 import Tabs from "./components/Tabs";
 import { NotificationProvider } from "./context/NotificationContext";
+import { ChatProvider } from "./context/ChatContext";
 import DoctorNotifications from "./pages/Doctor/DoctorNotifications";
 // IMPORTANT: Import addIcons from ionicons
 import { addIcons } from "ionicons";
@@ -397,6 +401,7 @@ const App: React.FC = () => {
   console.log("Rendering App, currentUser:", currentUser);
 
   return (
+    <SettingsProvider>
     <NotificationProvider>
       {" "}
       <IonApp>
@@ -454,7 +459,9 @@ const App: React.FC = () => {
                   {/* Patient Menu (Sidebar) */}
                   <IonSplitPane contentId="main">
                     <PatientMenu />
-                    <Tabs />
+                    <ChatProvider>
+                      <Tabs />
+                    </ChatProvider>
                   </IonSplitPane>
                 </>
               )}
@@ -492,6 +499,10 @@ const App: React.FC = () => {
                       <Refer_patient />
                     </Route>
 
+                    <Route path="/doc/settings" exact={true}>
+                      <SettingsPage />
+                    </Route>
+
                     {/* Redirect any unknown doctor routes to dashboard */}
                     <Redirect to="/doc/dashboard" />
                   </IonRouterOutlet>
@@ -503,6 +514,9 @@ const App: React.FC = () => {
                   <AdminMenu />
                   <IonRouterOutlet id="main_3">
                     <Redirect exact from="/" to="/admin/dashboard" />
+                    <Route path="/admin/notifications" exact={true}>
+                      <AdminNotifications />
+                    </Route>
                     <Route path="/admin/dashboard" exact={true}>
                       <AdminDashboard />
                     </Route>
@@ -534,6 +548,10 @@ const App: React.FC = () => {
                       <Health_units />
                     </Route>
 
+                    <Route path="/admin/settings" exact={true}>
+                      <SettingsPage />
+                    </Route>
+
                     {/* Redirect any unknown admin routes to dashboard */}
                     <Redirect to="/admin/dashboard" />
                   </IonRouterOutlet>
@@ -563,6 +581,7 @@ const App: React.FC = () => {
         </IonReactRouter>
       </IonApp>
     </NotificationProvider>
+    </SettingsProvider>
   );
 };
 

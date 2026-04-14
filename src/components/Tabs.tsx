@@ -11,114 +11,60 @@ import Book_Appointment from "../pages/Patient/Book_Appointment";
 import Consult from "../pages/Patient/Consult";
 import Diagnoses from "../pages/Patient/Diagnoses";
 import Health_units_p from "../pages/Patient/Health_units_p";
-
 import PatientDashboard from "../pages/Patient/PatientDashboard";
 import Profile from "../pages/Patient/Profile";
 import SpecialtiesPage from "../pages/Patient/Specialties";
+import NotificationsPage from "../pages/Patient/NotificationPage";
+import SettingsPage from "../pages/Settings/SettingsPage";
 import {
-  FaHome,
   FaFileMedical,
   FaCalendarAlt,
   FaComments,
   FaUser,
+  FaCog,
 } from "react-icons/fa";
-import NotificationsPage from "../pages/Patient/NotificationPage";
 import { MdSpaceDashboard } from "react-icons/md";
+import { useChatContext } from "../context/ChatContext";
 
-interface TabPage {
-  title: string;
-  url: string;
-  icon: React.ReactNode;
-  tab: string;
-}
-
-const tabPages: TabPage[] = [
-  {
-    title: "Home",
-    url: "/patient/dashboard",
-    icon: <MdSpaceDashboard size={20} />,
-    tab: "home",
-  },
-  {
-    title: "Diagnosis",
-    url: "/patient/diagnoses",
-    icon: <FaFileMedical size={20} />,
-    tab: "diagnosis",
-  },
-  {
-    title: "My appt",
-    url: "/patient/book_appointment",
-    icon: <FaCalendarAlt size={20} />,
-    tab: "book-appointment",
-  },
-  {
-    title: "Consult",
-    url: "/patient/consult",
-    icon: <FaComments size={20} />,
-    tab: "consult",
-  },
-  {
-    title: "Me",
-    url: "/patient/profile",
-    icon: <FaUser size={20} />,
-    tab: "profile",
-  },
+const tabPages = [
+  { title: "Home", url: "/patient/dashboard", icon: <MdSpaceDashboard size={18} />, tab: "home" },
+  { title: "Diagnoses", url: "/patient/diagnoses", icon: <FaFileMedical size={18} />, tab: "diagnosis" },
+  { title: "Appt", url: "/patient/book_appointment", icon: <FaCalendarAlt size={18} />, tab: "book-appointment" },
+  { title: "Consult", url: "/patient/consult", icon: <FaComments size={18} />, tab: "consult" },
+  { title: "Me", url: "/patient/profile", icon: <FaUser size={18} />, tab: "profile" },
 ];
 
 const Tabs: React.FC = () => {
   const location = useLocation();
-  const activeTab = location.pathname;
-
+  const { chatOpen } = useChatContext();
   const isTabActive = (url: string) =>
-    activeTab === url || activeTab.startsWith(`${url}/`);
+    location.pathname === url || location.pathname.startsWith(`${url}/`);
 
   return (
     <IonTabs>
       <IonRouterOutlet id="main">
         <Redirect exact from="/" to="/patient/dashboard" />
-        <Route path="/patient/dashboard" exact={true}>
-          <PatientDashboard />
-        </Route>
-        <Route path="/patient/profile" exact={true}>
-          <Profile />
-        </Route>
-        <Route path="/patient/book_appointment" exact={true}>
-          <Book_Appointment />
-        </Route>
-        <Route path="/patient/specialties" exact={true}>
-          <SpecialtiesPage />
-        </Route>
-        <Route path="/patient/consult" exact={true}>
-          <Consult />
-        </Route>
-        <Route path="/patient/health_units_p" exact={true}>
-          <Health_units_p />
-        </Route>
-        <Route path="/notifications" exact={true}>
-          <NotificationsPage />
-        </Route>
-
-        <Route path="/patient/diagnoses" exact={true}>
-          <Diagnoses />
-        </Route>
+        <Route path="/patient/dashboard" exact><PatientDashboard /></Route>
+        <Route path="/patient/profile" exact><Profile /></Route>
+        <Route path="/patient/book_appointment" exact><Book_Appointment /></Route>
+        <Route path="/patient/specialties" exact><SpecialtiesPage /></Route>
+        <Route path="/patient/consult" exact><Consult /></Route>
+        <Route path="/patient/health_units_p" exact><Health_units_p /></Route>
+        <Route path="/notifications" exact><NotificationsPage /></Route>
+        <Route path="/patient/diagnoses" exact><Diagnoses /></Route>
+        <Route path="/patient/settings" exact><SettingsPage /></Route>
       </IonRouterOutlet>
 
-      <IonTabBar slot="bottom" className="custom-tab-bar">
-        {tabPages.map((tabPage, index) => {
-          const active = isTabActive(tabPage.url);
-
+      <IonTabBar slot="bottom" className="custom-tab-bar" style={chatOpen ? { display: "none" } : {}}>
+        {tabPages.map(({ url, icon, tab, title }) => {
+          const active = isTabActive(url);
           return (
-            <IonTabButton
-              key={index}
-              tab={tabPage.tab}
-              href={tabPage.url}
-              className="custom-tab-button"
-              aria-label={tabPage.title}
-            >
-              <div className="tab-content" data-active={active}>
+            <IonTabButton key={tab} tab={tab} href={url} className="custom-tab-button" aria-label={title}>
+              <div className="tab-content">
                 <div className={`icon-container ${active ? "is-active" : ""}`}>
-                  <div className="icon-inactive">{tabPage.icon}</div>
+                  <div className="icon-inactive">{icon}</div>
                 </div>
+                <span className={`tab-label ${active ? "is-active" : ""}`}>{title}</span>
               </div>
             </IonTabButton>
           );
