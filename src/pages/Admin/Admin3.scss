@@ -817,43 +817,59 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 // ---- Modal form -------------------------------------------
+ion-modal {
+  ion-content {
+    --background: var(--ion-background-color);
+    --padding-start: 16px;
+    --padding-end: 16px;
+    --padding-top: 16px;
+    --padding-bottom: 32px;
+  }
+}
+
 .form-item {
-  --padding-start: 0;
-  --inner-padding-end: 0;
-  --border-radius: $radius-sm;
-  margin-bottom: 14px;
-  border-radius: $radius-sm;
+  --background: var(--ion-color-light);
+  --border-color: transparent;
+  --border-radius: 10px;
+  --padding-start: 14px;
+  --inner-padding-end: 14px;
+  --min-height: 56px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
 
   ion-label {
     color: var(--ion-color-medium);
-    font-size: 0.85rem;
+    font-size: 0.78rem;
     font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
   }
 
   ion-input,
   ion-textarea,
-  ion-select,
-  ion-datetime {
+  ion-select {
     --padding-start: 0;
     --padding-end: 0;
-    margin-top: 6px;
+    font-size: 0.95rem;
+    color: var(--ion-text-color);
+    margin-top: 2px;
   }
-
-  .date-picker { width: 100%; }
 }
 
 .form-actions {
   display: flex;
   gap: 10px;
   justify-content: flex-end;
-  margin-top: 28px;
+  margin-top: 24px;
   padding-top: 14px;
   border-top: 1px solid var(--ion-color-step-100);
 
   .action-button {
-    --border-radius: $radius-sm;
-    min-width: 110px;
+    --border-radius: 10px;
+    min-width: 120px;
     font-weight: 600;
+    font-size: 0.9rem;
   }
 }
 

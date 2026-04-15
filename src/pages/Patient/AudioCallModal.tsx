@@ -2,53 +2,48 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   IonModal,
   IonContent,
-  IonButton,
   IonIcon,
   IonSpinner,
   IonToast,
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardContent,
-  IonAvatar,
 } from "@ionic/react";
 import {
   call,
   callOutline,
-  close,
+  micOff,
+  mic,
   volumeHigh,
   volumeMute,
-  personCircleOutline,
-  timeOutline,
+  videocam,
+  ellipsisHorizontal,
+  personAddOutline,
+  contractOutline,
 } from "ionicons/icons";
-import { db, auth, storage } from "../../firebaseconfig";
+import { db, auth } from "../../firebaseconfig";
 import {
   collection,
   doc,
   getDoc,
   setDoc,
   updateDoc,
-  onSnapshot,
-  query,
-  where,
-  orderBy,
   serverTimestamp,
   Timestamp,
 } from "firebase/firestore";
 import { twilioServiceAlternative } from "../../components/Services/twilioService";
+import { avatarColor } from "../../utils/avatarColor";
 import "./AudioCallModal.scss";
 
 interface AudioCallModalProps {
   isOpen: boolean;
   onClose: () => void;
-  doctorId: string; // Doctor's unique ID from Firebase
-  patientId?: string; // Patient's ID (current user)
+  doctorId: string;
+  patientId?: string;
+  onSwitchToVideo?: () => void;
 }
 
 interface DoctorInfo {
   name: string;
-  phoneNumber: string;
-  specialty?: string;
+  contact: string;
+  specialization?: string;
   avatarUrl?: string;
   isAvailable?: boolean;
 }
@@ -68,7 +63,7 @@ interface CallLog {
     | "failed";
   startTime: Timestamp | null;
   endTime: Timestamp | null;
-  duration: number; // in seconds
+  duration: number;
   notes?: string;
   patientPhone?: string;
   doctorPhone?: string;
@@ -78,106 +73,110 @@ const AudioCallModal: React.FC<AudioCallModalProps> = ({
   isOpen,
   onClose,
   doctorId,
-  patientId,
+  onSwitchToVideo,
 }) => {
   const [doctorInfo, setDoctorInfo] = useState<DoctorInfo>({
     name: "Loading...",
-    phoneNumber: "",
-    specialty: "",
+    contact: "",
+    specialization: "",
+    isAvailable: true,
   });
+  const [patientInfo, setPatientInfo] = useState({ name: "", contact: "" });
   const [callStatus, setCallStatus] = useState<
     "idle" | "calling" | "ringing" | "connected" | "error"
   >("idle");
   const [callDuration, setCallDuration] = useState(0);
-  const [error, setError] = useState<string>("");
+  const [error, setError] = useState("");
   const [isMuted, setIsMuted] = useState(false);
+  const [isSpeakerOn, setIsSpeakerOn] = useState(true);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
-  const [patientInfo, setPatientInfo] = useState({
-    name: "",
-    phoneNumber: "",
-  });
-  const [callLogId, setCallLogId] = useState<string>("");
+  const [callLogId, setCallLogId] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const ringtoneRef = useRef<{ ctx: AudioContext | null; timer: any }>({
+    ctx: null,
+    timer: null,
+  });
 
-  // Fetch doctor information
   useEffect(() => {
     if (isOpen && doctorId) {
       fetchDoctorInfo();
       fetchPatientInfo();
     }
-
     return () => {
       cleanupCall();
+      stopRingtone();
     };
   }, [isOpen, doctorId]);
 
-  // Fetch patient information from Firebase
+  useEffect(() => {
+    if (isOpen && (callStatus === "calling" || callStatus === "ringing")) {
+      startRingtone();
+    } else {
+      stopRingtone();
+    }
+  }, [isOpen, callStatus]);
+
   const fetchPatientInfo = async () => {
     try {
       const currentUser = auth.currentUser;
-      if (!currentUser) {
-        throw new Error("No user logged in");
-      }
-
-      const patientDocRef = doc(db, "patients", currentUser.uid);
-      const patientDoc = await getDoc(patientDocRef);
-
-      if (patientDoc.exists()) {
-        const data = patientDoc.data();
+      if (!currentUser) return;
+      const snap = await getDoc(doc(db, "patients", currentUser.uid));
+      if (snap.exists()) {
+        const d = snap.data();
         setPatientInfo({
-          name: data?.fullName || data?.name || "Patient",
-          phoneNumber: data?.phoneNumber || data?.phone || "",
+          name: d?.name || d?.fullName || "Patient",
+          contact: d?.contact || d?.phone || "",
         });
       } else {
-        // Fallback to user profile if not in patients collection
-        const userDocRef = doc(db, "users", currentUser.uid);
-        const userDoc = await getDoc(userDocRef);
-
-        if (userDoc.exists()) {
-          const data = userDoc.data();
+        const snap2 = await getDoc(doc(db, "patients", currentUser.uid));
+        if (snap2.exists()) {
+          const d = snap2.data();
           setPatientInfo({
-            name: data?.displayName || data?.name || "Patient",
-            phoneNumber: data?.phoneNumber || "",
+            name: d?.name || d?.displayName || "Patient",
+            contact: d?.contact || d?.phone || "",
           });
         }
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error fetching patient info:", err);
-      setPatientInfo({
-        name: "Patient",
-        phoneNumber: "",
-      });
     }
   };
 
-  // Fetch doctor information from Firebase
   const fetchDoctorInfo = async () => {
     try {
       setIsLoading(true);
-      const doctorDocRef = doc(db, "doctors", doctorId);
-      const doctorDoc = await getDoc(doctorDocRef);
-
-      if (doctorDoc.exists()) {
-        const data = doctorDoc.data();
+      const snap = await getDoc(doc(db, "doctors", doctorId));
+      if (snap.exists()) {
+        const d = snap.data();
         setDoctorInfo({
-          name: data?.fullName || data?.name || "Doctor",
-          phoneNumber: data?.phoneNumber || data?.phone || "",
-          specialty:
-            data?.specialty || data?.department || "General Practitioner",
-          avatarUrl: data?.photoURL || data?.avatarUrl,
-          isAvailable: data?.isAvailable !== false, // Default to true if not specified
+          name: d?.name || d?.fullName || "Doctor",
+          contact: d?.contact || d?.phone || "",
+          specialization: d?.specialization || "General Practitioner",
+          avatarUrl: d?.profilePhoto || d?.photoURL || d?.image || d?.avatarUrl,
+          isAvailable: d?.isAvailable !== false,
         });
       } else {
-        setError("Doctor not found");
-        setToastMessage("Doctor information not available");
-        setShowToast(true);
+        const snap2 = await getDoc(doc(db, "doctors", doctorId));
+        if (snap2.exists()) {
+          const d = snap2.data();
+          setDoctorInfo({
+            name: d?.name || d?.displayName || "Doctor",
+            contact: d?.contact || "",
+            specialization: d?.specialization || "General Practitioner",
+            avatarUrl:
+              d?.profilePhoto || d?.photoURL || d?.image || d?.avatarUrl,
+            isAvailable: true,
+          });
+        } else {
+          setToastMessage("Doctor information not available");
+          setShowToast(true);
+        }
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error fetching doctor info:", err);
-      setError("Failed to load doctor information");
       setToastMessage("Failed to load doctor details");
       setShowToast(true);
     } finally {
@@ -185,118 +184,69 @@ const AudioCallModal: React.FC<AudioCallModalProps> = ({
     }
   };
 
-  // Initialize Twilio with Firebase authentication
   const initializeTwilio = async () => {
-    try {
-      setCallStatus("idle");
-      setError("");
-
-      const currentUser = auth.currentUser;
-      if (!currentUser) {
-        throw new Error("Please log in to make a call");
-      }
-
-      // Use Firebase UID as identity for Twilio
-      const identity = `patient_${currentUser.uid}`;
-      const token = await twilioServiceAlternative.getCallToken(identity);
-      await twilioServiceAlternative.initialize(token);
-
-      // Listen for incoming call events if needed (guarded to avoid TS error if method doesn't exist)
-      const setupHandler = (twilioServiceAlternative as any)[
-        "setupIncomingCallHandler"
-      ];
-      if (typeof setupHandler === "function") {
-        setupHandler((incomingCall: any) => {
-          // Handle incoming calls if required
-          console.log("Incoming call:", incomingCall);
-        });
-      } else {
-        // Optional: log that the handler is not available on this Twilio service implementation
-        console.warn(
-          "setupIncomingCallHandler is not available on twilioServiceAlternative"
-        );
-      }
-    } catch (err: any) {
-      console.error("Failed to initialize Twilio:", err);
-      setError("Failed to initialize call service");
-      setCallStatus("error");
-      setToastMessage("Call service initialization failed");
-      setShowToast(true);
-    }
+    const currentUser = auth.currentUser;
+    if (!currentUser) throw new Error("Please log in to make a call");
+    const token = await twilioServiceAlternative.getCallToken(
+      `patient_${currentUser.uid}`,
+    );
+    await twilioServiceAlternative.initialize(token);
   };
 
-  // Create a call log in Firebase
   const createCallLog = async (status: CallLog["status"]) => {
     try {
       const currentUser = auth.currentUser;
-      if (!currentUser || !doctorId) return null;
-
-      const callLogRef = doc(collection(db, "callLogs"));
-      const callLogId = callLogRef.id;
-      setCallLogId(callLogId);
-
-      const callLog: CallLog = {
-        id: callLogId,
+      if (!currentUser) return null;
+      const ref = doc(collection(db, "callLogs"));
+      setCallLogId(ref.id);
+      await setDoc(ref, {
+        id: ref.id,
         doctorId,
         patientId: currentUser.uid,
         patientName: patientInfo.name,
         doctorName: doctorInfo.name,
         status,
-        startTime:
-          status === "connected" ? (serverTimestamp() as Timestamp) : null,
+        startTime: status === "connected" ? serverTimestamp() : null,
         endTime: null,
         duration: 0,
-        patientPhone: patientInfo.phoneNumber,
-        doctorPhone: doctorInfo.phoneNumber,
-      };
-
-      await setDoc(callLogRef, callLog);
-      return callLogId;
+        patientPhone: patientInfo.contact,
+        doctorPhone: doctorInfo.contact,
+      });
+      return ref.id;
     } catch (err) {
       console.error("Error creating call log:", err);
       return null;
     }
   };
 
-  // Update call log status
   const updateCallLog = async (updates: Partial<CallLog>) => {
     if (!callLogId) return;
-
     try {
-      const callLogRef = doc(db, "callLogs", callLogId);
-      await updateDoc(callLogRef, updates);
+      await updateDoc(doc(db, "callLogs", callLogId), updates);
     } catch (err) {
       console.error("Error updating call log:", err);
     }
   };
 
-  // Start the call with Firebase integration
   const startCall = async () => {
     try {
       if (!doctorInfo.isAvailable) {
-        setError("Doctor is not available");
         setToastMessage("Doctor is currently unavailable");
         setShowToast(true);
         return;
       }
-
       await initializeTwilio();
       setCallStatus("calling");
       setError("");
-
-      // Create initial call log
       await createCallLog("initiated");
 
       const connection = await twilioServiceAlternative.makeCall(
-        doctorInfo.phoneNumber
+        doctorInfo.contact,
       );
-
-      // Set up connection listeners for real-time updates
       connection?.on("ringing", async () => {
         setCallStatus("ringing");
         await updateCallLog({ status: "ringing" });
       });
-
       connection?.on("accept", async () => {
         setCallStatus("connected");
         startTimer();
@@ -305,23 +255,19 @@ const AudioCallModal: React.FC<AudioCallModalProps> = ({
           startTime: serverTimestamp() as Timestamp,
         });
       });
-
       connection?.on("disconnect", async () => {
         await endCall();
       });
-
-      connection?.on("error", async (error: any) => {
-        console.error("Call error:", error);
-        setError(error.message || "Call failed");
+      connection?.on("error", async (e: any) => {
+        setError(e.message || "Call failed");
         setCallStatus("error");
         await updateCallLog({
           status: "failed",
           endTime: serverTimestamp() as Timestamp,
-          notes: error.message,
+          notes: e.message,
         });
       });
     } catch (err: any) {
-      console.error("Call failed:", err);
       setError(err.message || "Failed to make call");
       setCallStatus("error");
       setToastMessage("Call failed to initiate");
@@ -334,11 +280,9 @@ const AudioCallModal: React.FC<AudioCallModalProps> = ({
     }
   };
 
-  // End call and update Firebase
   const endCall = async () => {
     try {
       twilioServiceAlternative.disconnectCall();
-
       if (callLogId && callStatus === "connected") {
         await updateCallLog({
           status: "completed",
@@ -357,6 +301,7 @@ const AudioCallModal: React.FC<AudioCallModalProps> = ({
     } catch (err) {
       console.error("Error ending call:", err);
     } finally {
+      stopRingtone();
       cleanupCall();
       onClose();
     }
@@ -364,13 +309,16 @@ const AudioCallModal: React.FC<AudioCallModalProps> = ({
 
   const toggleMute = () => {
     if (twilioServiceAlternative["connection"]) {
-      const currentMuteStatus = !isMuted;
-      twilioServiceAlternative["connection"].mute(currentMuteStatus);
-      setIsMuted(currentMuteStatus);
+      const next = !isMuted;
+      twilioServiceAlternative["connection"].mute(next);
+      setIsMuted(next);
     }
   };
 
   const cleanupCall = () => {
+    try {
+      twilioServiceAlternative.disconnectCall();
+    } catch (_) {}
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -379,41 +327,80 @@ const AudioCallModal: React.FC<AudioCallModalProps> = ({
     setCallStatus("idle");
     setError("");
     setIsMuted(false);
+    setIsSpeakerOn(true);
     setCallLogId("");
   };
 
   const startTimer = () => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => setCallDuration((p) => p + 1), 1000);
+  };
+
+  const startRingtone = () => {
+    if (ringtoneRef.current.timer) return;
+    try {
+      if (!ringtoneRef.current.ctx)
+        ringtoneRef.current.ctx = new AudioContext();
+      const ctx = ringtoneRef.current.ctx;
+      ringtoneRef.current.timer = setInterval(() => {
+        const oA = ctx.createOscillator(),
+          oB = ctx.createOscillator(),
+          gain = ctx.createGain();
+        oA.type = "sine";
+        oA.frequency.setValueAtTime(520, ctx.currentTime);
+        oB.type = "sine";
+        oB.frequency.setValueAtTime(660, ctx.currentTime);
+        gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.09, ctx.currentTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.4);
+        oA.connect(gain);
+        oB.connect(gain);
+        gain.connect(ctx.destination);
+        oA.start();
+        oB.start();
+        oA.stop(ctx.currentTime + 0.42);
+        oB.stop(ctx.currentTime + 0.42);
+      }, 900);
+    } catch (err) {
+      console.warn("Ringtone blocked:", err);
     }
-
-    timerRef.current = setInterval(() => {
-      setCallDuration((prev) => prev + 1);
-    }, 1000);
   };
 
-  const formatDuration = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs
+  const stopRingtone = () => {
+    if (ringtoneRef.current.timer) {
+      clearInterval(ringtoneRef.current.timer);
+      ringtoneRef.current.timer = null;
+    }
+    if (ringtoneRef.current.ctx) {
+      ringtoneRef.current.ctx.close();
+      ringtoneRef.current.ctx = null;
+    }
+  };
+
+  const formatDuration = (s: number) =>
+    `${Math.floor(s / 60)
       .toString()
-      .padStart(2, "0")}`;
-  };
+      .padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
   const getStatusMessage = () => {
     switch (callStatus) {
       case "calling":
-        return "Calling Doctor...";
+        return "Calling...";
       case "ringing":
-        return "Doctor's Phone Ringing...";
+        return "Ringing...";
       case "connected":
         return "Call in progress";
       case "error":
         return error || "Call failed";
       default:
-        return "Ready to call";
+        return doctorInfo.specialization || "Doctor";
     }
   };
+
+  const isActive =
+    callStatus === "calling" ||
+    callStatus === "ringing" ||
+    callStatus === "connected";
 
   return (
     <IonModal
@@ -428,131 +415,115 @@ const AudioCallModal: React.FC<AudioCallModalProps> = ({
             <p>Loading doctor information...</p>
           </div>
         ) : (
-          <div className="audio-phone-shell">
-            <div className="audio-topbar">
-              <div className="audio-call-chip">Audio Consultation</div>
-              <IonButton fill="clear" className="audio-close-btn" onClick={onClose}>
-                <IonIcon icon={close} />
-              </IonButton>
-            </div>
-
-            <div className="audio-profile-card">
-              <IonAvatar className="doctor-avatar">
-                {doctorInfo.avatarUrl ? (
-                  <img src={doctorInfo.avatarUrl} alt={doctorInfo.name} />
-                ) : (
-                  <IonIcon icon={personCircleOutline} />
-                )}
-              </IonAvatar>
-              <h2 className="doctor-name">{doctorInfo.name}</h2>
-              <p className="doctor-specialty">{doctorInfo.specialty}</p>
-              <p className="availability">
-                {doctorInfo.isAvailable ? "Available now" : "Unavailable"}
-              </p>
-            </div>
-
-            <div className="status-section">
-              <div className={`status-icon ${callStatus}`}>
-                {callStatus === "calling" || callStatus === "ringing" ? (
-                  <IonSpinner name="crescent" />
-                ) : callStatus === "connected" ? (
-                  <IonIcon
-                    icon={isMuted ? volumeMute : volumeHigh}
-                    color="success"
-                    className="connected"
-                  />
-                ) : (
-                  <IonIcon icon={timeOutline} />
-                )}
-              </div>
-
-              <h3
-                className={`duration-display ${
-                  callStatus === "connected" ? "" : "connecting"
-                }`}
+          <div className="wa-audio-shell">
+            <div className="wa-top-actions">
+              <button
+                className="wa-top-btn"
+                type="button"
+                aria-label="Minimize"
+                onClick={onClose}
               >
+                <IonIcon icon={contractOutline} />
+              </button>
+              <button
+                className="wa-top-btn"
+                type="button"
+                aria-label="Add participant"
+              >
+                <IonIcon icon={personAddOutline} />
+              </button>
+            </div>
+
+            <div className="wa-caller-info">
+              <h2 className="wa-caller-name">{doctorInfo.name}</h2>
+              <p className="wa-call-status">
                 {callStatus === "connected"
                   ? formatDuration(callDuration)
                   : getStatusMessage()}
-              </h3>
-
-              {callStatus === "error" && (
-                <p className="status-message error">{error}</p>
-              )}
+              </p>
             </div>
 
-            <IonCard className="patient-card">
-              <IonCardHeader>
-                <IonCardTitle>Caller</IonCardTitle>
-              </IonCardHeader>
-              <IonCardContent>
-                <p className="patient-name">{patientInfo.name}</p>
-                <p className="patient-phone">
-                  {patientInfo.phoneNumber || "Phone not provided"}
-                </p>
-              </IonCardContent>
-            </IonCard>
-
-            <div className="call-controls">
-              {callStatus === "connected" && (
-                <IonButton
-                  fill="clear"
-                  className={`mute-pill ${isMuted ? "active" : ""}`}
-                  onClick={toggleMute}
-                >
-                  <IonIcon icon={isMuted ? volumeMute : volumeHigh} />
-                  {isMuted ? "Unmute" : "Mute"}
-                </IonButton>
-              )}
-
-              <div className="primary-controls">
-                {callStatus === "idle" && (
-                  <IonButton
-                    expand="block"
-                    className="call-button"
-                    onClick={startCall}
-                    disabled={!doctorInfo.phoneNumber || !doctorInfo.isAvailable}
-                  >
-                    <IonIcon icon={call} />
-                    Start Call
-                  </IonButton>
-                )}
-
-                {(callStatus === "calling" ||
-                  callStatus === "ringing" ||
-                  callStatus === "connected") && (
-                  <IonButton
-                    expand="block"
-                    className="end-call-button"
-                    onClick={endCall}
-                  >
-                    <IonIcon icon={callOutline} />
-                    End Call
-                  </IonButton>
-                )}
-
-                {callStatus === "error" && (
-                  <>
-                    <IonButton
-                      expand="block"
-                      className="retry-button"
-                      onClick={startCall}
-                    >
-                      <IonIcon icon={call} />
-                      Try Again
-                    </IonButton>
-                    <IonButton
-                      expand="block"
-                      fill="outline"
-                      className="close-button"
-                      onClick={onClose}
-                    >
-                      Close
-                    </IonButton>
-                  </>
+            <div className="wa-avatar-wrap">
+              <div
+                className="wa-avatar"
+                style={{ background: avatarColor(doctorInfo.name) }}
+              >
+                {doctorInfo.avatarUrl ? (
+                  <img src={doctorInfo.avatarUrl} alt={doctorInfo.name} />
+                ) : (
+                  doctorInfo.name
+                    .split(" ")
+                    .map((p) => p[0])
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase()
                 )}
               </div>
             </div>
+
+            <div className="wa-bottom-controls">
+              <button
+                className="wa-control-btn"
+                type="button"
+                aria-label="More options"
+                onClick={() => {
+                  setToastMessage("More options coming soon");
+                  setShowToast(true);
+                }}
+              >
+                <IonIcon icon={ellipsisHorizontal} />
+              </button>
+              <button
+                className="wa-control-btn"
+                type="button"
+                aria-label="Switch to video"
+                onClick={async () => {
+                  await endCall();
+                  onSwitchToVideo?.();
+                }}
+              >
+                <IonIcon icon={videocam} />
+              </button>
+              <button
+                className={`wa-control-btn ${isSpeakerOn ? "active" : ""}`}
+                type="button"
+                aria-label="Toggle speaker"
+                onClick={() => setIsSpeakerOn((p) => !p)}
+              >
+                <IonIcon icon={isSpeakerOn ? volumeHigh : volumeMute} />
+              </button>
+              <button
+                className={`wa-control-btn ${isMuted ? "active" : ""}`}
+                type="button"
+                aria-label="Toggle mute"
+                onClick={toggleMute}
+                disabled={callStatus !== "connected"}
+              >
+                <IonIcon icon={isMuted ? micOff : mic} />
+              </button>
+              {isActive ? (
+                <button
+                  className="wa-control-btn wa-end-btn"
+                  type="button"
+                  aria-label="End call"
+                  onClick={endCall}
+                >
+                  <IonIcon icon={callOutline} />
+                </button>
+              ) : (
+                <button
+                  className="wa-control-btn wa-start-btn"
+                  type="button"
+                  aria-label="Start call"
+                  onClick={startCall}
+                  disabled={!doctorInfo.contact || !doctorInfo.isAvailable}
+                >
+                  <IonIcon icon={call} />
+                </button>
+              )}
+            </div>
+
+            {callStatus === "error" && <p className="wa-error">{error}</p>}
           </div>
         )}
       </IonContent>

@@ -1383,7 +1383,8 @@ const Consult: React.FC = () => {
         <AudioCallModal
           isOpen={isCallModalOpen}
           onClose={() => setIsCallModalOpen(false)}
-          doctorId="doctor_firebase_id_here"
+          doctorId={selectedDoctor?.id || ""}
+          onSwitchToVideo={() => { setIsCallModalOpen(false); startVideoCall(); }}
         />
         <IonAlert
           isOpen={showAlert}

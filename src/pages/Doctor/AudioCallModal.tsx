@@ -5,7 +5,6 @@ import {
   IonIcon,
   IonSpinner,
   IonToast,
-  IonAvatar,
 } from "@ionic/react";
 import {
   call,
@@ -18,7 +17,6 @@ import {
   ellipsisHorizontal,
   personAddOutline,
   contractOutline,
-  personCircleOutline,
 } from "ionicons/icons";
 import { db, auth } from "../../firebaseconfig";
 import {
@@ -31,6 +29,7 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { twilioServiceAlternative } from "../../components/Services/twilioService";
+import { avatarColor } from "../../utils/avatarColor";
 import "./AudioCallModal.scss";
 
 interface AudioCallModalProps {
@@ -512,12 +511,6 @@ const AudioCallModal: React.FC<AudioCallModalProps> = ({
     onSwitchToVideo?.();
   };
 
-  const callerInitials = patientInfo.name
-    .split(" ")
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
 
   return (
     <IonModal
@@ -562,15 +555,15 @@ const AudioCallModal: React.FC<AudioCallModalProps> = ({
             </div>
 
             <div className="wa-avatar-wrap">
-              <IonAvatar className="wa-avatar">
-                {patientInfo.avatarUrl ? (
-                  <img src={patientInfo.avatarUrl} alt={patientInfo.name} />
-                ) : (
-                  <span>
-                    {callerInitials || <IonIcon icon={personCircleOutline} />}
-                  </span>
-                )}
-              </IonAvatar>
+              <div
+                className="wa-avatar"
+                style={{ background: avatarColor(patientInfo.name) }}
+              >
+                {patientInfo.avatarUrl
+                  ? <img src={patientInfo.avatarUrl} alt={patientInfo.name} />
+                  : patientInfo.name.split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase()
+                }
+              </div>
             </div>
 
             <div className="wa-bottom-controls">
@@ -607,7 +600,16 @@ const AudioCallModal: React.FC<AudioCallModalProps> = ({
               >
                 <IonIcon icon={isMuted ? micOff : mic} />
               </button>
-              {callStatus === "idle" || callStatus === "error" ? (
+              {callStatus === "calling" || callStatus === "ringing" || callStatus === "connected" ? (
+                <button
+                  className="wa-control-btn wa-end-btn"
+                  type="button"
+                  aria-label="End call"
+                  onClick={endCall}
+                >
+                  <IonIcon icon={callOutline} />
+                </button>
+              ) : (
                 <button
                   className="wa-control-btn wa-start-btn"
                   type="button"
@@ -616,15 +618,6 @@ const AudioCallModal: React.FC<AudioCallModalProps> = ({
                   disabled={!patientInfo.contact || patientInfo.isAvailable === false}
                 >
                   <IonIcon icon={call} />
-                </button>
-              ) : (
-                <button
-                  className="wa-control-btn wa-end-btn"
-                  type="button"
-                  aria-label="End call"
-                  onClick={endCall}
-                >
-                  <IonIcon icon={callOutline} />
                 </button>
               )}
             </div>

@@ -763,12 +763,15 @@ const Admin_patient: React.FC = () => {
             </IonItem>
 
             <IonItem className="form-item">
-              <IonLabel position="stacked">Date of Birth</IonLabel>
-              <IonDatetime
-                presentation="date"
+              <IonLabel position="floating">Age</IonLabel>
+              <IonInput
+                type="number"
                 value={patientForm.dob}
-                onIonChange={handleDateChange}
-                className="date-picker"
+                onIonChange={(e) =>
+                  setPatientForm({ ...patientForm, dob: e.detail.value! })
+                }
+                min="0"
+                max="150"
               />
             </IonItem>
 

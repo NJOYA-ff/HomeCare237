@@ -80,6 +80,8 @@ import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { onAuthStateChanged } from "firebase/auth";
 import { Capacitor } from "@capacitor/core";
 import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
+import AudioCallModal from "./AudioCallModal";
+import VideoChatModal from "./VideoChat";
 
 // Updated interfaces for Firebase
 interface Doctor {
@@ -150,6 +152,9 @@ const formatTime = (seconds: number) => {
 const SMS_doctor: React.FC = () => {
   const [searchText, setSearchText] = useState("");
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
+  const [isCallModalOpen, setIsCallModalOpen] = useState(false);
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+  const [roomToken, setRoomToken] = useState("");
   const [selectedChat, setSelectedChat] = useState<ChatSession | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -1039,8 +1044,8 @@ const SMS_doctor: React.FC = () => {
                 </div>
               </div>
               <IonButtons slot="end">
-                <IonButton className="call-button"><IonIcon icon={callOutline} /></IonButton>
-                <IonButton className="call-button"><IonIcon icon={videocamOutline} /></IonButton>
+                <IonButton className="call-button" onClick={() => setIsCallModalOpen(true)}><IonIcon icon={callOutline} /></IonButton>
+                <IonButton className="call-button" onClick={() => { setRoomToken("room-" + Date.now()); setIsVideoModalOpen(true); }}><IonIcon icon={videocamOutline} /></IonButton>
               </IonButtons>
             </>
           ) : (
@@ -1271,6 +1276,19 @@ const SMS_doctor: React.FC = () => {
           </IonToolbar>
         </IonFooter>
       )}
+      <AudioCallModal
+        isOpen={isCallModalOpen}
+        onClose={() => setIsCallModalOpen(false)}
+        targetId={selectedDoctor?.id || ""}
+        targetCollection="doctors"
+        onSwitchToVideo={() => { setIsCallModalOpen(false); setRoomToken("room-" + Date.now()); setIsVideoModalOpen(true); }}
+      />
+      <VideoChatModal
+        isOpen={isVideoModalOpen}
+        onClose={() => setIsVideoModalOpen(false)}
+        roomName={roomToken}
+        token={roomToken}
+      />
     </IonPage>
   );
 };
