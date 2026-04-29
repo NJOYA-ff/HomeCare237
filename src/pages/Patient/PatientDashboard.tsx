@@ -750,7 +750,7 @@ const PatientDashboard: React.FC = () => {
         </IonToolbar>
       </IonHeader>
 
-      <IonContent className="dashboard-patient">
+      <IonContent fullscreen className="dashboard-patient">
         <IonRefresher slot="fixed" onIonRefresh={doRefresh}>
           <IonRefresherContent
             pullingIcon={arrowDownCircle}

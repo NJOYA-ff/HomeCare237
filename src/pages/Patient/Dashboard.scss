@@ -783,6 +783,7 @@ ion-card:active {
 /* Patient homepage style inspired by reference mockup */
 .dashboard-patient {
   --background: linear-gradient(180deg, #edf0ff 0%, #f8f9ff 100%);
+  --overflow: auto;
 }
 
 .patient-home-shell {
@@ -1087,8 +1088,6 @@ ion-card:active {
 
 @media (prefers-color-scheme: dark) {
   .dashboard-patient {
-  --padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
-  overscroll-behavior-y: none;
     --background: var(--background);
   }
 

@@ -15,7 +15,7 @@ interface VoiceflowChatProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const VoiceflowChat: React.FC<VoiceflowChatProps> = ({
-  projectID = "6884d01bac55ce90f0e97dad",
+  projectID = "69f1a03016565cff426ebc3d",
   className,
   style,
   children,
@@ -138,7 +138,7 @@ const VoiceflowChat: React.FC<VoiceflowChatProps> = ({
       }
 
       window.voiceflow.chat.load({
-        verify: { projectID: "6884d01bac55ce90f0e97dad" },
+        verify: { projectID: "69f1a03016565cff426ebc3d" },
         url: "https://general-runtime.voiceflow.com",
         versionID: "production",
         voice: {
