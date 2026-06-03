@@ -242,7 +242,7 @@ const Doc_Consult: React.FC = () => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
       if (user) {
-        loadPatients();
+        loadPatients(user.uid);
         loadChatSessions(user.uid);
       }
       setLoading(false);
@@ -253,23 +253,29 @@ const Doc_Consult: React.FC = () => {
     };
   }, []);
 
-  // Load patients from Firebase (now matching the structure)
-  const loadPatients = async () => {
+  // Load patients who have booked an appointment with this doctor
+  const loadPatients = async (doctorId: string) => {
     try {
-      const patientsRef = collection(db, "patients");
-      const patientsSnapshot = await getDocs(patientsRef);
-      const patientsData = patientsSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Patient[];
+      const appointmentsSnap = await getDocs(
+        query(collection(db, "appointments"), where("doctorId", "==", doctorId))
+      );
+
+      const patientIds = [...new Set(appointmentsSnap.docs.map((d) => d.data().patientId as string))];
+      if (patientIds.length === 0) { setPatients([]); return; }
+
+      const patientsData: Patient[] = [];
+      await Promise.all(
+        patientIds.map(async (pid) => {
+          const patientDoc = await getDoc(doc(db, "patients", pid));
+          if (patientDoc.exists()) {
+            patientsData.push({ id: patientDoc.id, ...patientDoc.data() } as Patient);
+          }
+        })
+      );
       setPatients(patientsData);
     } catch (error) {
       console.error("Error loading patients:", error);
-      presentToast({
-        message: "Failed to load patients",
-        duration: 2000,
-        color: "danger",
-      });
+      presentToast({ message: "Failed to load patients", duration: 2000, color: "danger" });
     }
   };
 

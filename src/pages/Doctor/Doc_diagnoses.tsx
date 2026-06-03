@@ -20,7 +20,6 @@ import {
   IonSelect,
   IonSelectOption,
   IonList,
-  IonDatetime,
   IonGrid,
   IonRow,
   IonCol,
@@ -518,18 +517,28 @@ const DoctorDiagnoses: React.FC = () => {
     null
   );
 
-  // Fetch patients from Firebase
+  // Fetch only patients who have booked an appointment with this doctor
   useEffect(() => {
     const fetchPatients = async () => {
+      const user = auth.currentUser;
+      if (!user) return;
       setLoading(true);
       try {
-        const patientsCollection = collection(db, "patients");
-        const patientsSnapshot = await getDocs(patientsCollection);
-        const patientsData = patientsSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Patient[];
+        const appointmentsSnap = await getDocs(
+          query(collection(db, "appointments"), where("doctorId", "==", user.uid))
+        );
+        const patientIds = [...new Set(appointmentsSnap.docs.map((d) => d.data().patientId as string))];
+        if (patientIds.length === 0) { setPatients([]); return; }
 
+        const patientsData: Patient[] = [];
+        await Promise.all(
+          patientIds.map(async (pid) => {
+            const patientDoc = await getDoc(doc(db, "patients", pid));
+            if (patientDoc.exists()) {
+              patientsData.push({ id: patientDoc.id, ...patientDoc.data() } as Patient);
+            }
+          })
+        );
         setPatients(patientsData);
       } catch (error) {
         console.error("Error fetching patients:", error);
@@ -620,10 +629,8 @@ const DoctorDiagnoses: React.FC = () => {
   // Filter patients based on search text
   const filteredPatients = patients.filter(
     (patient) =>
-      patient.name.toLowerCase().includes(searchText.toLowerCase()) ||
-      patient.medicalRecordNumber
-        .toLowerCase()
-        .includes(searchText.toLowerCase())
+      (patient.name || "").toLowerCase().includes(searchText.toLowerCase()) ||
+      (patient.medicalRecordNumber || "").toLowerCase().includes(searchText.toLowerCase())
   );
 
   const handleSelectPatient = (patient: Patient) => {
@@ -829,23 +836,6 @@ const DoctorDiagnoses: React.FC = () => {
       prescriptions: [],
     });
     setPreviewDiagnosis(null);
-  };
-
-  // Helper function to handle datetime changes
-  const handleDateChange = (field: string, value: string | string[] | null) => {
-    if (typeof value === "string") {
-      if (field === "diagnosis") {
-        setDiagnosisForm({ ...diagnosisForm, date: value });
-      } else if (field === "lab") {
-        setLabResultForm({ ...labResultForm, date: value });
-      }
-    } else if (Array.isArray(value) && value.length > 0) {
-      if (field === "diagnosis") {
-        setDiagnosisForm({ ...diagnosisForm, date: value[0] });
-      } else if (field === "lab") {
-        setLabResultForm({ ...labResultForm, date: value[0] });
-      }
-    }
   };
 
   // Helper function to get status color
@@ -1170,16 +1160,6 @@ const DoctorDiagnoses: React.FC = () => {
                       </IonItem>
 
                       <IonItem>
-                        <IonLabel position="stacked">Date</IonLabel>
-                        <IonDatetime
-                          value={diagnosisForm.date}
-                          onIonChange={(e) =>
-                            handleDateChange("diagnosis", e.detail.value!)
-                          }
-                        />
-                      </IonItem>
-
-                      <IonItem>
                         <IonLabel position="stacked">Description *</IonLabel>
                         <IonTextarea
                           value={diagnosisForm.description}
@@ -1236,16 +1216,6 @@ const DoctorDiagnoses: React.FC = () => {
                             })
                           }
                           placeholder="e.g., Complete Blood Count"
-                        />
-                      </IonItem>
-
-                      <IonItem>
-                        <IonLabel position="stacked">Test Date</IonLabel>
-                        <IonDatetime
-                          value={labResultForm.date}
-                          onIonChange={(e) =>
-                            handleDateChange("lab", e.detail.value!)
-                          }
                         />
                       </IonItem>
 

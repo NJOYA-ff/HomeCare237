@@ -441,7 +441,7 @@ const DoctorDashboard: React.FC = () => {
         (app) => app.status === "completed" || app.status === "accepted",
       ).length;
 
-      const totalPatients = patientIds.size;
+      const totalPatients = patientsData.length;
       const consultationFee = profile?.consultationFee || 5000;
 
       // Calculate earnings from completed appointments
@@ -734,7 +734,7 @@ const DoctorDashboard: React.FC = () => {
 
   return (
     <IonPage>
-      <IonHeader className="ion-no-border dashboard-header">
+      <IonHeader className="ion-no-border">
         <IonToolbar>
           <IonButtons slot="start">
             <IonMenuButton>
@@ -798,7 +798,7 @@ const DoctorDashboard: React.FC = () => {
             <IonGrid className="stats-grid ion-padding">
               <IonRow>
                 <IonCol size="6" sizeMd="3">
-                  <IonCard className="stats-card animated-card" button>
+                  <IonCard className="stats-card animated-card" button routerLink="/doc/appointments">
                     <IonCardContent>
                       <div
                         className="stat-icon-container"
@@ -814,7 +814,7 @@ const DoctorDashboard: React.FC = () => {
                   </IonCard>
                 </IonCol>
                 <IonCol size="6" sizeMd="3">
-                  <IonCard className="stats-card animated-card" button>
+                  <IonCard className="stats-card animated-card" button routerLink="/doc/Patients">
                     <IonCardContent>
                       <div
                         className="stat-icon-container"
@@ -831,7 +831,7 @@ const DoctorDashboard: React.FC = () => {
                   </IonCard>
                 </IonCol>
                 <IonCol size="6" sizeMd="3">
-                  <IonCard className="stats-card animated-card" button>
+                  <IonCard className="stats-card animated-card" button routerLink="/doc/refer_patients">
                     <IonCardContent>
                       <div
                         className="stat-icon-container"
@@ -847,7 +847,7 @@ const DoctorDashboard: React.FC = () => {
                   </IonCard>
                 </IonCol>
                 <IonCol size="6" sizeMd="3">
-                  <IonCard className="stats-card animated-card" button>
+                  <IonCard className="stats-card animated-card" button routerLink="/doc/profile">
                     <IonCardContent>
                       <div
                         className="stat-icon-container"

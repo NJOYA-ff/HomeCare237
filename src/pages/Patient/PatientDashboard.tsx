@@ -745,12 +745,12 @@ const PatientDashboard: React.FC = () => {
                 {unreadCount}
               </IonBadge>
             )}
-            <IonIcon icon={notificationsOutline} />
+            <IonIcon icon={notificationsOutline} color="dark" />
           </IonButton>
         </IonToolbar>
       </IonHeader>
 
-      <IonContent fullscreen className="dashboard-patient">
+      <IonContent className="dashboard-patient">
         <IonRefresher slot="fixed" onIonRefresh={doRefresh}>
           <IonRefresherContent
             pullingIcon={arrowDownCircle}
@@ -883,7 +883,7 @@ const PatientDashboard: React.FC = () => {
                 <IonCardContent>
                   <div className="home-section-head">
                     <h3>Upcoming Appointment</h3>
-                    <IonButton fill="clear" size="small">
+                    <IonButton fill="clear" size="small" routerLink="/patient/book_appointment?tab=myAppointments">
                       See all
                     </IonButton>
                   </div>
@@ -988,7 +988,7 @@ const PatientDashboard: React.FC = () => {
                     <IonButton
                       fill="clear"
                       size="small"
-                      routerLink="/patient/specialties"
+                      routerLink="/patient/specialties?all=1"
                     >
                       See all
                     </IonButton>

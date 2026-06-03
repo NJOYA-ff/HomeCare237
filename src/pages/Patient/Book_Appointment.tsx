@@ -998,6 +998,12 @@ const Book_Appointment: React.FC = () => {
     const params = new URLSearchParams(routerLocation.search);
     const appointmentId = params.get("appointmentId");
     const doctorId = params.get("doctorId");
+    const tab = params.get("tab");
+
+    if (tab === "myAppointments") {
+      setActiveSegment("myAppointments");
+      return;
+    }
 
     // If appointmentId provided, load that appointment and show its details
     if (appointmentId) {

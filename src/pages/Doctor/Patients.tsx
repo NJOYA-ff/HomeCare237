@@ -115,11 +115,9 @@ const Patients: React.FC = () => {
 
     setLoading(true);
     let appointmentIds = new Set<string>();
-    let chatIds = new Set<string>();
 
     const updateCombined = () => {
-      const combined = new Set<string>([...appointmentIds, ...chatIds]);
-      setRelatedPatientIds(Array.from(combined));
+      setRelatedPatientIds(Array.from(appointmentIds));
     };
 
     const appointmentsRef = collection(db, "appointments");
@@ -127,9 +125,6 @@ const Patients: React.FC = () => {
       appointmentsRef,
       where("doctorId", "==", doctorId),
     );
-
-    const chatsRef = collection(db, "chats");
-    const chatsQuery = query(chatsRef, where("doctorId", "==", doctorId));
 
     const unsubscribeAppointments = onSnapshot(
       appointmentsQuery,
@@ -149,27 +144,8 @@ const Patients: React.FC = () => {
       },
     );
 
-    const unsubscribeChats = onSnapshot(
-      chatsQuery,
-      (snapshot) => {
-        chatIds = new Set();
-        snapshot.forEach((docSnap) => {
-          const data = docSnap.data() as any;
-          if (data.patientId) {
-            chatIds.add(String(data.patientId));
-          }
-        });
-        updateCombined();
-      },
-      (error) => {
-        console.error("Error listening to chats:", error);
-        setLoading(false);
-      },
-    );
-
     return () => {
       unsubscribeAppointments();
-      unsubscribeChats();
     };
   }, [doctorId]);
 

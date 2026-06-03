@@ -301,7 +301,7 @@ const Refer_patient: React.FC = () => {
       setCurrentUser(user);
       if (user) {
         loadUserReferrals(user.uid);
-        loadPatients();
+        loadPatients(user.uid);
       } else {
         if (unsubscribeSentReferrals) {
           unsubscribeSentReferrals();
@@ -389,37 +389,39 @@ const Refer_patient: React.FC = () => {
     }
   };
 
-  // Load patients from Firebase with deduplication
-  const loadPatients = async () => {
+  // Load patients who have booked an appointment with this doctor
+  const loadPatients = async (doctorId?: string) => {
     try {
-      const patientsCollection = collection(db, "patients");
-      const patientSnapshot = await getDocs(patientsCollection);
+      const uid = doctorId || currentUser?.uid;
+      if (!uid) return;
+
+      const appointmentsSnap = await getDocs(
+        query(collection(db, "appointments"), where("doctorId", "==", uid))
+      );
+      const patientIds = [...new Set(appointmentsSnap.docs.map((d) => d.data().patientId as string))];
+      if (patientIds.length === 0) { setPatients([]); setFilteredPatients([]); return; }
+
       const patientsList: Patient[] = [];
-
-      // Use a Set to track unique patient IDs
-      const uniquePatientIds = new Set<string>();
-
-      patientSnapshot.forEach((doc) => {
-        if (uniquePatientIds.has(doc.id)) {
-          return; // Skip if already added
-        }
-        uniquePatientIds.add(doc.id);
-
-        const patientData = doc.data();
-        patientsList.push({
-          id: doc.id,
-          name: patientData.name || "Unknown Patient",
-          email: patientData.email || "",
-          phone: patientData.phone,
-          dateOfBirth: patientData.dateOfBirth,
-          gender: patientData.gender,
-          medicalHistory: patientData.medicalHistory,
-          allergies: patientData.allergies,
-          currentMedications: patientData.currentMedications,
-          emergencyContact: patientData.emergencyContact,
-        } as Patient);
-      });
-
+      await Promise.all(
+        patientIds.map(async (pid) => {
+          const patientDoc = await getDoc(doc(db, "patients", pid));
+          if (patientDoc.exists()) {
+            const data = patientDoc.data();
+            patientsList.push({
+              id: patientDoc.id,
+              name: data.name || "Unknown Patient",
+              email: data.email || "",
+              phone: data.phone,
+              dateOfBirth: data.dateOfBirth,
+              gender: data.gender,
+              medicalHistory: data.medicalHistory,
+              allergies: data.allergies,
+              currentMedications: data.currentMedications,
+              emergencyContact: data.emergencyContact,
+            } as Patient);
+          }
+        })
+      );
       setPatients(patientsList);
       setFilteredPatients(patientsList);
     } catch (error) {

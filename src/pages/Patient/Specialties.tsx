@@ -28,8 +28,9 @@ import {
   bandageOutline,
   close,
 } from "ionicons/icons";
-import { db } from "../../firebaseconfig";
+import { db, storage } from "../../firebaseconfig";
 import { collection, query, where, getDocs } from "firebase/firestore";
+import { ref, getDownloadURL } from "firebase/storage";
 
 type Doctor = {
   id: string;
@@ -79,20 +80,28 @@ const SpecialtiesPage: React.FC = () => {
     const load = async () => {
       setLoading(true);
       try {
-        // Query doctors by specialization
         const doctorsRef = collection(db, "doctors");
-        const q = query(doctorsRef, where("specialization", "==", specialty));
+        const q = specialty
+          ? query(doctorsRef, where("specialization", "==", specialty))
+          : query(doctorsRef);
         const snap = await getDocs(q);
         const list: Doctor[] = [];
-        snap.forEach((d) => {
+        const DEFAULT_AVATAR = "https://ionicframework.com/docs/img/demos/avatar.svg";
+        await Promise.all(snap.docs.map(async (d) => {
           const data = d.data() as any;
+          let avatar = DEFAULT_AVATAR;
+          if (data.profileImage) {
+            try { avatar = await getDownloadURL(ref(storage, data.profileImage)); } catch {}
+          } else if (data.avatar) {
+            avatar = data.avatar;
+          } else if (data.image) {
+            avatar = data.image;
+          }
           list.push({
             id: d.id,
             name: data.name || "Unknown Doctor",
             specialization: data.specialization || "",
-            avatar:
-              data.avatar ||
-              "https://ionicframework.com/docs/img/demos/avatar.svg",
+            avatar,
             rating: data.rating || 4.0,
             reviews: data.reviews || 0,
             region: data.region || "",
@@ -101,14 +110,13 @@ const SpecialtiesPage: React.FC = () => {
             consultationFee: data.consultationFee || 0,
             languages: data.languages || ["English"],
             availableSlots: data.availableSlots || [],
-            isAvailable:
-              data.isAvailable !== undefined ? data.isAvailable : true,
+            isAvailable: data.isAvailable !== undefined ? data.isAvailable : true,
             experience: data.experience || 0,
             email: data.email,
             contact: data.contact,
             phone: data.phone || data.contact,
           });
-        });
+        }));
         setDoctors(list);
       } catch (error) {
         console.error("Error loading doctors for specialty:", error);
@@ -118,14 +126,14 @@ const SpecialtiesPage: React.FC = () => {
       }
     };
 
-    if (specialty) load();
+    load();
   }, [specialty]);
 
   return (
     <IonPage className="specialties-dashboard-page">
       <IonHeader class="ion-no-border">
         <IonToolbar className="patient-dashboard-toolbar specialties-toolbar">
-          <IonTitle>{specialty || "Specialty"}</IonTitle>
+          <IonTitle>{specialty || "All Doctors"}</IonTitle>
           <IonButton
             slot="end"
             fill="clear"
@@ -141,7 +149,7 @@ const SpecialtiesPage: React.FC = () => {
           <IonCard className="specialties-card">
             <IonCardHeader>
               <IonCardTitle className="specialties-title">
-                Doctors - {specialty}
+                {specialty ? `Doctors - ${specialty}` : "All Doctors"}
               </IonCardTitle>
             </IonCardHeader>
             <IonCardContent>

@@ -3,7 +3,7 @@
 .doctor-card {
   margin: 8px 0;
   border-radius: 12px;
-  
+
   .doctor-header {
     display: flex;
     align-items: center;
@@ -85,10 +85,14 @@
 
 /* Welcome Card Styling */
 .welcome-card {
-  --background: linear-gradient(90deg, var(--ion-color-primary-shade) 0%, var(--ion-color-primary) 100%);
+  --background: linear-gradient(
+    90deg,
+    var(--ion-color-primary-shade) 0%,
+    var(--ion-color-primary) 100%
+  );
   color: white;
   border-radius: 10px;
-  
+
   .p-avatar {
     width: 50px;
     height: 50px;
@@ -125,12 +129,10 @@
   border-radius: 12px;
   margin: 10px;
   transition: all 0.3s ease;
-  
 }
 
 .status-card:hover {
   transform: translateY(-2px);
-  
 }
 
 /* Metric Cards */
@@ -139,12 +141,10 @@
   border-radius: 10px;
   transition: all 0.3s ease;
   height: 100%;
-  
 }
 
 .metric-card:hover {
   transform: translateY(-3px);
-  
 }
 
 .metric-card ion-icon {
@@ -177,7 +177,11 @@
 
 /* Chatbot FAB */
 .chatbot-fab {
-  --background: linear-gradient(90deg, var(--ion-color-primary-shade) 0%, var(--ion-color-primary) 100%);
+  --background: linear-gradient(
+    90deg,
+    var(--ion-color-primary-shade) 0%,
+    var(--ion-color-primary) 100%
+  );
   font-size: 0.75rem;
   white-space: nowrap;
   transition: all 0.3s ease;
@@ -197,7 +201,7 @@
   height: 400px;
   background: var(--ion-card-background, #ffffff);
   border-radius: 10px;
-  
+
   display: flex;
   flex-direction: column;
   z-index: 1000;
@@ -276,15 +280,17 @@ ion-card:active {
   box-shadow: none;
 }
 .upcoming-app {
-  
   border-radius: 13px;
 }
 .quick-actions {
-  
   border-radius: 13px;
 }
 .book-btn {
-  --background: linear-gradient(90deg, var(--ion-color-primary-shade) 0%, var(--ion-color-primary) 100%);
+  --background: linear-gradient(
+    90deg,
+    var(--ion-color-primary-shade) 0%,
+    var(--ion-color-primary) 100%
+  );
   width: 100%;
   height: 50px;
   --border-radius: 30px;
@@ -293,11 +299,19 @@ ion-card:active {
   }
 }
 .book-now-btn {
-  --background: linear-gradient(90deg, var(--ion-color-primary-shade) 0%, var(--ion-color-primary) 100%);
+  --background: linear-gradient(
+    90deg,
+    var(--ion-color-primary-shade) 0%,
+    var(--ion-color-primary) 100%
+  );
   --border-radius: 30px;
 }
 .book-now-btn-1 {
-  --background: linear-gradient(90deg, var(--ion-color-primary-shade) 0%, var(--ion-color-primary) 100%);
+  --background: linear-gradient(
+    90deg,
+    var(--ion-color-primary-shade) 0%,
+    var(--ion-color-primary) 100%
+  );
   --border-radius: 30px;
   width: 50%;
   margin-left: 30%;
@@ -343,7 +357,11 @@ ion-card:active {
     left: 0;
     right: 0;
     height: 4px;
-    background: linear-gradient(90deg, var(--ion-color-primary-shade) 0%, var(--ion-color-primary) 100%);
+    background: linear-gradient(
+      90deg,
+      var(--ion-color-primary-shade) 0%,
+      var(--ion-color-primary) 100%
+    );
     border-radius: 24px 24px 0 0;
   }
 }
@@ -382,7 +400,6 @@ ion-card:active {
     transform: translateY(-4px);
 
     .specialty-btn {
-      
     }
   }
 }
@@ -547,7 +564,6 @@ ion-card:active {
   // background: white;
   border-radius: 16px;
   overflow: hidden;
-  
 
   .popover-header {
     padding: 20px 20px 16px;
@@ -601,7 +617,11 @@ ion-card:active {
   align-items: center;
   justify-content: center;
   margin-right: 16px;
-  background: linear-gradient(90deg, var(--ion-color-primary-shade) 0%, var(--ion-color-primary) 100%);
+  background: linear-gradient(
+    90deg,
+    var(--ion-color-primary-shade) 0%,
+    var(--ion-color-primary) 100%
+  );
   flex-shrink: 0;
 
   .popover-icon {
@@ -728,7 +748,6 @@ ion-card:active {
 .specialties-page .specialties-card {
   margin: 12px;
   border-radius: 12px;
-  
 }
 
 .specialties-title {
@@ -783,7 +802,7 @@ ion-card:active {
 /* Patient homepage style inspired by reference mockup */
 .dashboard-patient {
   --background: linear-gradient(180deg, #edf0ff 0%, #f8f9ff 100%);
-  --overflow: auto;
+  // --overflow: auto;
 }
 
 .patient-home-shell {
@@ -798,7 +817,7 @@ ion-card:active {
 .home-top-doctors-card {
   margin: 0;
   border-radius: 26px;
-  
+
   border: 1px solid #e5e8f9;
   --background: #fefeff;
 }
@@ -911,7 +930,6 @@ ion-card:active {
   color: #ffffff;
   &:hover {
     transform: translateY(-3px);
-    
   }
 
   svg,
@@ -1082,7 +1100,7 @@ ion-card:active {
   height: 50%;
   background: #bfbff5;
   border-radius: 26px;
-  
+
   z-index: -1;
 }
 
@@ -1096,7 +1114,6 @@ ion-card:active {
   .home-top-doctors-card {
     --background: var(--background);
     border: 1px solid #2a2f57;
-    
   }
 
   .tiny-greeting {
@@ -1137,7 +1154,6 @@ ion-card:active {
   }
 
   .upcoming-highlight {
-    
   }
 
   .home-doctor-item {
@@ -1163,7 +1179,6 @@ ion-card:active {
 
   .home-upcoming-card.has-appointment::after {
     background: #2b3163;
-    
   }
 }
 
@@ -1173,14 +1188,20 @@ ion-card:active {
   font-size: 10px;
   font-weight: 700;
   text-transform: capitalize;
-  --background: rgba(255,255,255,0.2);
+  --background: rgba(255, 255, 255, 0.2);
   color: #fff;
-  border: 1px solid rgba(255,255,255,0.35);
+  border: 1px solid rgba(255, 255, 255, 0.35);
   flex-shrink: 0;
 }
-.appt-status-accepted { --background: rgba(22,163,74,0.3); }
-.appt-status-pending  { --background: rgba(234,179,8,0.3); }
-.appt-status-rejected { --background: rgba(220,38,38,0.3); }
+.appt-status-accepted {
+  --background: rgba(22, 163, 74, 0.3);
+}
+.appt-status-pending {
+  --background: rgba(234, 179, 8, 0.3);
+}
+.appt-status-rejected {
+  --background: rgba(220, 38, 38, 0.3);
+}
 
 // ===== DOCTOR AVAILABILITY DOT =====
 .doc-avatar-wrap {
@@ -1195,8 +1216,12 @@ ion-card:active {
   height: 10px;
   border-radius: 50%;
   border: 2px solid #fff;
-  &.avail   { background: #16a34a; }
-  &.unavail { background: #9ca3af; }
+  &.avail {
+    background: #16a34a;
+  }
+  &.unavail {
+    background: #9ca3af;
+  }
 }
 
 // ===== QUICK ACTIONS =====
@@ -1206,7 +1231,9 @@ ion-card:active {
   border: 1px solid #e5e8f9;
   --background: #fefeff;
 }
-.home-quick-actions-card ion-card-content { padding: 16px; }
+.home-quick-actions-card ion-card-content {
+  padding: 16px;
+}
 
 .quick-actions-grid {
   display: grid;
@@ -1239,7 +1266,10 @@ ion-card:active {
   display: flex;
   align-items: center;
   justify-content: center;
-  ion-icon { font-size: 20px; color: #fff; }
+  ion-icon {
+    font-size: 20px;
+    color: #fff;
+  }
 }
 
 // ===== HEALTH STATS STRIP =====
@@ -1249,7 +1279,9 @@ ion-card:active {
   border: 1px solid #e5e8f9;
   --background: #fefeff;
 }
-.home-health-stats-card ion-card-content { padding: 16px; }
+.home-health-stats-card ion-card-content {
+  padding: 16px;
+}
 
 .stats-updated {
   font-size: 11px;
@@ -1263,7 +1295,9 @@ ion-card:active {
   scrollbar-width: none;
   margin-top: 12px;
   padding-bottom: 4px;
-  &::-webkit-scrollbar { display: none; }
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .health-stat-item {
@@ -1277,13 +1311,21 @@ ion-card:active {
   background: #f3f4fb;
   min-width: 80px;
 
-  ion-icon { font-size: 18px; color: #6b86ff; }
+  ion-icon {
+    font-size: 18px;
+    color: #6b86ff;
+  }
 
   .stat-value {
     font-size: 16px;
     font-weight: 700;
     color: #191d38;
-    small { font-size: 10px; font-weight: 500; color: #9399ae; margin-left: 1px; }
+    small {
+      font-size: 10px;
+      font-weight: 500;
+      color: #9399ae;
+      margin-left: 1px;
+    }
   }
 
   .stat-name {
@@ -1292,9 +1334,15 @@ ion-card:active {
     text-align: center;
   }
 
-  &.stat-warning ion-icon { color: #f59e0b; }
-  &.stat-critical ion-icon { color: #ef4444; }
-  &.stat-normal ion-icon { color: #16a34a; }
+  &.stat-warning ion-icon {
+    color: #f59e0b;
+  }
+  &.stat-critical ion-icon {
+    color: #ef4444;
+  }
+  &.stat-normal ion-icon {
+    color: #16a34a;
+  }
 }
 
 // ===== HEALTH TIP BANNER =====
@@ -1337,12 +1385,25 @@ ion-card:active {
     --background: var(--ion-item-background, #1e2030);
     border-color: #2a2f57;
   }
-  .quick-action-item span { color: #d3d7f0; }
-  .doc-avail-dot { border-color: #1e2241; }
-  .health-stat-item { background: #202448; }
-  .health-stat-item .stat-value { color: #eef0ff; }
-  .health-tip-banner { background: linear-gradient(135deg, #1a1e3a 0%, #1e1a30 100%); border-color: #2a2f57; }
-  .tip-body { color: #c8cce8; }
+  .quick-action-item span {
+    color: #d3d7f0;
+  }
+  .doc-avail-dot {
+    border-color: #1e2241;
+  }
+  .health-stat-item {
+    background: #202448;
+  }
+  .health-stat-item .stat-value {
+    color: #eef0ff;
+  }
+  .health-tip-banner {
+    background: linear-gradient(135deg, #1a1e3a 0%, #1e1a30 100%);
+    border-color: #2a2f57;
+  }
+  .tip-body {
+    color: #c8cce8;
+  }
 }
 
 body.dark {
@@ -1351,10 +1412,23 @@ body.dark {
     --background: var(--ion-item-background, #1e2030);
     border-color: #2a2f57;
   }
-  .quick-action-item span { color: #d3d7f0; }
-  .doc-avail-dot { border-color: #1e2241; }
-  .health-stat-item { background: #202448; }
-  .health-stat-item .stat-value { color: #eef0ff; }
-  .health-tip-banner { background: linear-gradient(135deg, #1a1e3a 0%, #1e1a30 100%); border-color: #2a2f57; }
-  .tip-body { color: #c8cce8; }
+  .quick-action-item span {
+    color: #d3d7f0;
+  }
+  .doc-avail-dot {
+    border-color: #1e2241;
+  }
+  .health-stat-item {
+    background: #202448;
+  }
+  .health-stat-item .stat-value {
+    color: #eef0ff;
+  }
+  .health-tip-banner {
+    background: linear-gradient(135deg, #1a1e3a 0%, #1e1a30 100%);
+    border-color: #2a2f57;
+  }
+  .tip-body {
+    color: #c8cce8;
+  }
 }

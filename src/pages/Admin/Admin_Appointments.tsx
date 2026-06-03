@@ -30,6 +30,7 @@ import {
 } from "firebase/firestore";
 import { calendar, time, location, filter } from "ionicons/icons";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLocation } from "react-router-dom";
 import "./Admin2.scss";
 
 type AppointmentStatus = "confirmed" | "pending" | "cancelled" | "completed";
@@ -55,9 +56,11 @@ const Admin_Appointments: React.FC = () => {
     Appointment[]
   >([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<AppointmentStatus | "all">(
-    "all"
-  );
+  const location = useLocation();
+  const [statusFilter, setStatusFilter] = useState<AppointmentStatus | "all">(() => {
+    const params = new URLSearchParams(location.search);
+    return (params.get("status") as AppointmentStatus | "all") || "all";
+  });
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 

@@ -1,6 +1,7 @@
 /* ===== SIDE MENU ===== */
 ion-menu ion-content {
   --background: var(--ion-item-background, #fff);
+  --padding-bottom: env(safe-area-inset-bottom);
 }
 
 ion-menu ion-list {

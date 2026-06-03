@@ -123,6 +123,10 @@ const AdminDashboard: React.FC = () => {
     appointments: 0,
     alerts: 3,
     healthUnits: 0,
+    pending: 0,
+    accepted: 0,
+    completed: 0,
+    cancelled: 0,
   });
   const [recentCaregivers, setRecentCaregivers] = useState<Caregiver[]>([]);
   const [recentPatients, setRecentPatients] = useState<Patient[]>([]);
@@ -310,7 +314,7 @@ const AdminDashboard: React.FC = () => {
             });
 
             if (status === "pending") pendingCount++;
-            else if (status === "confirmed") confirmedCount++;
+            else if (status === "confirmed" || status === "accepted") confirmedCount++;
             else if (status === "completed") completedCount++;
 
             appointmentsData.push({
@@ -330,6 +334,10 @@ const AdminDashboard: React.FC = () => {
           setStats((prev) => ({
             ...prev,
             appointments: snapshot.size,
+            pending: pendingCount,
+            accepted: confirmedCount,
+            completed: completedCount,
+            cancelled: snapshot.docs.filter(d => d.data().status === "cancelled" || d.data().status === "rejected").length,
           }));
 
           // Update patient stats chart
@@ -451,11 +459,35 @@ const AdminDashboard: React.FC = () => {
                     },
                     {
                       icon: calendar,
-                      title: "Appointments",
-                      value: stats.appointments,
+                      title: "Pending",
+                      value: stats.pending,
+                      color: "warning",
+                      trend: "steady",
+                      url: "/admin/appointments?status=pending",
+                    },
+                    {
+                      icon: calendar,
+                      title: "Accepted",
+                      value: stats.accepted,
                       color: "tertiary",
                       trend: "steady",
-                      url: "/admin/appointments",
+                      url: "/admin/appointments?status=confirmed",
+                    },
+                    {
+                      icon: calendar,
+                      title: "Completed",
+                      value: stats.completed,
+                      color: "success",
+                      trend: "steady",
+                      url: "/admin/appointments?status=completed",
+                    },
+                    {
+                      icon: calendar,
+                      title: "Cancelled",
+                      value: stats.cancelled,
+                      color: "danger",
+                      trend: "steady",
+                      url: "/admin/appointments?status=cancelled",
                     },
                     {
                       icon: business,

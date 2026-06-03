@@ -101,6 +101,8 @@ interface Appointment {
   status: "pending" | "accepted" | "rejected" | "completed";
   phone: string;
   symptoms: string;
+  reason: string;
+  type: string;
   duration: string;
   consultationFee: string;
   createdAt?: any;
@@ -351,6 +353,8 @@ const Appointments: React.FC = () => {
       status: status,
       phone,
       symptoms: safeValue(data.symptoms) || "No symptoms provided",
+      reason: safeValue(data.reason) || "Not specified",
+      type: safeValue(data.type) || "Not specified",
       duration: safeValue(data.duration) || "30 mins",
       consultationFee: safeValue(data.consultationFee) || "0 XAF",
       createdAt: data.createdAt,
@@ -427,6 +431,8 @@ const Appointments: React.FC = () => {
               | "completed",
             phone: data.phone || "No phone provided",
             symptoms: data.symptoms || "No symptoms provided",
+            reason: data.reason || "Not specified",
+            type: data.type || "Not specified",
             duration: data.duration || "30 mins",
             consultationFee: data.consultationFee || "0 XAF",
             createdAt: data.createdAt,
@@ -536,6 +542,8 @@ const Appointments: React.FC = () => {
                 | "completed",
               phone: data.phone || "No phone provided",
               symptoms: data.symptoms || "No symptoms provided",
+              reason: data.reason || "Not specified",
+              type: data.type || "Not specified",
               duration: data.duration || "30 mins",
               consultationFee: data.consultationFee || "0 XAF",
               createdAt: data.createdAt,
@@ -991,6 +999,30 @@ const Appointments: React.FC = () => {
                           <IonLabel className="compact-label">
                             <p>Fee</p>
                             <h3>{safeValue(appointment.consultationFee)}</h3>
+                          </IonLabel>
+                        </IonItem>
+                      </IonCol>
+                    </IonRow>
+
+                    <IonRow>
+                      <IonCol>
+                        <IonItem className="compact-item" lines="none">
+                          <IonIcon icon={medical} slot="start" />
+                          <IonLabel className="compact-label">
+                            <p>Reason for Visit</p>
+                            <h3>{safeValue(appointment.reason)}</h3>
+                          </IonLabel>
+                        </IonItem>
+                      </IonCol>
+                    </IonRow>
+
+                    <IonRow>
+                      <IonCol>
+                        <IonItem className="compact-item" lines="none">
+                          <IonIcon icon={informationCircle} slot="start" />
+                          <IonLabel className="compact-label">
+                            <p>Type of Visit</p>
+                            <h3>{safeValue(appointment.type)}</h3>
                           </IonLabel>
                         </IonItem>
                       </IonCol>

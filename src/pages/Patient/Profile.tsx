@@ -654,7 +654,7 @@ const Profile: React.FC = () => {
   if (initialLoad) {
     return (
       <IonPage>
-        <IonContent fullscreen className="ion-padding">
+        <IonContent className="ion-padding">
           <div className="loading-container">
             <motion.div
               animate={{ rotate: 360 }}
@@ -694,7 +694,7 @@ const Profile: React.FC = () => {
   }
 
   return (
-    <IonPage className="profile-page">
+    <IonPage>
       <IonHeader class="ion-no-border">
         <IonToolbar className="patient-dashboard-toolbar toolbar-profile">
           <IonButtons slot="start">
@@ -715,587 +715,611 @@ const Profile: React.FC = () => {
         </IonToolbar>
       </IonHeader>
 
-      <IonContent className="dashboard-patient ion-padding profile-content">
+      <IonContent className="dashboard-patient profile-content">
         <div className="profile-shell">
-        {/* Hidden file input */}
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileChange}
-          accept="image/*"
-          style={{ display: "none" }}
-        />
+          {/* Hidden file input */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept="image/*"
+            style={{ display: "none" }}
+          />
 
-        {/* Loading Indicator */}
-        <IonLoading
-          isOpen={isLoading}
-          message={isLoading ? "Saving changes..." : "Uploading image..."}
-          spinner="circles"
-        />
+          {/* Loading Indicator */}
+          <IonLoading
+            isOpen={isLoading}
+            message={isLoading ? "Saving changes..." : "Uploading image..."}
+            spinner="circles"
+          />
 
-        <IonAlert
-          isOpen={showAlert}
-          onDidDismiss={() => setShowAlert(false)}
-          header={alertMessage.includes("Error") ? "Error" : "Success"}
-          message={alertMessage}
-          buttons={["OK"]}
-        />
+          <IonAlert
+            isOpen={showAlert}
+            onDidDismiss={() => setShowAlert(false)}
+            header={alertMessage.includes("Error") ? "Error" : "Success"}
+            message={alertMessage}
+            buttons={["OK"]}
+          />
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="profile-header">
-            <motion.div
-              whileHover={{ scale: isEditing ? 1.05 : 1 }}
-              whileTap={{ scale: isEditing ? 0.95 : 1 }}
-              className="avatar-container"
-              onClick={isEditing ? selectFromGallery : undefined}
-            >
-              <IonAvatar className="profile-avatar">
-                <img
-                  src={
-                    tempData.avatar ||
-                    "https://ionicframework.com/docs/img/demos/avatar.svg"
-                  }
-                  alt="Patient Avatar"
-                />
-              </IonAvatar>
-              {isEditing && (
-                <div className="avatar-overlay">
-                  <IonIcon icon={cameraOutline} color="light" size="large" />
-                </div>
-              )}
-            </motion.div>
-
-            <div className="profile-info">
-              {isEditing ? (
-                <IonInput
-                  value={tempData.name}
-                  onIonInput={(e) => handleInputChange("name", e.detail.value!)}
-                  className="profile-edit-input"
-                />
-              ) : (
-                <IonText color="dark">
-                  <h1 className="profile-name">{patient.name || "Not set"}</h1>
-                </IonText>
-              )}
-
-              <div className="profile-meta">
-                <IonChip color="primary">
-                  {isEditing ? (
-                    <IonSelect
-                      value={tempData.gender}
-                      onIonChange={(e) =>
-                        handleInputChange("gender", e.detail.value)
-                      }
-                      interface="popover"
-                    >
-                      <IonSelectOption value="male">Male</IonSelectOption>
-                      <IonSelectOption value="female">Female</IonSelectOption>
-                      <IonSelectOption value="other">Other</IonSelectOption>
-                    </IonSelect>
-                  ) : (
-                    <>
-                      <IonIcon
-                        icon={
-                          patient.gender === "male"
-                            ? maleOutline
-                            : patient.gender === "female"
-                            ? femaleOutline
-                            : transgenderOutline
-                        }
-                      />
-                      <IonLabel>{patient.gender || "Not set"}</IonLabel>
-                    </>
-                  )}
-                </IonChip>
-
-                <IonChip color="secondary">
-                  <IonIcon icon={accessibilityOutline} />
-                  {isEditing ? (
-                    <IonInput
-                      type="number"
-                      value={tempData.age}
-                      onIonInput={(e) =>
-                        handleInputChange("age", parseInt(e.detail.value!) || 0)
-                      }
-                      className="chip-input"
-                    />
-                  ) : (
-                    <IonLabel>{patient.age || 0} years</IonLabel>
-                  )}
-                </IonChip>
-
-                <IonChip color="tertiary">
-                  <IonIcon icon={heartOutline} />
-                  {isEditing ? (
-                    <IonInput
-                      value={tempData.bloodType}
-                      onIonInput={(e) =>
-                        handleInputChange("bloodType", e.detail.value!)
-                      }
-                      className="chip-input"
-                    />
-                  ) : (
-                    <IonLabel>{patient.bloodType || "Not set"}</IonLabel>
-                  )}
-                </IonChip>
-              </div>
-
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                className="profile-stats"
-              >
-                <div className="stat-item">
-                  <IonIcon icon={bandageOutline} color="primary" />
-                  <span className="stat-value">{getConditionsCount()}</span>
-                  <span className="stat-label">Conditions</span>
-                </div>
-                <div className="stat-item">
-                  <IonIcon icon={medkitOutline} color="secondary" />
-                  <span className="stat-value">{getMedicationsCount()}</span>
-                  <span className="stat-label">Medications</span>
-                </div>
-                <div className="stat-item">
-                  <div
-                    onClick={() => {
-                      if (nextAppointment && nextAppointment.id) {
-                        history.push(
-                          `/patient/book_appointment?appointmentId=${nextAppointment.id}`,
-                        );
-                      }
-                    }}
-                    style={{ cursor: nextAppointment ? "pointer" : "default" }}
-                  >
-                    <IonIcon icon={calendarOutline} color="tertiary" />
-                    <IonLabel>
-                      <span className="stat-value">
-                        {nextAppointment
-                          ? formatAppointmentDate(nextAppointment._dateObj)
-                          : "N/A"}
-                      </span>
-                    </IonLabel>
-
-                    <span className="stat-label">Next Appt</span>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-          </div>
-        </motion.div>
-
-        <AnimatePresence>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            exit={{ opacity: 0 }}
-            className="profile-details"
+            transition={{ duration: 0.5 }}
           >
-            <IonList lines="full" className="ion-no-padding">
-              {/* Email */}
-              <motion.div whileHover={{ scale: 1.01 }}>
-                <IonItem className="profile-d-item">
-                  <IonIcon slot="start" icon={mailOutline} color="medium" />
-                  <IonLabel>
-                    <h3>Email</h3>
-                    <p>{patient.email || "Not set"}</p>
-                  </IonLabel>
-                </IonItem>
-              </motion.div>
-
-              {/* Phone */}
-              <motion.div whileHover={{ scale: 1.01 }}>
-                <IonItem className="profile-d-item">
-                  <IonIcon slot="start" icon={callOutline} color="medium" />
-                  {isEditing ? (
-                    <IonInput
-                      type="tel"
-                      value={tempData.phone}
-                      onIonInput={(e) =>
-                        handleInputChange("phone", e.detail.value!)
-                      }
-                      className="profile-edit-input"
-                    />
-                  ) : (
-                    <IonLabel>
-                      <h3>Phone</h3>
-                      <p>{patient.phone || "Not set"}</p>
-                    </IonLabel>
-                  )}
-                </IonItem>
-              </motion.div>
-
-              {/* Address */}
-              <motion.div whileHover={{ scale: 1.01 }}>
-                <IonItem className="profile-d-item">
-                  <IonIcon slot="start" icon={locationOutline} color="medium" />
-                  {isEditing ? (
-                    <IonInput
-                      type="text"
-                      value={tempData.address}
-                      onIonInput={(e) =>
-                        handleInputChange("address", e.detail.value!)
-                      }
-                      className="profile-edit-input"
-                    />
-                  ) : (
-                    <IonLabel>
-                      <h3>Address</h3>
-                      <p>{patient.address || "Not set"}</p>
-                    </IonLabel>
-                  )}
-                </IonItem>
-              </motion.div>
-
-              {/* Physical Stats */}
-              <IonCard>
-                <IonCardContent>
-                  <IonGrid>
-                    <IonRow>
-                      <IonCol>
-                        <IonItem lines="none">
-                          <IonLabel>
-                            <h3>Height</h3>
-                            {isEditing ? (
-                              <IonInput
-                                value={tempData.height}
-                                onIonInput={(e) =>
-                                  handleInputChange("height", e.detail.value!)
-                                }
-                                className="profile-edit-input"
-                              />
-                            ) : (
-                              <p>{patient.height || "Not set"}</p>
-                            )}
-                          </IonLabel>
-                        </IonItem>
-                      </IonCol>
-                      <IonCol>
-                        <IonItem lines="none">
-                          <IonLabel>
-                            <h3>Weight</h3>
-                            {isEditing ? (
-                              <IonInput
-                                value={tempData.weight}
-                                onIonInput={(e) =>
-                                  handleInputChange("weight", e.detail.value!)
-                                }
-                                className="profile-edit-input"
-                              />
-                            ) : (
-                              <p>{patient.weight || "Not set"}</p>
-                            )}
-                          </IonLabel>
-                        </IonItem>
-                      </IonCol>
-                    </IonRow>
-                  </IonGrid>
-                </IonCardContent>
-              </IonCard>
-
-              {/* Emergency Contact */}
-              <motion.div whileHover={{ scale: 1.01 }}>
-                <IonItem className="profile-d-item">
-                  <IonIcon
-                    slot="start"
-                    icon={shieldCheckmarkOutline}
-                    color="medium"
+            <div className="profile-header">
+              <motion.div
+                whileHover={{ scale: isEditing ? 1.05 : 1 }}
+                whileTap={{ scale: isEditing ? 0.95 : 1 }}
+                className="avatar-container"
+                onClick={isEditing ? selectFromGallery : undefined}
+              >
+                <IonAvatar className="profile-avatar">
+                  <img
+                    src={
+                      tempData.avatar ||
+                      "https://ionicframework.com/docs/img/demos/avatar.svg"
+                    }
+                    alt="Patient Avatar"
                   />
-                  <IonLabel>
-                    <h3>Emergency Contact</h3>
-                    {isEditing ? (
-                      <div>
-                        <IonInput
-                          placeholder="Name"
-                          value={tempData.emergencyContact.name}
-                          onIonInput={(e) =>
-                            handleNestedInputChange(
-                              "emergencyContact",
-                              "name",
-                              e.detail.value!,
-                            )
-                          }
-                          className="profile-edit-input"
-                        />
-                        <IonInput
-                          placeholder="Phone"
-                          value={tempData.emergencyContact.phone}
-                          onIonInput={(e) =>
-                            handleNestedInputChange(
-                              "emergencyContact",
-                              "phone",
-                              e.detail.value!,
-                            )
-                          }
-                          className="profile-edit-input"
-                        />
-                        <IonInput
-                          placeholder="Relationship"
-                          value={tempData.emergencyContact.relationship}
-                          onIonInput={(e) =>
-                            handleNestedInputChange(
-                              "emergencyContact",
-                              "relationship",
-                              e.detail.value!,
-                            )
-                          }
-                          className="profile-edit-input"
-                        />
-                      </div>
-                    ) : (
-                      <p>
-                        {getEmergencyContact().name
-                          ? `${getEmergencyContact().name} (${
-                              getEmergencyContact().relationship
-                            }) - ${getEmergencyContact().phone}`
-                          : "Not set"}
-                      </p>
-                    )}
-                  </IonLabel>
-                </IonItem>
+                </IonAvatar>
+                {isEditing && (
+                  <div className="avatar-overlay">
+                    <IonIcon icon={cameraOutline} color="light" size="large" />
+                  </div>
+                )}
               </motion.div>
 
-              {/* Insurance Information */}
-              <motion.div whileHover={{ scale: 1.01 }}>
-                <IonItem className="profile-d-item">
-                  <IonIcon
-                    slot="start"
-                    icon={documentTextOutline}
-                    color="medium"
+              <div className="profile-info">
+                {isEditing ? (
+                  <IonInput
+                    value={tempData.name}
+                    onIonInput={(e) =>
+                      handleInputChange("name", e.detail.value!)
+                    }
+                    className="profile-edit-input"
                   />
-                  <IonLabel>
-                    <h3>Insurance</h3>
-                    {isEditing ? (
-                      <div>
-                        <IonInput
-                          placeholder="Provider"
-                          value={tempData.insurance.provider}
-                          onIonInput={(e) =>
-                            handleNestedInputChange(
-                              "insurance",
-                              "provider",
-                              e.detail.value!,
-                            )
-                          }
-                          className="profile-edit-input"
-                        />
-                        <IonInput
-                          placeholder="Policy Number"
-                          value={tempData.insurance.policyNumber}
-                          onIonInput={(e) =>
-                            handleNestedInputChange(
-                              "insurance",
-                              "policyNumber",
-                              e.detail.value!,
-                            )
-                          }
-                          className="profile-edit-input"
-                        />
-                      </div>
-                    ) : (
-                      <p>
-                        {getInsurance().provider
-                          ? `${getInsurance().provider} - ${
-                              getInsurance().policyNumber
-                            }`
-                          : "Not set"}
-                      </p>
-                    )}
-                  </IonLabel>
-                </IonItem>
-              </motion.div>
+                ) : (
+                  <IonText color="dark">
+                    <h1 className="profile-name">
+                      {patient.name || "Not set"}
+                    </h1>
+                  </IonText>
+                )}
 
-              {/* Allergies */}
-              <motion.div whileHover={{ scale: 1.01 }}>
-                <IonItem className="profile-d-item">
-                  <IonIcon slot="start" icon={bandageOutline} color="medium" />
-                  <IonLabel>
-                    <h3>Allergies</h3>
+                <div className="profile-meta">
+                  <IonChip color="primary">
                     {isEditing ? (
-                      <div className="items-edit">
-                        <IonInput
-                          ref={allergyInputRef}
-                          placeholder="Add an allergy"
-                          onKeyPress={async (e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              await addAllergy();
-                            }
-                          }}
-                          className="item-input"
-                          onIonBlur={addAllergy}
-                        />
-                        <div className="item-chips">
-                          {(tempData.allergies || []).map((allergy, index) => (
-                            <IonChip key={index} color="warning">
-                              <IonLabel>{allergy}</IonLabel>
-                              <IonIcon
-                                icon={closeCircleOutline}
-                                onClick={() => removeItem("allergies", index)}
-                              />
-                            </IonChip>
-                          ))}
-                        </div>
-                      </div>
-                    ) : (
-                      <p>{getAllergies().join(", ") || "None reported"}</p>
-                    )}
-                  </IonLabel>
-                </IonItem>
-              </motion.div>
-
-              {/* Medical Conditions */}
-              <motion.div whileHover={{ scale: 1.01 }}>
-                <IonItem className="profile-d-item">
-                  <IonIcon slot="start" icon={heartOutline} color="medium" />
-                  <IonLabel>
-                    <h3>Medical Conditions</h3>
-                    {isEditing ? (
-                      <div className="items-edit">
-                        <IonInput
-                          ref={conditionInputRef}
-                          placeholder="Add a condition"
-                          onKeyPress={async (e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              await addCondition();
-                            }
-                          }}
-                          className="item-input"
-                          onIonBlur={addCondition}
-                        />
-                        <div className="item-chips">
-                          {(tempData.conditions || []).map(
-                            (condition, index) => (
-                              <IonChip key={index} color="danger">
-                                <IonLabel>{condition}</IonLabel>
-                                <IonIcon
-                                  icon={closeCircleOutline}
-                                  onClick={() =>
-                                    removeItem("conditions", index)
-                                  }
-                                />
-                              </IonChip>
-                            ),
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      <p>{getConditions().join(", ") || "None reported"}</p>
-                    )}
-                  </IonLabel>
-                </IonItem>
-              </motion.div>
-
-              {/* Medications */}
-              <motion.div whileHover={{ scale: 1.01 }}>
-                <IonItem className="profile-d-item">
-                  <IonIcon slot="start" icon={medkitOutline} color="medium" />
-                  <IonLabel>
-                    <h3>Current Medications</h3>
-                    {isEditing ? (
-                      <div className="items-edit">
-                        <IonInput
-                          ref={medicationInputRef}
-                          placeholder="Add a medication"
-                          onKeyPress={async (e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              await addMedication();
-                            }
-                          }}
-                          className="item-input"
-                          onIonBlur={addMedication}
-                        />
-                        <div className="item-chips">
-                          {(tempData.medications || []).map(
-                            (medication, index) => (
-                              <IonChip key={index} color="primary">
-                                <IonLabel>{medication}</IonLabel>
-                                <IonIcon
-                                  icon={closeCircleOutline}
-                                  onClick={() =>
-                                    removeItem("medications", index)
-                                  }
-                                />
-                              </IonChip>
-                            ),
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      <p>{getMedications().join(", ") || "None reported"}</p>
-                    )}
-                  </IonLabel>
-                </IonItem>
-              </motion.div>
-
-              {/* Bio */}
-              <motion.div whileHover={{ scale: 1.01 }}>
-                <IonItem className="profile-d-item">
-                  <IonIcon
-                    slot="start"
-                    icon={documentTextOutline}
-                    color="medium"
-                  />
-                  <IonLabel>
-                    <h3>Bio</h3>
-                    {isEditing ? (
-                      <IonTextarea
-                        value={tempData.bio}
-                        onIonInput={(e) =>
-                          handleInputChange("bio", e.detail.value!)
+                      <IonSelect
+                        value={tempData.gender}
+                        onIonChange={(e) =>
+                          handleInputChange("gender", e.detail.value)
                         }
-                        rows={4}
-                        className="profile-edit-textarea"
+                        interface="popover"
+                      >
+                        <IonSelectOption value="male">Male</IonSelectOption>
+                        <IonSelectOption value="female">Female</IonSelectOption>
+                        <IonSelectOption value="other">Other</IonSelectOption>
+                      </IonSelect>
+                    ) : (
+                      <>
+                        <IonIcon
+                          icon={
+                            patient.gender === "male"
+                              ? maleOutline
+                              : patient.gender === "female"
+                              ? femaleOutline
+                              : transgenderOutline
+                          }
+                        />
+                        <IonLabel>{patient.gender || "Not set"}</IonLabel>
+                      </>
+                    )}
+                  </IonChip>
+
+                  <IonChip color="secondary">
+                    <IonIcon icon={accessibilityOutline} />
+                    {isEditing ? (
+                      <IonInput
+                        type="number"
+                        value={tempData.age}
+                        onIonInput={(e) =>
+                          handleInputChange(
+                            "age",
+                            parseInt(e.detail.value!) || 0,
+                          )
+                        }
+                        className="chip-input"
                       />
                     ) : (
-                      <p>{patient.bio || "No bio added"}</p>
+                      <IonLabel>{patient.age || 0} years</IonLabel>
                     )}
-                  </IonLabel>
-                </IonItem>
-              </motion.div>
-            </IonList>
-          </motion.div>
-        </AnimatePresence>
+                  </IonChip>
 
-        <AnimatePresence>
-          {isEditing && (
+                  <IonChip color="tertiary">
+                    <IonIcon icon={heartOutline} />
+                    {isEditing ? (
+                      <IonInput
+                        value={tempData.bloodType}
+                        onIonInput={(e) =>
+                          handleInputChange("bloodType", e.detail.value!)
+                        }
+                        className="chip-input"
+                      />
+                    ) : (
+                      <IonLabel>{patient.bloodType || "Not set"}</IonLabel>
+                    )}
+                  </IonChip>
+                </div>
+
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  className="profile-stats"
+                >
+                  <div className="stat-item">
+                    <IonIcon icon={bandageOutline} color="primary" />
+                    <span className="stat-value">{getConditionsCount()}</span>
+                    <span className="stat-label">Conditions</span>
+                  </div>
+                  <div className="stat-item">
+                    <IonIcon icon={medkitOutline} color="secondary" />
+                    <span className="stat-value">{getMedicationsCount()}</span>
+                    <span className="stat-label">Medications</span>
+                  </div>
+                  <div className="stat-item">
+                    <div
+                      onClick={() => {
+                        if (nextAppointment && nextAppointment.id) {
+                          history.push(
+                            `/patient/book_appointment?appointmentId=${nextAppointment.id}`,
+                          );
+                        }
+                      }}
+                      style={{
+                        cursor: nextAppointment ? "pointer" : "default",
+                      }}
+                    >
+                      <IonIcon icon={calendarOutline} color="tertiary" />
+                      <IonLabel>
+                        <span className="stat-value">
+                          {nextAppointment
+                            ? formatAppointmentDate(nextAppointment._dateObj)
+                            : "N/A"}
+                        </span>
+                      </IonLabel>
+
+                      <span className="stat-label">Next Appt</span>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            </div>
+          </motion.div>
+
+          <AnimatePresence>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="edit-actions"
+              className="profile-details"
             >
-              <IonButton color="primary" className="profile-save-btn" onClick={saveChanges}>
-                Save Changes
-              </IonButton>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              <IonList lines="full" className="ion-no-padding">
+                {/* Email */}
+                <motion.div whileHover={{ scale: 1.01 }}>
+                  <IonItem className="profile-d-item">
+                    <IonIcon slot="start" icon={mailOutline} color="medium" />
+                    <IonLabel>
+                      <h3>Email</h3>
+                      <p>{patient.email || "Not set"}</p>
+                    </IonLabel>
+                  </IonItem>
+                </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className="profile-actions"
-        >
-          <IonButton
-            expand="block"
-            color="danger"
-            fill="outline"
-            className="profile-logout-btn"
-            onClick={() => setShowLogOutAlert(true)}
-            disabled={isLoading}
+                {/* Phone */}
+                <motion.div whileHover={{ scale: 1.01 }}>
+                  <IonItem className="profile-d-item">
+                    <IonIcon slot="start" icon={callOutline} color="medium" />
+                    {isEditing ? (
+                      <IonInput
+                        type="tel"
+                        value={tempData.phone}
+                        onIonInput={(e) =>
+                          handleInputChange("phone", e.detail.value!)
+                        }
+                        className="profile-edit-input"
+                      />
+                    ) : (
+                      <IonLabel>
+                        <h3>Phone</h3>
+                        <p>{patient.phone || "Not set"}</p>
+                      </IonLabel>
+                    )}
+                  </IonItem>
+                </motion.div>
+
+                {/* Address */}
+                <motion.div whileHover={{ scale: 1.01 }}>
+                  <IonItem className="profile-d-item">
+                    <IonIcon
+                      slot="start"
+                      icon={locationOutline}
+                      color="medium"
+                    />
+                    {isEditing ? (
+                      <IonInput
+                        type="text"
+                        value={tempData.address}
+                        onIonInput={(e) =>
+                          handleInputChange("address", e.detail.value!)
+                        }
+                        className="profile-edit-input"
+                      />
+                    ) : (
+                      <IonLabel>
+                        <h3>Address</h3>
+                        <p>{patient.address || "Not set"}</p>
+                      </IonLabel>
+                    )}
+                  </IonItem>
+                </motion.div>
+
+                {/* Physical Stats */}
+                <IonCard>
+                  <IonCardContent>
+                    <IonGrid>
+                      <IonRow>
+                        <IonCol>
+                          <IonItem lines="none">
+                            <IonLabel>
+                              <h3>Height</h3>
+                              {isEditing ? (
+                                <IonInput
+                                  value={tempData.height}
+                                  onIonInput={(e) =>
+                                    handleInputChange("height", e.detail.value!)
+                                  }
+                                  className="profile-edit-input"
+                                />
+                              ) : (
+                                <p>{patient.height || "Not set"}</p>
+                              )}
+                            </IonLabel>
+                          </IonItem>
+                        </IonCol>
+                        <IonCol>
+                          <IonItem lines="none">
+                            <IonLabel>
+                              <h3>Weight</h3>
+                              {isEditing ? (
+                                <IonInput
+                                  value={tempData.weight}
+                                  onIonInput={(e) =>
+                                    handleInputChange("weight", e.detail.value!)
+                                  }
+                                  className="profile-edit-input"
+                                />
+                              ) : (
+                                <p>{patient.weight || "Not set"}</p>
+                              )}
+                            </IonLabel>
+                          </IonItem>
+                        </IonCol>
+                      </IonRow>
+                    </IonGrid>
+                  </IonCardContent>
+                </IonCard>
+
+                {/* Emergency Contact */}
+                <motion.div whileHover={{ scale: 1.01 }}>
+                  <IonItem className="profile-d-item">
+                    <IonIcon
+                      slot="start"
+                      icon={shieldCheckmarkOutline}
+                      color="medium"
+                    />
+                    <IonLabel>
+                      <h3>Emergency Contact</h3>
+                      {isEditing ? (
+                        <div>
+                          <IonInput
+                            placeholder="Name"
+                            value={tempData.emergencyContact.name}
+                            onIonInput={(e) =>
+                              handleNestedInputChange(
+                                "emergencyContact",
+                                "name",
+                                e.detail.value!,
+                              )
+                            }
+                            className="profile-edit-input"
+                          />
+                          <IonInput
+                            placeholder="Phone"
+                            value={tempData.emergencyContact.phone}
+                            onIonInput={(e) =>
+                              handleNestedInputChange(
+                                "emergencyContact",
+                                "phone",
+                                e.detail.value!,
+                              )
+                            }
+                            className="profile-edit-input"
+                          />
+                          <IonInput
+                            placeholder="Relationship"
+                            value={tempData.emergencyContact.relationship}
+                            onIonInput={(e) =>
+                              handleNestedInputChange(
+                                "emergencyContact",
+                                "relationship",
+                                e.detail.value!,
+                              )
+                            }
+                            className="profile-edit-input"
+                          />
+                        </div>
+                      ) : (
+                        <p>
+                          {getEmergencyContact().name
+                            ? `${getEmergencyContact().name} (${
+                                getEmergencyContact().relationship
+                              }) - ${getEmergencyContact().phone}`
+                            : "Not set"}
+                        </p>
+                      )}
+                    </IonLabel>
+                  </IonItem>
+                </motion.div>
+
+                {/* Insurance Information */}
+                <motion.div whileHover={{ scale: 1.01 }}>
+                  <IonItem className="profile-d-item">
+                    <IonIcon
+                      slot="start"
+                      icon={documentTextOutline}
+                      color="medium"
+                    />
+                    <IonLabel>
+                      <h3>Insurance</h3>
+                      {isEditing ? (
+                        <div>
+                          <IonInput
+                            placeholder="Provider"
+                            value={tempData.insurance.provider}
+                            onIonInput={(e) =>
+                              handleNestedInputChange(
+                                "insurance",
+                                "provider",
+                                e.detail.value!,
+                              )
+                            }
+                            className="profile-edit-input"
+                          />
+                          <IonInput
+                            placeholder="Policy Number"
+                            value={tempData.insurance.policyNumber}
+                            onIonInput={(e) =>
+                              handleNestedInputChange(
+                                "insurance",
+                                "policyNumber",
+                                e.detail.value!,
+                              )
+                            }
+                            className="profile-edit-input"
+                          />
+                        </div>
+                      ) : (
+                        <p>
+                          {getInsurance().provider
+                            ? `${getInsurance().provider} - ${
+                                getInsurance().policyNumber
+                              }`
+                            : "Not set"}
+                        </p>
+                      )}
+                    </IonLabel>
+                  </IonItem>
+                </motion.div>
+
+                {/* Allergies */}
+                <motion.div whileHover={{ scale: 1.01 }}>
+                  <IonItem className="profile-d-item">
+                    <IonIcon
+                      slot="start"
+                      icon={bandageOutline}
+                      color="medium"
+                    />
+                    <IonLabel>
+                      <h3>Allergies</h3>
+                      {isEditing ? (
+                        <div className="items-edit">
+                          <IonInput
+                            ref={allergyInputRef}
+                            placeholder="Add an allergy"
+                            onKeyPress={async (e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                await addAllergy();
+                              }
+                            }}
+                            className="item-input"
+                            onIonBlur={addAllergy}
+                          />
+                          <div className="item-chips">
+                            {(tempData.allergies || []).map(
+                              (allergy, index) => (
+                                <IonChip key={index} color="warning">
+                                  <IonLabel>{allergy}</IonLabel>
+                                  <IonIcon
+                                    icon={closeCircleOutline}
+                                    onClick={() =>
+                                      removeItem("allergies", index)
+                                    }
+                                  />
+                                </IonChip>
+                              ),
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <p>{getAllergies().join(", ") || "None reported"}</p>
+                      )}
+                    </IonLabel>
+                  </IonItem>
+                </motion.div>
+
+                {/* Medical Conditions */}
+                <motion.div whileHover={{ scale: 1.01 }}>
+                  <IonItem className="profile-d-item">
+                    <IonIcon slot="start" icon={heartOutline} color="medium" />
+                    <IonLabel>
+                      <h3>Medical Conditions</h3>
+                      {isEditing ? (
+                        <div className="items-edit">
+                          <IonInput
+                            ref={conditionInputRef}
+                            placeholder="Add a condition"
+                            onKeyPress={async (e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                await addCondition();
+                              }
+                            }}
+                            className="item-input"
+                            onIonBlur={addCondition}
+                          />
+                          <div className="item-chips">
+                            {(tempData.conditions || []).map(
+                              (condition, index) => (
+                                <IonChip key={index} color="danger">
+                                  <IonLabel>{condition}</IonLabel>
+                                  <IonIcon
+                                    icon={closeCircleOutline}
+                                    onClick={() =>
+                                      removeItem("conditions", index)
+                                    }
+                                  />
+                                </IonChip>
+                              ),
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <p>{getConditions().join(", ") || "None reported"}</p>
+                      )}
+                    </IonLabel>
+                  </IonItem>
+                </motion.div>
+
+                {/* Medications */}
+                <motion.div whileHover={{ scale: 1.01 }}>
+                  <IonItem className="profile-d-item">
+                    <IonIcon slot="start" icon={medkitOutline} color="medium" />
+                    <IonLabel>
+                      <h3>Current Medications</h3>
+                      {isEditing ? (
+                        <div className="items-edit">
+                          <IonInput
+                            ref={medicationInputRef}
+                            placeholder="Add a medication"
+                            onKeyPress={async (e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                await addMedication();
+                              }
+                            }}
+                            className="item-input"
+                            onIonBlur={addMedication}
+                          />
+                          <div className="item-chips">
+                            {(tempData.medications || []).map(
+                              (medication, index) => (
+                                <IonChip key={index} color="primary">
+                                  <IonLabel>{medication}</IonLabel>
+                                  <IonIcon
+                                    icon={closeCircleOutline}
+                                    onClick={() =>
+                                      removeItem("medications", index)
+                                    }
+                                  />
+                                </IonChip>
+                              ),
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <p>{getMedications().join(", ") || "None reported"}</p>
+                      )}
+                    </IonLabel>
+                  </IonItem>
+                </motion.div>
+
+                {/* Bio */}
+                <motion.div whileHover={{ scale: 1.01 }}>
+                  <IonItem className="profile-d-item">
+                    <IonIcon
+                      slot="start"
+                      icon={documentTextOutline}
+                      color="medium"
+                    />
+                    <IonLabel>
+                      <h3>Bio</h3>
+                      {isEditing ? (
+                        <IonTextarea
+                          value={tempData.bio}
+                          onIonInput={(e) =>
+                            handleInputChange("bio", e.detail.value!)
+                          }
+                          rows={4}
+                          className="profile-edit-textarea"
+                        />
+                      ) : (
+                        <p>{patient.bio || "No bio added"}</p>
+                      )}
+                    </IonLabel>
+                  </IonItem>
+                </motion.div>
+              </IonList>
+            </motion.div>
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {isEditing && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="edit-actions"
+              >
+                <IonButton
+                  color="primary"
+                  className="profile-save-btn"
+                  onClick={saveChanges}
+                >
+                  Save Changes
+                </IonButton>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="profile-actions"
           >
-            <IonIcon slot="start" icon={logOutOutline} />
-            Log Out
-          </IonButton>
-        </motion.div>
+            <IonButton
+              expand="block"
+              color="danger"
+              fill="outline"
+              onClick={() => setShowLogOutAlert(true)}
+              disabled={isLoading}
+            >
+              <IonIcon slot="start" icon={logOutOutline} />
+              Log Out
+            </IonButton>
+          </motion.div>
         </div>
       </IonContent>
       <IonAlert

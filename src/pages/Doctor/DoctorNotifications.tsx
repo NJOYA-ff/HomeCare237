@@ -135,7 +135,11 @@ const DoctorNotifications: React.FC = () => {
             )}
           </IonTitle>
           <IonButtons slot="end">
-            <IonButton className="read-all-btn" onClick={() => markAsRead()}>
+            <IonButton
+              className="read-all-btn"
+              onClick={() => markAsRead()}
+              color={"dark"}
+            >
               Read all
             </IonButton>
           </IonButtons>
@@ -170,7 +174,6 @@ const DoctorNotifications: React.FC = () => {
                   <h2>{notification.title}</h2>
                   <br />
                   <p>{notification.body}</p>
-
                 </IonLabel>
                 <IonNote slot="end" className="notification-time">
                   {formatDate(notification.data?.timestamp as number)}

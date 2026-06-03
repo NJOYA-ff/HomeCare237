@@ -103,6 +103,7 @@
 .stats-tertiary  .stat-icon-wrap { background: rgba(var(--ion-color-tertiary-rgb), 0.15); color: var(--ion-color-tertiary-shade); }
 .stats-success   .stat-icon-wrap { background: rgba(var(--ion-color-success-rgb), 0.12); color: var(--ion-color-success); }
 .stats-danger    .stat-icon-wrap { background: rgba(var(--ion-color-danger-rgb), 0.12); color: var(--ion-color-danger); }
+.stats-warning   .stat-icon-wrap { background: rgba(var(--ion-color-warning-rgb), 0.15); color: var(--ion-color-warning-shade); }
 
 // card-title color per type
 .stats-primary   ion-card-title { color: var(--ion-color-primary); }
@@ -110,6 +111,7 @@
 .stats-tertiary  ion-card-title { color: var(--ion-color-tertiary-shade); }
 .stats-success   ion-card-title { color: var(--ion-color-success); }
 .stats-danger    ion-card-title { color: var(--ion-color-danger); }
+.stats-warning   ion-card-title { color: var(--ion-color-warning-shade); }
 
 // ---- Chart Cards ----
 .chart-card {

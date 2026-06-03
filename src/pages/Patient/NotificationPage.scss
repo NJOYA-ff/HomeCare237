@@ -34,8 +34,8 @@
     --padding-start: 14px;
     --padding-end: 14px;
     border: 1px solid #e5e8f9;
-    border-radius: 18px;
-    
+    border-radius: 12px;
+
     margin: 0;
   }
 
@@ -98,7 +98,6 @@
     .notification-item,
     .empty-notification-state {
       border: 1px solid #2a2f57;
-      
     }
 
     .notification-item.unread {
