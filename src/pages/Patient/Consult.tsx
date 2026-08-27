@@ -268,7 +268,7 @@ const Consult: React.FC = () => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
       if (user) {
-        loadDoctors();
+        loadDoctors(user.uid);
         loadChatSessions(user.uid);
       }
       setLoading(false);
@@ -276,22 +276,40 @@ const Consult: React.FC = () => {
 
     return () => {
       unsubscribeAuth();
-      // Clean up any active listeners
-      if (selectedChat) {
-        // The onSnapshot will automatically clean up when component unmounts
-      }
     };
   }, []);
 
-  // Load doctors from Firebase
-  const loadDoctors = async () => {
+  // Load only doctors that this patient has booked an appointment with
+  const loadDoctors = async (patientId: string) => {
     try {
-      const doctorsRef = collection(db, "doctors");
-      const doctorsSnapshot = await getDocs(doctorsRef);
-      const doctorsData = doctorsSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Doctor[];
+      // 1. Get all appointments for this patient
+      const appointmentsSnap = await getDocs(
+        query(collection(db, "appointments"), where("patientId", "==", patientId))
+      );
+
+      // 2. Collect unique doctorIds
+      const doctorIds = [
+        ...new Set(
+          appointmentsSnap.docs.map((d) => d.data().doctorId as string)
+        ),
+      ];
+
+      if (doctorIds.length === 0) {
+        setDoctors([]);
+        return;
+      }
+
+      // 3. Fetch each doctor document
+      const doctorsData: Doctor[] = [];
+      await Promise.all(
+        doctorIds.map(async (did) => {
+          const doctorDoc = await getDoc(doc(db, "doctors", did));
+          if (doctorDoc.exists()) {
+            doctorsData.push({ id: doctorDoc.id, ...doctorDoc.data() } as Doctor);
+          }
+        })
+      );
+
       setDoctors(doctorsData);
     } catch (error) {
       console.error("Error loading doctors:", error);
@@ -535,11 +553,26 @@ const Consult: React.FC = () => {
     }
   }, [messages, selectedChat]);
 
-  const filteredDoctors = doctors.filter(
-    (doctor) =>
-      doctor.name.toLowerCase().includes(searchText.toLowerCase()) ||
-      doctor.specialization.toLowerCase().includes(searchText.toLowerCase()),
-  );
+  const filteredDoctors = doctors
+    .filter(
+      (doctor) =>
+        doctor.name.toLowerCase().includes(searchText.toLowerCase()) ||
+        doctor.specialization.toLowerCase().includes(searchText.toLowerCase()),
+    )
+    .sort((a, b) => {
+      const chatA = chatSessions.find((c) => c.doctorId === a.id);
+      const chatB = chatSessions.find((c) => c.doctorId === b.id);
+      const timeA = chatA?.lastMessageTime;
+      const timeB = chatB?.lastMessageTime;
+      // No chat → goes to bottom
+      if (!timeA && !timeB) return 0;
+      if (!timeA) return 1;
+      if (!timeB) return -1;
+      // Convert Firestore Timestamp or Date to ms for comparison
+      const msA = timeA.toDate ? timeA.toDate().getTime() : new Date(timeA).getTime();
+      const msB = timeB.toDate ? timeB.toDate().getTime() : new Date(timeB).getTime();
+      return msB - msA; // most recent first
+    });
 
   const handleSelectDoctor = async (doctor: Doctor) => {
     if (!currentUser) {

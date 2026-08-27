@@ -407,12 +407,25 @@ const SMS_patient: React.FC = () => {
     }
   }, [messages, selectedChat]);
 
-  const filteredPatients = patients.filter(
-    (patient) =>
-      patient.name.toLowerCase().includes(searchText.toLowerCase()) ||
-      (patient.condition &&
-        patient.condition.toLowerCase().includes(searchText.toLowerCase())),
-  );
+  const filteredPatients = patients
+    .filter(
+      (patient) =>
+        patient.name.toLowerCase().includes(searchText.toLowerCase()) ||
+        (patient.condition &&
+          patient.condition.toLowerCase().includes(searchText.toLowerCase())),
+    )
+    .sort((a, b) => {
+      const chatA = chatSessions.find((c) => c.patientId === a.id);
+      const chatB = chatSessions.find((c) => c.patientId === b.id);
+      const timeA = chatA?.lastMessageTime;
+      const timeB = chatB?.lastMessageTime;
+      if (!timeA && !timeB) return 0;
+      if (!timeA) return 1;
+      if (!timeB) return -1;
+      const msA = timeA.toDate ? timeA.toDate().getTime() : new Date(timeA).getTime();
+      const msB = timeB.toDate ? timeB.toDate().getTime() : new Date(timeB).getTime();
+      return msB - msA;
+    });
 
   const handleSelectPatient = async (patient: Patient) => {
     if (!currentUser) {

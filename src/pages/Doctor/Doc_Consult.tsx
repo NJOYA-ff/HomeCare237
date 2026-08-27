@@ -467,12 +467,27 @@ const Doc_Consult: React.FC = () => {
     }
   }, [messages, selectedChat]);
 
-  const filteredPatients = patients.filter(
-    (patient) =>
-      patient.name.toLowerCase().includes(searchText.toLowerCase()) ||
-      (patient.condition &&
-        patient.condition.toLowerCase().includes(searchText.toLowerCase())),
-  );
+  const filteredPatients = patients
+    .filter(
+      (patient) =>
+        patient.name.toLowerCase().includes(searchText.toLowerCase()) ||
+        (patient.condition &&
+          patient.condition.toLowerCase().includes(searchText.toLowerCase())),
+    )
+    .sort((a, b) => {
+      const chatA = chatSessions.find((c) => c.patientId === a.id);
+      const chatB = chatSessions.find((c) => c.patientId === b.id);
+      const timeA = chatA?.lastMessageTime;
+      const timeB = chatB?.lastMessageTime;
+      // No chat → goes to bottom
+      if (!timeA && !timeB) return 0;
+      if (!timeA) return 1;
+      if (!timeB) return -1;
+      // Convert Firestore Timestamp or Date to ms for comparison
+      const msA = timeA.toDate ? timeA.toDate().getTime() : new Date(timeA).getTime();
+      const msB = timeB.toDate ? timeB.toDate().getTime() : new Date(timeB).getTime();
+      return msB - msA; // most recent first
+    });
 
   const handleSelectPatient = async (patient: Patient) => {
     if (!currentUser) {
