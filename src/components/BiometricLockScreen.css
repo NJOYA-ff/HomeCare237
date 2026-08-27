@@ -1,0 +1,217 @@
+/* BiometricLockScreen.css */
+
+.lock-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 100001;
+  background: linear-gradient(
+    160deg,
+    var(--ion-color-primary-shade, #0366c8) 0%,
+    var(--ion-color-primary, #0375e6) 50%,
+    var(--ion-color-primary-tint, #1a85f5) 100%
+  );
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 60px 24px 40px;
+  color: #fff;
+  overflow: hidden;
+}
+
+/* ── Header ── */
+.lock-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 48px;
+}
+
+.lock-app-icon {
+  font-size: 56px;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 12px;
+}
+
+.lock-app-name {
+  font-size: 26px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+/* ── Hint ── */
+.lock-hint {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.8);
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+/* ── Biometric view ── */
+.lock-bio-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.lock-fingerprint-btn {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-bottom: 20px;
+  transition: background 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.lock-fingerprint-btn:active {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* ── PIN view ── */
+.lock-pin-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.lock-dots-wrapper {
+  margin-bottom: 16px;
+}
+
+/* Override dot colours for the lock screen (white on blue bg) */
+.lock-pin-view .pin-dot {
+  border-color: rgba(255, 255, 255, 0.7);
+}
+
+.lock-pin-view .pin-dot.filled {
+  background: #fff;
+  border-color: #fff;
+}
+
+/* Override keypad colours for lock screen */
+.lock-pin-view .pin-key {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.lock-pin-view .pin-key:active {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.lock-pin-view .pin-key:disabled {
+  opacity: 0.3;
+}
+
+/* ── Switch button ── */
+.lock-switch-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 20px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  padding: 8px 20px;
+  cursor: pointer;
+  margin: 16px 0;
+  transition: background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.lock-switch-btn:active {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* ── Error banner ── */
+.lock-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(235, 68, 90, 0.85);
+  border-radius: 12px;
+  padding: 10px 16px;
+  margin-top: 20px;
+  color: #fff;
+  font-size: 13px;
+  max-width: 300px;
+  text-align: center;
+}
+
+.lock-error ion-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+/* ── Re-use pin-dot / pin-keypad / pin-key classes from PinSetupModal ── */
+/* (already defined globally if PinSetupModal.css is imported, but we     */
+/*  redefine the minimal set here so the lock screen is self-contained.)   */
+
+.lock-pin-view .pin-dots {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+.lock-pin-view .pin-keypad {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 280px;
+  margin: 0 auto;
+}
+
+.lock-pin-view .pin-keypad-row {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.lock-pin-view .pin-key {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  font-size: 24px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, transform 0.1s;
+  user-select: none;
+}
+
+.lock-pin-view .pin-key:active {
+  transform: scale(0.94);
+}
+
+.lock-pin-view .pin-key-empty {
+  background: transparent !important;
+  border: none !important;
+  pointer-events: none;
+}
+
+/* Shake animation (same as PinSetupModal) */
+@keyframes shake {
+  0%   { transform: translateX(0); }
+  20%  { transform: translateX(-8px); }
+  40%  { transform: translateX(8px); }
+  60%  { transform: translateX(-6px); }
+  80%  { transform: translateX(6px); }
+  100% { transform: translateX(0); }
+}
+
+.shake {
+  animation: shake 0.35s ease-in-out;
+}

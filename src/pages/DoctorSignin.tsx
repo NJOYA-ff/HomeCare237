@@ -19,6 +19,7 @@ import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { FiMail, FiLock, FiLogIn } from "react-icons/fi";
 import { authService, UserRole } from "../App";
+import QuickSignIn from "../components/QuickSignIn";
 import "./Page.scss";
 import { useHistory } from "react-router";
 import { chevronBackOutline } from "ionicons/icons";
@@ -36,6 +37,7 @@ const DoctorSignin: React.FC = () => {
   } = useForm<FormData>();
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState("");
+  const [isPinOpen, setIsPinOpen] = useState(false);
   const history = useHistory();
 
   const onSubmit = async (data: FormData) => {
@@ -83,6 +85,31 @@ const DoctorSignin: React.FC = () => {
         default:
           setLoginError("Failed to log in. Please try again.");
       }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Called by QuickSignIn after biometric/PIN verification succeeds.
+  const handleQuickSignIn = async (creds: { email: string; password: string }) => {
+    setIsLoading(true);
+    setLoginError("");
+    try {
+      const user = await authService.login1(creds.email, creds.password);
+      if (user) {
+        switch (user.role) {
+          case UserRole.Admin:
+            history.push("/admin/dashboard");
+            break;
+          case UserRole.Doctor:
+          default:
+            history.push("/doc/dashboard");
+        }
+      } else {
+        setLoginError("Quick sign-in failed. Please sign in manually.");
+      }
+    } catch {
+      setLoginError("Quick sign-in failed. Please sign in manually.");
     } finally {
       setIsLoading(false);
     }
@@ -141,128 +168,145 @@ const DoctorSignin: React.FC = () => {
             <IonGrid>
               <IonRow className="ion-justify-content-center">
                 <IonCol size="12" sizeMd="8" sizeLg="6">
-                  {/* Email */}
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 }}
-                  >
-                    <IonItem className="form-item">
-                      <FiMail className="input-icon" />
-                      <IonInput
-                        type="email"
-                        placeholder="Email"
-                        {...register("email1", {
-                          required: "Email is required",
-                          pattern: {
-                            value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                            message: "Invalid email address",
-                          },
-                        })}
-                      />
-                    </IonItem>
-                    {errors.email1 && (
-                      <span className="error-message">
-                        {errors.email1.message}
-                      </span>
-                    )}
-                  </motion.div>
+                  {/* Hide email/password form while PIN modal is open */}
+                  {!isPinOpen && (
+                    <>
+                      {/* Email */}
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.3 }}
+                      >
+                        <IonItem className="form-item">
+                          <FiMail className="input-icon" />
+                          <IonInput
+                            type="email"
+                            placeholder="Email"
+                            {...register("email1", {
+                              required: "Email is required",
+                              pattern: {
+                                value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                                message: "Invalid email address",
+                              },
+                            })}
+                          />
+                        </IonItem>
+                        {errors.email1 && (
+                          <span className="error-message">
+                            {errors.email1.message}
+                          </span>
+                        )}
+                      </motion.div>
 
-                  {/* Password */}
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.4 }}
-                  >
-                    <IonItem className="form-item">
-                      <FiLock className="input-icon" />
-                      <IonInput
-                        type="password"
-                        placeholder="Password"
-                        {...register("password1", {
-                          required: "Password is required",
-                          minLength: {
-                            value: 6,
-                            message: "Password must be at least 6 characters",
-                          },
-                        })}
-                      />
-                    </IonItem>
-                    {errors.password1 && (
-                      <span className="error-message">
-                        {errors.password1.message}
-                      </span>
-                    )}
-                  </motion.div>
+                      {/* Password */}
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.4 }}
+                      >
+                        <IonItem className="form-item">
+                          <FiLock className="input-icon" />
+                          <IonInput
+                            type="password"
+                            placeholder="Password"
+                            {...register("password1", {
+                              required: "Password is required",
+                              minLength: {
+                                value: 6,
+                                message: "Password must be at least 6 characters",
+                              },
+                            })}
+                          />
+                        </IonItem>
+                        {errors.password1 && (
+                          <span className="error-message">
+                            {errors.password1.message}
+                          </span>
+                        )}
+                      </motion.div>
 
-                  {/* Forgot Password */}
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.5 }}
-                    className="forgot-password"
-                  >
-                    <IonButton
-                      fill="clear"
-                      size="small"
-                      routerLink="/Doctor_password_recovery"
-                    >
-                      Forgot Password?
-                    </IonButton>
-                  </motion.div>
+                      {/* Forgot Password */}
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.5 }}
+                        className="forgot-password"
+                      >
+                        <IonButton
+                          fill="clear"
+                          size="small"
+                          routerLink="/Doctor_password_recovery"
+                        >
+                          Forgot Password?
+                        </IonButton>
+                      </motion.div>
 
-                  {/* Error Message */}
-                  {loginError && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      className="error-container"
-                    >
-                      <IonText color="danger">{loginError}</IonText>
-                    </motion.div>
+                      {/* Error Message */}
+                      {loginError && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          className="error-container"
+                        >
+                          <IonText color="danger">{loginError}</IonText>
+                        </motion.div>
+                      )}
+
+                      {/* Submit Button */}
+                      <motion.div
+                        className="submit-container"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.6 }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <IonButton
+                          type="submit"
+                          expand="block"
+                          className="submit-button"
+                          disabled={isLoading}
+                        >
+                          {isLoading ? (
+                            <>
+                              <IonSpinner name="crescent" className="spinner" />
+                              Signing In...
+                            </>
+                          ) : (
+                            "Sign In"
+                          )}
+                        </IonButton>
+                      </motion.div>
+
+                      {/* Sign Up Link */}
+                      <motion.div
+                        className="signup-link"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.7 }}
+                      >
+                        <IonText>Don't have an account?</IonText>
+                        <IonButton
+                          fill="clear"
+                          routerLink="/Doctor_signup"
+                          className="signup-button2"
+                        >
+                          Sign Up
+                        </IonButton>
+                      </motion.div>
+                    </>
                   )}
 
-                  {/* Submit Button */}
+                  {/* Quick Sign-In: PIN / Biometric (always rendered — button stays visible) */}
                   <motion.div
-                    className="submit-container"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.6 }}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <IonButton
-                      type="submit"
-                      expand="block"
-                      className="submit-button"
-                      disabled={isLoading}
-                    >
-                      {isLoading ? (
-                        <>
-                          <IonSpinner name="crescent" className="spinner" />
-                          Signing In...
-                        </>
-                      ) : (
-                        "Sign In"
-                      )}
-                    </IonButton>
-                  </motion.div>
-
-                  {/* Sign Up Link */}
-                  <motion.div
-                    className="signup-link"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 0.7 }}
+                    transition={{ delay: 0.8 }}
                   >
-                    <IonText>Don't have an account?</IonText>
-                    <IonButton
-                      fill="clear"
-                      routerLink="/Doctor_signup"
-                      className="signup-button2"
-                    >
-                      Sign Up
-                    </IonButton>
+                    <QuickSignIn
+                      onCredentials={handleQuickSignIn}
+                      onViewChange={setIsPinOpen}
+                    />
                   </motion.div>
                 </IonCol>
               </IonRow>

@@ -285,13 +285,14 @@ const AdminDashboard: React.FC = () => {
         setHealthUnits(unitsData);
 
         // Update stats
-        setStats({
+        setStats((prev) => ({
+          ...prev,
           patients: patientCount,
           caregivers: doctorCount,
           appointments: 0, // Will be updated by real-time listener
           alerts: 5,
           healthUnits: unitsCount,
-        });
+        }));
 
         // Real-time listener for appointments
         const appointmentsRef = collection(db, "appointments");

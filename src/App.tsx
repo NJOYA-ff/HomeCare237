@@ -6,9 +6,16 @@ import {
 } from "@ionic/react";
 import { IonReactRouter } from "@ionic/react-router";
 import { Redirect, Route } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SettingsProvider } from "./context/SettingsContext";
 import SettingsPage from "./pages/Settings/SettingsPage";
+import BiometricLockScreen from "./components/BiometricLockScreen";
+import {
+  isLockEnabled,
+  saveCredentials,
+  clearCredentials,
+} from "./utils/BiometricAuthService";
+import { App as CapApp } from "@capacitor/app";
 
 /* Core CSS required for Ionic components to work properly */
 import "@ionic/react/css/core.css";
@@ -200,6 +207,14 @@ class AuthService {
       this.currentUser = user;
       this.notifyAuthStateListeners(user);
       console.log("Login successful, user role:", user.role);
+
+      // Persist credentials so PIN/biometric quick sign-in works on next visit
+      await saveCredentials({
+        email,
+        password,
+        displayName: user.name || user.name1 || email,
+      });
+
       return this.currentUser;
     } catch (error) {
       console.error("Login error:", error);
@@ -223,6 +238,14 @@ class AuthService {
       this.currentUser = user;
       this.notifyAuthStateListeners(user);
       console.log("Login successful, user role:", user.role);
+
+      // Persist credentials so PIN/biometric quick sign-in works on next visit
+      await saveCredentials({
+        email: email1,
+        password: password1,
+        displayName: user.name || user.name1 || email1,
+      });
+
       return this.currentUser;
     } catch (error) {
       console.error("Login error:", error);
@@ -278,6 +301,7 @@ class AuthService {
   async logout(): Promise<void> {
     try {
       await signOut(auth);
+      await clearCredentials();
       this.currentUser = null;
       this.notifyAuthStateListeners(null);
     } catch (error) {
@@ -347,6 +371,15 @@ const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Lock screen state – shown when app resumes from background and user has
+  // biometric or PIN security enabled.
+  const [lockVisible, setLockVisible] = useState(false);
+  // Track whether the app was sent to background at least once so we don't
+  // lock on the very first launch.
+  const wasInBackground = useRef(false);
+  // Prevent showing the lock screen multiple times for the same resume event.
+  const lockShown = useRef(false);
+
   // useCloseApp();
 
   useEffect(() => {
@@ -375,9 +408,62 @@ const App: React.FC = () => {
 
     authService.addAuthStateListener(handleAuthStateChange);
 
+    // ── Shared helper: show lock screen if conditions are met ─────────────
+    const maybeShowLock = async () => {
+      if (!wasInBackground.current) return;
+      if (lockShown.current) return; // already shown for this resume
+
+      const user = await authService.getCurrentUser();
+      if (!user) return; // not logged in — nothing to lock
+
+      const lockOn = await isLockEnabled();
+      if (lockOn) {
+        lockShown.current = true;
+        setLockVisible(true);
+      }
+    };
+
+    // ── Native (Capacitor): appStateChange ───────────────────────────────
+    // Await the addListener promise so the handle is captured synchronously
+    // before any cleanup could fire, eliminating the previous race condition.
+    let removeCapListener: (() => void) | null = null;
+
+    (async () => {
+      const handle = await CapApp.addListener(
+        "appStateChange",
+        async ({ isActive }) => {
+          if (!isActive) {
+            // App going to background
+            wasInBackground.current = true;
+            lockShown.current = false; // ready to lock on next resume
+          } else {
+            // App coming back to foreground
+            await maybeShowLock();
+          }
+        }
+      );
+      removeCapListener = () => handle.remove();
+    })();
+
+    // ── Web / PWA: visibilitychange ───────────────────────────────────────
+    // Fires when the user switches browser tabs, minimises the window, or
+    // the PWA goes to the background on Android Chrome.
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === "hidden") {
+        wasInBackground.current = true;
+        lockShown.current = false;
+      } else if (document.visibilityState === "visible") {
+        await maybeShowLock();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     // Cleanup
     return () => {
       authService.removeAuthStateListener(handleAuthStateChange);
+      removeCapListener?.();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);
 
@@ -579,6 +665,16 @@ const App: React.FC = () => {
             </>
           )}
         </IonReactRouter>
+
+        {/* Biometric / PIN lock screen – shown on app resume when lock is enabled */}
+        <BiometricLockScreen
+          visible={lockVisible}
+          onUnlocked={() => {
+            setLockVisible(false);
+            wasInBackground.current = false;
+            lockShown.current = false;
+          }}
+        />
       </IonApp>
     </NotificationProvider>
     </SettingsProvider>

@@ -28,7 +28,7 @@ import {
   orderBy,
   Timestamp,
 } from "firebase/firestore";
-import { calendar, time, location, filter } from "ionicons/icons";
+import { calendar, time, location as locationIcon, filter } from "ionicons/icons";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "react-router-dom";
 import "./Admin2.scss";
@@ -367,7 +367,7 @@ const Admin_Appointments: React.FC = () => {
                         </span>
                         {appointment.address && (
                           <span className="meta-item">
-                            <IonIcon className="meta-icon" icon={location} />
+                            <IonIcon className="meta-icon" icon={locationIcon} />
                             <span className="meta-text">{safeString(appointment.address)}</span>
                           </span>
                         )}

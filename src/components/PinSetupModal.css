@@ -1,0 +1,151 @@
+/* PinSetupModal.css */
+
+.pin-setup-modal {
+  --border-radius: 24px 24px 0 0;
+}
+
+.pin-modal-header ion-toolbar {
+  --background: var(--ion-background-color, #fff);
+  padding: 8px 0;
+}
+
+.pin-modal-content {
+  --background: var(--ion-background-color, #fff);
+}
+
+.pin-modal-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 24px 16px 32px;
+  min-height: 100%;
+}
+
+/* Subtitle */
+.pin-subtitle {
+  font-size: 15px;
+  color: var(--ion-color-medium, #888);
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+/* ── Dots ── */
+.pin-dots-wrapper {
+  margin-bottom: 12px;
+}
+
+.pin-dots {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.pin-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--ion-color-primary, #3880ff);
+  background: transparent;
+  transition: background 0.15s;
+}
+
+.pin-dot.filled {
+  background: var(--ion-color-primary, #3880ff);
+}
+
+/* Shake animation for wrong PIN */
+@keyframes shake {
+  0%   { transform: translateX(0); }
+  20%  { transform: translateX(-8px); }
+  40%  { transform: translateX(8px); }
+  60%  { transform: translateX(-6px); }
+  80%  { transform: translateX(6px); }
+  100% { transform: translateX(0); }
+}
+
+.shake {
+  animation: shake 0.35s ease-in-out;
+}
+
+/* ── Error ── */
+.pin-error {
+  color: var(--ion-color-danger, #eb445a);
+  font-size: 13px;
+  text-align: center;
+  margin-bottom: 16px;
+  min-height: 20px;
+}
+
+/* ── Keypad ── */
+.pin-keypad {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 280px;
+  margin: 16px auto 0;
+}
+
+.pin-keypad-row {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.pin-key {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: none;
+  background: var(--ion-color-light, #f4f5f8);
+  color: var(--ion-color-dark, #222);
+  font-size: 24px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.pin-key:active {
+  background: var(--ion-color-primary-tint, #4d90f0);
+  color: #fff;
+  transform: scale(0.94);
+}
+
+.pin-key:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pin-key-empty {
+  background: transparent !important;
+  cursor: default !important;
+  pointer-events: none;
+}
+
+/* ── Done state ── */
+.pin-done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 60px;
+}
+
+.pin-done-icon {
+  font-size: 72px;
+  color: var(--ion-color-success, #2dd36f);
+}
+
+.pin-done-text {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ion-color-success, #2dd36f);
+}

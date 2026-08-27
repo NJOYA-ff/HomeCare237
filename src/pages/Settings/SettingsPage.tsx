@@ -1,4 +1,13 @@
-import React from "react";
+/**
+ * SettingsPage
+ *
+ * Full settings UI including a Security section that lets users:
+ *  - Enable / disable fingerprint authentication
+ *  - Enable / disable PIN lock
+ *  - Set up or change their PIN
+ */
+
+import React, { useCallback, useEffect, useState } from "react";
 import {
   IonPage,
   IonHeader,
@@ -16,6 +25,9 @@ import {
   IonIcon,
   IonNote,
   IonListHeader,
+  IonButton,
+  useIonToast,
+  useIonAlert,
 } from "@ionic/react";
 import {
   languageOutline,
@@ -24,27 +36,144 @@ import {
   textOutline,
   informationCircleOutline,
   lockClosedOutline,
+  fingerPrintOutline,
+  keypadOutline,
 } from "ionicons/icons";
 import { useSettings } from "../../context/SettingsContext";
-import { useHistory } from "react-router-dom";
+import {
+  checkBiometryAvailability,
+  setBiometricEnabled,
+  disablePin,
+} from "../../utils/BiometricAuthService";
+import PinSetupModal from "../../components/PinSetupModal";
 import "./Settings.scss";
 
 const SettingsPage: React.FC = () => {
   const {
-    language, setLanguage,
+    language,
+    setLanguage,
     t,
-    notificationsEnabled, setNotificationsEnabled,
-    soundEnabled, setSoundEnabled,
-    fontSize, setFontSize,
+    notificationsEnabled,
+    setNotificationsEnabled,
+    soundEnabled,
+    setSoundEnabled,
+    fontSize,
+    setFontSize,
+    biometricEnabled,
+    setBiometricEnabledSetting,
+    pinEnabled,
+    setPinEnabledSetting,
   } = useSettings();
-  const history = useHistory();
+
+  const [presentToast] = useIonToast();
+  const [presentAlert] = useIonAlert();
+
+  // Biometry availability (device-level check)
+  const [bioAvailable, setBioAvailable] = useState(false);
+  const [bioLabel, setBioLabel] = useState("Fingerprint");
+
+  // PIN setup modal state
+  const [pinModalOpen, setPinModalOpen] = useState(false);
+  const [pinModalMode, setPinModalMode] = useState<"setup" | "verify">("setup");
+
+  useEffect(() => {
+    checkBiometryAvailability().then((r) => {
+      setBioAvailable(r.available);
+      setBioLabel(r.biometryLabel);
+    });
+  }, []);
+
+  // ── Biometric toggle ──────────────────────────────────────────────────────
+
+  const handleBiometricToggle = useCallback(
+    async (checked: boolean) => {
+      if (checked && !bioAvailable) {
+        presentToast({
+          message: t("biometricNotAvailable"),
+          duration: 3000,
+          color: "warning",
+          position: "top",
+        });
+        return;
+      }
+      await setBiometricEnabled(checked);
+      setBiometricEnabledSetting(checked);
+      presentToast({
+        message: checked
+          ? `${bioLabel} enabled`
+          : `${bioLabel} disabled`,
+        duration: 2000,
+        color: checked ? "success" : "medium",
+        position: "top",
+      });
+    },
+    [bioAvailable, bioLabel, setBiometricEnabledSetting, presentToast, t]
+  );
+
+  // ── PIN toggle ────────────────────────────────────────────────────────────
+
+  const handlePinToggle = useCallback(
+    async (checked: boolean) => {
+      if (checked) {
+        // Open setup modal
+        setPinModalMode("setup");
+        setPinModalOpen(true);
+      } else {
+        // Confirm before disabling
+        presentAlert({
+          header: t("disablePin"),
+          message: "Are you sure you want to remove your PIN?",
+          buttons: [
+            { text: t("cancel"), role: "cancel" },
+            {
+              text: "Remove",
+              role: "destructive",
+              handler: async () => {
+                await disablePin();
+                setPinEnabledSetting(false);
+                presentToast({
+                  message: "PIN disabled",
+                  duration: 2000,
+                  color: "medium",
+                  position: "top",
+                });
+              },
+            },
+          ],
+        });
+      }
+    },
+    [t, setPinEnabledSetting, presentAlert, presentToast]
+  );
+
+  // ── Change PIN ────────────────────────────────────────────────────────────
+
+  const handleChangePin = useCallback(() => {
+    setPinModalMode("setup");
+    setPinModalOpen(true);
+  }, []);
+
+  // ── PIN setup success ─────────────────────────────────────────────────────
+
+  const handlePinSuccess = useCallback(() => {
+    setPinModalOpen(false);
+    setPinEnabledSetting(true);
+    presentToast({
+      message: t("pinSetupSuccess"),
+      duration: 2500,
+      color: "success",
+      position: "top",
+    });
+  }, [setPinEnabledSetting, presentToast, t]);
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
           <IonButtons slot="start">
-            <IonBackButton defaultHref="#" onClick={() => history.goBack()} />
+            <IonBackButton defaultHref="#" />
           </IonButtons>
           <IonTitle>{t("settings")}</IonTitle>
         </IonToolbar>
@@ -120,6 +249,51 @@ const SettingsPage: React.FC = () => {
           </IonItem>
         </IonList>
 
+        {/* ── Security ───────────────────────────────────────────────────── */}
+        <IonListHeader className="settings-section-header">
+          {t("security")}
+        </IonListHeader>
+        <IonList className="settings-list">
+
+          {/* Biometric toggle */}
+          <IonItem>
+            <IonIcon icon={fingerPrintOutline} slot="start" className="settings-icon" />
+            <IonLabel>
+              <h3>{t("biometricAuth")}</h3>
+              <p className="settings-desc">{t("biometricAuthDesc")}</p>
+            </IonLabel>
+            <IonToggle
+              slot="end"
+              checked={biometricEnabled}
+              disabled={!bioAvailable}
+              onIonChange={(e) => handleBiometricToggle(e.detail.checked)}
+            />
+          </IonItem>
+
+          {/* PIN toggle */}
+          <IonItem>
+            <IonIcon icon={keypadOutline} slot="start" className="settings-icon" />
+            <IonLabel>
+              <h3>{t("pinAuth")}</h3>
+              <p className="settings-desc">{t("pinAuthDesc")}</p>
+            </IonLabel>
+            <IonToggle
+              slot="end"
+              checked={pinEnabled}
+              onIonChange={(e) => handlePinToggle(e.detail.checked)}
+            />
+          </IonItem>
+
+          {/* Change PIN – only visible when PIN is already enabled */}
+          {pinEnabled && (
+            <IonItem button detail onClick={handleChangePin}>
+              <IonIcon icon={lockClosedOutline} slot="start" className="settings-icon" />
+              <IonLabel>{t("changePin")}</IonLabel>
+            </IonItem>
+          )}
+
+        </IonList>
+
         {/* Account */}
         <IonListHeader className="settings-section-header">
           {t("account")}
@@ -137,6 +311,14 @@ const SettingsPage: React.FC = () => {
         </IonList>
 
       </IonContent>
+
+      {/* PIN Setup / Change modal */}
+      <PinSetupModal
+        isOpen={pinModalOpen}
+        mode={pinModalMode}
+        onSuccess={handlePinSuccess}
+        onDismiss={() => setPinModalOpen(false)}
+      />
     </IonPage>
   );
 };
