@@ -854,7 +854,6 @@ const Admin_doctors: React.FC = () => {
                     layout
                   >
                     <IonItem className="admin-item" lines="none"
-                      style={{ borderLeft: `4px solid ${admin.status === "active" ? "var(--ion-color-success)" : "var(--ion-color-medium)"}` }}
                     >
                       <div slot="start" className="p-avatar">
                         <div className="p-initials" style={{ background: "var(--ion-color-tertiary)" }}>
@@ -945,7 +944,6 @@ const Admin_doctors: React.FC = () => {
                     <IonItem
                       className={`doctor-item ${doctor.status}`}
                       lines="none"
-                      style={{ borderLeft: `4px solid ${doctor.status === "active" ? "var(--ion-color-success)" : doctor.status === "on leave" ? "var(--ion-color-warning)" : "var(--ion-color-medium)"}` }}
                     >
                       <div slot="start" className="p-avatar">
                         <div className="p-initials" style={{ background: "var(--ion-color-secondary)" }}>

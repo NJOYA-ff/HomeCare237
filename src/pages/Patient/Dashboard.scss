@@ -192,19 +192,60 @@
   visibility: visible;
 }
 
+/*
+ * The actual IonFabButton rendered with className="chatbot".
+ * Styling is kept minimal here; positioning is handled via
+ * the IonFab style prop using env(safe-area-inset-*).
+ */
+.chatbot {
+  --background: linear-gradient(
+    135deg,
+    var(--ion-color-primary-shade) 0%,
+    var(--ion-color-primary) 100%
+  );
+  --background-activated: var(--ion-color-primary-shade);
+  --background-hover: var(--ion-color-primary-tint);
+  --box-shadow: 0 4px 16px rgba(59, 125, 216, 0.45);
+  --color: #fff;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+
+  &:hover,
+  &:focus-visible {
+    --box-shadow: 0 6px 20px rgba(59, 125, 216, 0.6);
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
 /* Chatbot Modal */
 .chatbot-modal {
   position: fixed;
-  bottom: 80px;
-  right: 20px;
-  width: 300px;
+  /*
+   * Bottom offset = tab bar (56px) + safe area home indicator
+   *                + FAB button (56px) + gap (12px)
+   */
+  bottom: calc(
+    124px + env(safe-area-inset-bottom, 0px)
+  );
+  right: calc(16px + env(safe-area-inset-right, 0px));
+  width: min(300px, calc(100vw - 32px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
+  max-height: calc(
+    100dvh
+    - 148px
+    - env(safe-area-inset-top, 0px)
+    - env(safe-area-inset-bottom, 0px)
+  );
   height: 400px;
   background: var(--ion-card-background, #ffffff);
-  border-radius: 10px;
+  border-radius: 16px;
 
   display: flex;
   flex-direction: column;
   z-index: 1000;
+  overflow: hidden;
   animation: slideIn 0.3s ease;
 }
 
@@ -802,7 +843,7 @@ ion-card:active {
 /* Patient homepage style inspired by reference mockup */
 .dashboard-patient {
   --background: linear-gradient(180deg, #edf0ff 0%, #f8f9ff 100%);
-  // --overflow: auto;
+  --overflow: auto;
 }
 
 .patient-home-shell {

@@ -1,4 +1,5 @@
 // DoctorDashboard.scss
+@use '../../theme/hc-form.scss';
 * {
   text-transform: none;
 }
@@ -830,20 +831,34 @@ ion-modal {
 }
 
 .profile-d-item ion-item {
-  --padding-start: 16px;
-  --padding-end: 16px;
-  --min-height: 64px;
-  --border-color: var(--ion-color-light-shade);
+  --border-radius: 12px;
+  --padding-start: 14px;
+  --inner-padding-end: 14px;
+  --padding-top: 8px;
+  --padding-bottom: 8px;
+  --min-height: 62px;
+  --background: #ffffff;
+  --border-color: #dde1f5;
+  --border-width: 1px;
+  --border-style: solid;
+  --highlight-color-focused: var(--ion-color-primary, #3b7dd8);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 12px;
 
   ion-label {
     h3 {
+      font-size: 0.78rem;
       font-weight: 600;
-      color: var(--ion-color-dark);
-      margin-bottom: 4px;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: var(--ion-color-medium, #92949c);
+      margin-bottom: 2px;
     }
 
     p {
-      color: var(--ion-color-medium);
+      font-size: 0.93rem;
+      color: var(--ion-text-color, #1a1a2e);
       margin-top: 0;
       line-height: 1.4;
     }
@@ -851,21 +866,23 @@ ion-modal {
 }
 
 .profile-edit-input {
-  background: var(--ion-color-light);
-  border-radius: 8px;
-  padding: 8px 12px;
-  margin: 8px 0;
+  --padding-start: 0;
+  --padding-end: 0;
+  font-size: 0.93rem;
+  color: var(--ion-text-color, #1a1a2e);
+  border-bottom: 1px solid #dde1f5;
+  margin: 6px 0;
   width: 100%;
-  border: 1px solid var(--ion-color-light-shade);
 }
 
 .profile-edit-textarea {
-  background: var(--ion-color-light);
-  border-radius: 8px;
-  padding: 8px 12px;
-  margin: 8px 0;
+  --padding-start: 0;
+  --padding-end: 0;
+  font-size: 0.93rem;
+  color: var(--ion-text-color, #1a1a2e);
+  border-bottom: 1px solid #dde1f5;
+  margin: 6px 0;
   width: 100%;
-  border: 1px solid var(--ion-color-light-shade);
 }
 
 .languages-edit {
@@ -873,12 +890,50 @@ ion-modal {
 }
 
 .language-input {
-  background: var(--ion-color-light);
-  border-radius: 8px;
-  padding: 8px 12px;
-  margin: 8px 0;
+  --padding-start: 0;
+  --padding-end: 0;
+  font-size: 0.93rem;
+  color: var(--ion-text-color, #1a1a2e);
+  border-bottom: 1px solid #dde1f5;
+  margin: 6px 0;
   width: 100%;
-  border: 1px solid var(--ion-color-light-shade);
+}
+
+// Dark mode for profile inputs
+@media (prefers-color-scheme: dark) {
+  .profile-d-item ion-item {
+    --background: var(--ion-item-background, #1a1d27);
+    --border-color: var(--ion-color-step-150, #252839);
+
+    ion-label {
+      h3 { color: var(--ion-color-medium); }
+      p  { color: var(--ion-text-color, #e8eaf0); }
+    }
+  }
+  .profile-edit-input,
+  .profile-edit-textarea,
+  .language-input {
+    color: var(--ion-text-color, #e8eaf0);
+    border-bottom-color: var(--ion-color-step-150, #252839);
+  }
+}
+
+body.dark {
+  .profile-d-item ion-item {
+    --background: var(--ion-item-background, #1a1d27);
+    --border-color: var(--ion-color-step-150, #252839);
+
+    ion-label {
+      h3 { color: var(--ion-color-medium); }
+      p  { color: var(--ion-text-color, #e8eaf0); }
+    }
+  }
+  .profile-edit-input,
+  .profile-edit-textarea,
+  .language-input {
+    color: var(--ion-text-color, #e8eaf0);
+    border-bottom-color: var(--ion-color-step-150, #252839);
+  }
 }
 
 .language-chips {

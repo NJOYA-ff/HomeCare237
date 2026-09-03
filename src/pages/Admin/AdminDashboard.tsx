@@ -27,6 +27,7 @@ import {
 } from "@ionic/react";
 import { useHistory } from "react-router-dom";
 import { useNotifications } from "../../context/NotificationContext";
+import { useSettings } from "../../context/SettingsContext";
 import {
   collection,
   getDocs,
@@ -116,6 +117,7 @@ type CustomVariants = Variants & {
 
 const AdminDashboard: React.FC = () => {
   const history = useHistory();
+  const { t } = useSettings();
   const { unreadCount } = useNotifications();
   const [stats, setStats] = useState({
     patients: 0,
@@ -407,7 +409,7 @@ const AdminDashboard: React.FC = () => {
               <FiMenu size={20} />{" "}
             </IonMenuButton>
           </IonButtons>
-          <IonTitle>Admin Dashboard</IonTitle>
+          <IonTitle>{t("adminDashboard")}</IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={() => history.push("/admin/notifications")} style={{ position: "relative" }}>
               <IonIcon icon={notifications} className="header-icon" />
@@ -429,7 +431,7 @@ const AdminDashboard: React.FC = () => {
               transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
               className="loading-spinner"
             />
-            <p>Loading dashboard data...</p>
+            <p>{t("loadingData")}</p>
           </div>
         ) : (
           <AnimatePresence>
@@ -444,7 +446,7 @@ const AdminDashboard: React.FC = () => {
                   {[
                     {
                       icon: people,
-                      title: "Patients",
+                      title: t("patients"),
                       value: stats.patients,
                       color: "primary",
                       trend: "up",
@@ -452,7 +454,7 @@ const AdminDashboard: React.FC = () => {
                     },
                     {
                       icon: person,
-                      title: "Doctors",
+                      title: t("doctors"),
                       value: stats.caregivers,
                       color: "secondary",
                       trend: "up",
@@ -460,7 +462,7 @@ const AdminDashboard: React.FC = () => {
                     },
                     {
                       icon: calendar,
-                      title: "Pending",
+                      title: t("pending"),
                       value: stats.pending,
                       color: "warning",
                       trend: "steady",
@@ -468,7 +470,7 @@ const AdminDashboard: React.FC = () => {
                     },
                     {
                       icon: calendar,
-                      title: "Accepted",
+                      title: t("accepted"),
                       value: stats.accepted,
                       color: "tertiary",
                       trend: "steady",
@@ -476,7 +478,7 @@ const AdminDashboard: React.FC = () => {
                     },
                     {
                       icon: calendar,
-                      title: "Completed",
+                      title: t("completed"),
                       value: stats.completed,
                       color: "success",
                       trend: "steady",
@@ -484,7 +486,7 @@ const AdminDashboard: React.FC = () => {
                     },
                     {
                       icon: calendar,
-                      title: "Cancelled",
+                      title: t("cancelled"),
                       value: stats.cancelled,
                       color: "danger",
                       trend: "steady",
@@ -492,7 +494,7 @@ const AdminDashboard: React.FC = () => {
                     },
                     {
                       icon: business,
-                      title: "Health Units",
+                      title: t("healthUnits"),
                       value: stats.healthUnits,
                       color: "success",
                       trend: "steady",
@@ -500,7 +502,7 @@ const AdminDashboard: React.FC = () => {
                     },
                     {
                       icon: alertCircle,
-                      title: "Alerts",
+                      title: t("alerts"),
                       value: stats.alerts,
                       color: "danger",
                       trend: "down",
@@ -545,7 +547,7 @@ const AdminDashboard: React.FC = () => {
                     >
                       <IonCard className="chart-card">
                         <IonCardHeader>
-                          <IonCardTitle>Patient Status</IonCardTitle>
+                          <IonCardTitle>{t("patientStatus")}</IonCardTitle>
                         </IonCardHeader>
                         <IonCardContent>
                           <Chart
@@ -568,7 +570,7 @@ const AdminDashboard: React.FC = () => {
                     >
                       <IonCard className="chart-card">
                         <IonCardHeader>
-                          <IonCardTitle>Weekly Appointments</IonCardTitle>
+                          <IonCardTitle>{t("weeklyAppointments")}</IonCardTitle>
                         </IonCardHeader>
                         <IonCardContent>
                           <Chart
@@ -595,9 +597,9 @@ const AdminDashboard: React.FC = () => {
                     >
                       <IonCard>
                         <IonCardHeader>
-                          <IonCardTitle>Health Units Status</IonCardTitle>
+                          <IonCardTitle>{t("healthUnitsStatus")}</IonCardTitle>
                           <IonCardSubtitle>
-                            Capacity and Utilization
+                            {t("capacityUtilization")}
                           </IonCardSubtitle>
                         </IonCardHeader>
                         <IonCardContent>
@@ -627,14 +629,14 @@ const AdminDashboard: React.FC = () => {
                                     />
                                     <div className="capacity-info">
                                       <span>
-                                        {unit.patients}/{unit.capacity} patients
+                                        {unit.patients}/{unit.capacity} {t("patients")}
                                       </span>
                                       <span>
                                         {getCapacityPercentage(
                                           unit.patients,
                                           unit.capacity,
                                         )}
-                                        % capacity
+                                        % {t("capacity")}
                                       </span>
                                     </div>
                                   </IonLabel>
@@ -664,8 +666,8 @@ const AdminDashboard: React.FC = () => {
                     >
                       <IonCard className="activity-card">
                         <IonCardHeader>
-                          <IonCardTitle>Recent Caregivers</IonCardTitle>
-                          <IonCardSubtitle>Currently Active</IonCardSubtitle>
+                          <IonCardTitle>{t("recentCaregivers")}</IonCardTitle>
+                          <IonCardSubtitle>{t("currentlyActive")}</IonCardSubtitle>
                         </IonCardHeader>
                         <IonCardContent>
                           <IonList lines="none" className="caregiver-list">
@@ -734,9 +736,9 @@ const AdminDashboard: React.FC = () => {
                     >
                       <IonCard className="activity-card">
                         <IonCardHeader>
-                          <IonCardTitle>Recent Patients</IonCardTitle>
+                          <IonCardTitle>{t("recentPatients")}</IonCardTitle>
                           <IonCardSubtitle>
-                            Health Status Overview
+                            {t("recentActivity")}
                           </IonCardSubtitle>
                         </IonCardHeader>
                         <IonCardContent>

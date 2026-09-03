@@ -754,3 +754,32 @@ body.dark {
   .typing-indicator { background: var(--ion-color-step-100, #1e2130); }
   .whatsapp-recording-bar { background: var(--ion-item-background, #1a1d27); }
 }
+
+// ---- Health Units Admin Actions -------------------------
+.card-image-container {
+  position: relative;
+
+  .admin-card-actions {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    gap: 6px;
+    z-index: 10;
+
+    ion-button {
+      --border-radius: 8px;
+      --padding-start: 8px;
+      --padding-end: 8px;
+      --padding-top: 6px;
+      --padding-bottom: 6px;
+      height: 36px;
+      width: 36px;
+      opacity: 0.92;
+
+      &:hover {
+        opacity: 1;
+      }
+    }
+  }
+}

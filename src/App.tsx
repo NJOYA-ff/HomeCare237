@@ -9,6 +9,9 @@ import { Redirect, Route } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { SettingsProvider } from "./context/SettingsContext";
 import SettingsPage from "./pages/Settings/SettingsPage";
+import PatientSettings from "./pages/Settings/PatientSettings";
+import DoctorSettings from "./pages/Settings/DoctorSettings";
+import AdminSettings from "./pages/Settings/AdminSettings";
 import BiometricLockScreen from "./components/BiometricLockScreen";
 import {
   isLockEnabled,
@@ -81,6 +84,8 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   sendPasswordResetEmail,
+  GoogleAuthProvider,
+  signInWithPopup,
 } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import Refer_patient from "./pages/Doctor/Refer_Patients";
@@ -249,6 +254,55 @@ class AuthService {
       return this.currentUser;
     } catch (error) {
       console.error("Login error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Sign in with Google popup.
+   * Looks up the user in patients / doctors / admins collections.
+   * If not found, creates a new patient record by default
+   * (role can be overridden by passing the expected role).
+   */
+  async loginWithGoogle(expectedRole?: UserRole): Promise<User | null> {
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: "select_account" });
+      const result = await signInWithPopup(auth, provider);
+      const firebaseUser = result.user;
+
+      // Try to find existing user
+      let user = await this.findUserInCollections(firebaseUser.uid);
+
+      if (!user) {
+        // New Google user — create a record in the appropriate collection
+        const role = expectedRole ?? UserRole.Patient;
+        const collectionName = this.getCollectionName(role);
+        const newUserData = {
+          id: firebaseUser.uid,
+          name: firebaseUser.displayName || "User",
+          email: firebaseUser.email || "",
+          role,
+          profilePhoto: firebaseUser.photoURL || "",
+          createdAt: new Date(),
+          isActive: true,
+        };
+        await setDoc(doc(db, collectionName, firebaseUser.uid), newUserData);
+        user = {
+          id: firebaseUser.uid,
+          name: newUserData.name,
+          email: newUserData.email,
+          name1: newUserData.name,
+          email1: newUserData.email,
+          role,
+        };
+      }
+
+      this.currentUser = user;
+      this.notifyAuthStateListeners(user);
+      return this.currentUser;
+    } catch (error) {
+      console.error("Google sign-in error:", error);
       throw error;
     }
   }
@@ -586,7 +640,7 @@ const App: React.FC = () => {
                     </Route>
 
                     <Route path="/doc/settings" exact={true}>
-                      <SettingsPage />
+                      <DoctorSettings />
                     </Route>
 
                     {/* Redirect any unknown doctor routes to dashboard */}
@@ -635,7 +689,7 @@ const App: React.FC = () => {
                     </Route>
 
                     <Route path="/admin/settings" exact={true}>
-                      <SettingsPage />
+                      <AdminSettings />
                     </Route>
 
                     {/* Redirect any unknown admin routes to dashboard */}

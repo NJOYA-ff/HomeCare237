@@ -1,3 +1,5 @@
+@use '../../theme/hc-form.scss';
+
 .auth-required {
   text-align: center;
   padding: 2rem;
@@ -160,7 +162,49 @@
 }
 
 .filter-item {
-  --padding-start: 0;
+  --border-radius: 12px;
+  --padding-start: 14px;
+  --inner-padding-end: 14px;
+  --padding-top: 8px;
+  --padding-bottom: 8px;
+  --min-height: 62px;
+  --background: var(--ion-item-background, #ffffff);
+  --border-color: #dde1f5;
+  --border-width: 1px;
+  --border-style: solid;
+  --inner-border-width: 0;
+  --highlight-color-focused: var(--ion-color-primary, #3b7dd8);
+  border-radius: 12px;
+  margin-bottom: 12px;
+
+  ion-label,
+  ion-label[position="stacked"],
+  ion-label[position="floating"] {
+    font-size: 0.78rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--ion-color-medium) !important;
+    margin-bottom: 4px;
+  }
+
+  ion-select,
+  ion-input {
+    font-size: 0.93rem;
+    color: var(--ion-text-color);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .filter-item {
+    --background: var(--ion-item-background, #1a1d27);
+    --border-color: var(--ion-color-step-150, #252839);
+  }
+}
+
+body.dark .filter-item {
+  --background: var(--ion-item-background, #1a1d27);
+  --border-color: var(--ion-color-step-150, #252839);
 }
 
 // Lists
@@ -305,8 +349,51 @@
 // Forms
 .referral-form {
   .form-item {
-    margin-bottom: 1rem;
+    --border-radius: 12px;
+    --padding-start: 14px;
+    --inner-padding-end: 14px;
+    --padding-top: 8px;
+    --padding-bottom: 8px;
+    --min-height: 62px;
+    --background: var(--ion-item-background, #ffffff);
+    --border-color: #dde1f5;
+    --border-width: 1px;
+    --border-style: solid;
+    --inner-border-width: 0;
+    --highlight-color-focused: var(--ion-color-primary, #3b7dd8);
+    border-radius: 12px;
+    margin-bottom: 14px;
+
+    ion-label,
+    ion-label[position="stacked"],
+    ion-label[position="floating"] {
+      font-size: 0.78rem !important;
+      font-weight: 600 !important;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: var(--ion-color-medium) !important;
+      margin-bottom: 4px;
+    }
+
+    ion-input,
+    ion-textarea,
+    ion-select {
+      font-size: 0.93rem;
+      color: var(--ion-text-color);
+    }
   }
+}
+
+@media (prefers-color-scheme: dark) {
+  .referral-form .form-item {
+    --background: var(--ion-item-background, #1a1d27);
+    --border-color: var(--ion-color-step-150, #252839);
+  }
+}
+
+body.dark .referral-form .form-item {
+  --background: var(--ion-item-background, #1a1d27);
+  --border-color: var(--ion-color-step-150, #252839);
 }
 
 .refer-btn {

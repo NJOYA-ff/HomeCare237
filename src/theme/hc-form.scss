@@ -1,0 +1,125 @@
+// hc-form.scss — Shared input-field design matching the Health Units modal form.
+//
+// Usage: add class="hc-form-item" to any IonItem that wraps an IonInput,
+//        IonTextarea, or IonSelect with a stacked / floating IonLabel.
+//
+// Import once from any page that needs it:
+//   @use '../../theme/hc-form.scss';   (adjust relative path as needed)
+//
+// Both light and dark modes are covered via @media and body.dark.
+
+/* ── Light-mode defaults ─────────────────────────────────────────────────── */
+.hc-form-item {
+  // Geometry & layout
+  --border-radius: 12px;
+  --padding-start: 14px;
+  --inner-padding-end: 14px;
+  --padding-top: 10px;
+  --padding-bottom: 10px;
+  --min-height: 62px;
+
+  // Colors — light theme
+  --background: var(--ion-item-background, #ffffff);
+  --border-color: #dde1f5;
+  --border-width: 1px;
+  --border-style: solid;
+  --inner-border-width: 0;
+  --highlight-color-focused: var(--ion-color-primary, #3b7dd8);
+  --highlight-color-valid: var(--ion-color-success, #2dd36f);
+  --highlight-color-invalid: var(--ion-color-danger, #eb445a);
+
+  // Spacing between siblings
+  margin-bottom: 14px;
+
+  // Rounded card look
+  border-radius: 12px;
+  overflow: hidden;
+
+  // Label
+  ion-label,
+  ion-label[position="stacked"],
+  ion-label[position="floating"] {
+    font-size: 0.78rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.03em;
+    color: var(--ion-color-medium, #92949c) !important;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+  }
+
+  // Input / Textarea / Select value text
+  ion-input,
+  ion-textarea,
+  ion-select {
+    font-size: 0.93rem !important;
+    color: var(--ion-text-color, #1a1a2e) !important;
+    --padding-start: 0px;
+    --padding-end: 0px;
+  }
+
+  // Placeholder
+  ion-input::part(placeholder),
+  ion-textarea::part(placeholder) {
+    color: var(--ion-color-medium, #92949c);
+    opacity: 0.7;
+  }
+
+  // Clear button
+  ion-input::part(clear-button) {
+    color: var(--ion-color-medium);
+  }
+}
+
+/* ── Dark mode ───────────────────────────────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  .hc-form-item {
+    --background: var(--ion-item-background, #1a1d27);
+    --border-color: var(--ion-color-step-150, #252839);
+
+    ion-label,
+    ion-label[position="stacked"],
+    ion-label[position="floating"] {
+      color: var(--ion-color-medium, #92949c) !important;
+    }
+
+    ion-input,
+    ion-textarea,
+    ion-select {
+      color: var(--ion-text-color, #e8eaf0) !important;
+    }
+  }
+}
+
+body.dark .hc-form-item {
+  --background: var(--ion-item-background, #1a1d27);
+  --border-color: var(--ion-color-step-150, #252839);
+
+  ion-label,
+  ion-label[position="stacked"],
+  ion-label[position="floating"] {
+    color: var(--ion-color-medium, #92949c) !important;
+  }
+
+  ion-input,
+  ion-textarea,
+  ion-select {
+    color: var(--ion-text-color, #e8eaf0) !important;
+  }
+}
+
+/* ── Focus glow ──────────────────────────────────────────────────────────── */
+// Ionic renders the focus highlight as a bottom border via ::part(highlight).
+// We bump the highlight height for a more visible focus ring.
+.hc-form-item::part(highlight) {
+  height: 2px;
+}
+
+/* ── Error state helper ──────────────────────────────────────────────────── */
+.hc-form-item.ion-invalid.ion-touched {
+  --border-color: var(--ion-color-danger, #eb445a);
+}
+
+/* ── Margin-free variant (use inside IonGrid cols) ───────────────────────── */
+.hc-form-item.no-margin {
+  margin-bottom: 0;
+}

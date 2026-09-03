@@ -46,6 +46,7 @@ import {
 import { doc, setDoc, collection, serverTimestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useHistory } from "react-router";
+import { authService, UserRole } from "../App";
 
 type FormData = {
   profilePhoto: FileList | null;
@@ -95,6 +96,7 @@ const DoctorSignup: React.FC = () => {
   });
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [toast, setToast] = useState({
@@ -112,6 +114,21 @@ const DoctorSignup: React.FC = () => {
     color: "success" | "danger" | "warning" = "success",
   ) => {
     setToast({ isOpen: true, message, color });
+  };
+
+  const handleGoogleSignup = async () => {
+    setIsGoogleLoading(true);
+    try {
+      const user = await authService.loginWithGoogle(UserRole.Doctor);
+      if (user) {
+        showToast("Signed up with Google successfully!", "success");
+        setTimeout(() => history.push("/doc/dashboard"), 500);
+      }
+    } catch (err: any) {
+      showToast(err?.message || "Google sign-up failed. Please try again.", "danger");
+    } finally {
+      setIsGoogleLoading(false);
+    }
   };
 
   const uploadImageToStorage = async (
@@ -948,6 +965,35 @@ const DoctorSignup: React.FC = () => {
                         </>
                       ) : (
                         "Complete Registration"
+                      )}
+                    </IonButton>
+                  </motion.div>
+
+                  {/* Google Sign-Up */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                  >
+                    <div className="or-divider"><span>or sign up with</span></div>
+                    <IonButton
+                      expand="block"
+                      fill="outline"
+                      className="google-signin-btn"
+                      disabled={isGoogleLoading}
+                      onClick={handleGoogleSignup}
+                    >
+                      {isGoogleLoading ? (
+                        <IonSpinner name="crescent" />
+                      ) : (
+                        <>
+                          <img
+                            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                            alt="Google"
+                            className="google-icon"
+                          />
+                          Continue with Google
+                        </>
                       )}
                     </IonButton>
                   </motion.div>

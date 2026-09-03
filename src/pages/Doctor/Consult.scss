@@ -97,6 +97,7 @@
 // ── Patient list (WhatsApp contact style) ─────────────────────
 .wa-patient-list {
   background: var(--ion-background-color);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .wa-patient-item {

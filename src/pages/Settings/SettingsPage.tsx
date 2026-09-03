@@ -38,6 +38,7 @@ import {
   lockClosedOutline,
   fingerPrintOutline,
   keypadOutline,
+  moonOutline,
 } from "ionicons/icons";
 import { useSettings } from "../../context/SettingsContext";
 import {
@@ -46,6 +47,8 @@ import {
   disablePin,
 } from "../../utils/BiometricAuthService";
 import PinSetupModal from "../../components/PinSetupModal";
+import { auth } from "../../firebaseconfig";
+import { sendPasswordResetEmail } from "firebase/auth";
 import "./Settings.scss";
 
 const SettingsPage: React.FC = () => {
@@ -59,6 +62,8 @@ const SettingsPage: React.FC = () => {
     setSoundEnabled,
     fontSize,
     setFontSize,
+    darkMode,
+    setDarkMode,
     biometricEnabled,
     setBiometricEnabledSetting,
     pinEnabled,
@@ -166,6 +171,60 @@ const SettingsPage: React.FC = () => {
     });
   }, [setPinEnabledSetting, presentToast, t]);
 
+  // ── Change Password ───────────────────────────────────────────────────────
+
+  const handleChangePassword = useCallback(() => {
+    const email = auth.currentUser?.email;
+    if (!email) {
+      presentToast({
+        message: "No account email found. Please sign in again.",
+        duration: 3000,
+        color: "warning",
+        position: "top",
+      });
+      return;
+    }
+    presentAlert({
+      header: t("changePassword"),
+      message: `A password reset link will be sent to:\n${email}`,
+      buttons: [
+        { text: t("cancel"), role: "cancel" },
+        {
+          text: "Send",
+          handler: async () => {
+            try {
+              await sendPasswordResetEmail(auth, email);
+              presentToast({
+                message: "Password reset email sent. Check your inbox.",
+                duration: 3500,
+                color: "success",
+                position: "top",
+              });
+            } catch (err: any) {
+              presentToast({
+                message: err?.message || "Failed to send reset email.",
+                duration: 3500,
+                color: "danger",
+                position: "top",
+              });
+            }
+          },
+        },
+      ],
+    });
+  }, [auth, presentAlert, presentToast, t]);
+
+  // ── About ─────────────────────────────────────────────────────────────────
+
+  const handleAbout = useCallback(() => {
+    presentAlert({
+      header: "HomeCare237",
+      message:
+        "Version 1.0.0\n\nHomeCare237 connects patients with healthcare professionals across Cameroon.\n\n© 2026 HomeCare237. All rights reserved.",
+      buttons: ["OK"],
+    });
+  }, [presentAlert]);
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -186,6 +245,23 @@ const SettingsPage: React.FC = () => {
           {t("appearance")}
         </IonListHeader>
         <IonList className="settings-list">
+          {/* Dark Mode */}
+          <IonItem>
+            <IonIcon icon={moonOutline} slot="start" className="settings-icon" />
+            <IonLabel>{t("darkMode")}</IonLabel>
+            <IonSelect
+              value={darkMode}
+              onIonChange={(e) => setDarkMode(e.detail.value)}
+              interface="popover"
+              slot="end"
+              className="settings-select"
+            >
+              <IonSelectOption value="system">{t("darkModeSystem")}</IonSelectOption>
+              <IonSelectOption value="light">{t("darkModeLight")}</IonSelectOption>
+              <IonSelectOption value="dark">{t("darkModeDark")}</IonSelectOption>
+            </IonSelect>
+          </IonItem>
+          {/* Font Size */}
           <IonItem>
             <IonIcon icon={textOutline} slot="start" className="settings-icon" />
             <IonLabel>{t("fontSize")}</IonLabel>
@@ -299,11 +375,11 @@ const SettingsPage: React.FC = () => {
           {t("account")}
         </IonListHeader>
         <IonList className="settings-list">
-          <IonItem button detail>
+          <IonItem button detail onClick={handleChangePassword}>
             <IonIcon icon={lockClosedOutline} slot="start" className="settings-icon" />
             <IonLabel>{t("changePassword")}</IonLabel>
           </IonItem>
-          <IonItem button detail>
+          <IonItem button detail onClick={handleAbout}>
             <IonIcon icon={informationCircleOutline} slot="start" className="settings-icon" />
             <IonLabel>{t("about")}</IonLabel>
             <IonNote slot="end">v1.0.0</IonNote>

@@ -6,6 +6,8 @@ import {
   IonToolbar,
   IonTitle,
   IonButton,
+  IonButtons,
+  IonIcon,
   IonInput,
   IonItem,
   IonLabel,
@@ -18,6 +20,9 @@ import {
   IonSpinner,
   IonToast,
 } from "@ionic/react";
+import { chevronBackOutline } from "ionicons/icons";
+import { useHistory } from "react-router";
+import { authService, UserRole } from "../App";
 import { motion } from "framer-motion";
 import {
   doc,
@@ -57,6 +62,8 @@ type FormData = {
 };
 
 const AdminSignup: React.FC = () => {
+  const history = useHistory();
+
   const {
     register,
     handleSubmit,
@@ -65,6 +72,7 @@ const AdminSignup: React.FC = () => {
     setError,
   } = useForm<FormData>();
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [toast, setToast] = useState({
     isOpen: false,
@@ -75,6 +83,25 @@ const AdminSignup: React.FC = () => {
 
   const showToast = (message: string, color: string = "success") => {
     setToast({ isOpen: true, message, color });
+  };
+
+  const handleGoogleSignup = async () => {
+    setIsGoogleLoading(true);
+    try {
+      const user = await authService.loginWithGoogle(UserRole.Admin);
+      if (user) {
+        showToast("Signed up with Google successfully!", "success");
+        setTimeout(() => history.push("/admin/dashboard"), 500);
+      }
+    } catch (err: any) {
+      showToast(err?.message || "Google sign-up failed. Please try again.", "danger");
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
+
+  const goBack = () => {
+    history.goBack();
   };
 
   // Check if username already exists
@@ -239,7 +266,13 @@ const AdminSignup: React.FC = () => {
         </div>
 
         <IonHeader class="ion-no-border">
-          <IonToolbar className="header-toolbar">
+          <IonToolbar className="signuptoolbar">
+            <IonButtons>
+              <IonButton onClick={goBack} className="signupback">
+                <IonIcon icon={chevronBackOutline} />
+                Back
+              </IonButton>
+            </IonButtons>
             <IonTitle className="header-title">Create Admin Account</IonTitle>
           </IonToolbar>
         </IonHeader>
@@ -567,6 +600,35 @@ const AdminSignup: React.FC = () => {
                         </>
                       ) : (
                         "Create Admin Account"
+                      )}
+                    </IonButton>
+                  </motion.div>
+
+                  {/* Google Sign-Up */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                  >
+                    <div className="or-divider"><span>or sign up with</span></div>
+                    <IonButton
+                      expand="block"
+                      fill="outline"
+                      className="google-signin-btn"
+                      disabled={isGoogleLoading}
+                      onClick={handleGoogleSignup}
+                    >
+                      {isGoogleLoading ? (
+                        <IonSpinner name="crescent" />
+                      ) : (
+                        <>
+                          <img
+                            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                            alt="Google"
+                            className="google-icon"
+                          />
+                          Continue with Google
+                        </>
                       )}
                     </IonButton>
                   </motion.div>

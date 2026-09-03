@@ -19,18 +19,20 @@ import {
   IonButtons,
   IonButton,
   IonSpinner,
-  IonList,
   IonChip,
   IonBadge,
-  IonAvatar,
   IonGrid,
   IonRow,
   IonCol,
-  useIonViewWillEnter,
   IonBackButton,
   IonFab,
   IonFabButton,
   IonModal,
+  IonInput,
+  IonTextarea,
+  IonToggle,
+  IonAlert,
+  useIonToast,
   IonHeader as ModalHeader,
   IonToolbar as ModalToolbar,
   IonTitle as ModalTitle,
@@ -55,15 +57,32 @@ import {
   locateOutline,
   listOutline,
   mapOutline,
+  add,
+  create,
+  trash,
+  save,
+  warning,
 } from "ionicons/icons";
 import { motion, AnimatePresence } from "framer-motion";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import {
+  collection,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  query,
+  orderBy,
+  Timestamp,
+  serverTimestamp,
+} from "firebase/firestore";
+import { db } from "../../firebaseconfig";
 import "./Admin2.scss";
 
-// Fix for default markers in react-leaflet
-// delete L.Icon.Default.prototype._getIconUrl;
+// Fix leaflet default markers
 L.Icon.Default.mergeOptions({
   iconRetinaUrl:
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
@@ -73,7 +92,6 @@ L.Icon.Default.mergeOptions({
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
 });
 
-// Custom marker icons
 const hospitalIcon = new L.Icon({
   iconUrl:
     "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
@@ -82,7 +100,6 @@ const hospitalIcon = new L.Icon({
   popupAnchor: [1, -34],
   shadowSize: [41, 41],
 });
-
 const clinicIcon = new L.Icon({
   iconUrl:
     "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png",
@@ -91,7 +108,6 @@ const clinicIcon = new L.Icon({
   popupAnchor: [1, -34],
   shadowSize: [41, 41],
 });
-
 const pharmacyIcon = new L.Icon({
   iconUrl:
     "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
@@ -100,7 +116,6 @@ const pharmacyIcon = new L.Icon({
   popupAnchor: [1, -34],
   shadowSize: [41, 41],
 });
-
 const laboratoryIcon = new L.Icon({
   iconUrl:
     "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png",
@@ -111,10 +126,12 @@ const laboratoryIcon = new L.Icon({
 });
 
 // Types
-type HealthUnit = {
+export type HealthUnitType = "hospital" | "clinic" | "pharmacy" | "laboratory";
+
+export interface HealthUnit {
   id: string;
   name: string;
-  type: "hospital" | "clinic" | "pharmacy" | "laboratory";
+  type: HealthUnitType;
   address: string;
   region: string;
   town: string;
@@ -129,16 +146,43 @@ type HealthUnit = {
   description?: string;
   emergency?: boolean;
   insuranceAccepted?: boolean;
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
+}
+
+const EMPTY_FORM: Omit<HealthUnit, "id" | "createdAt" | "updatedAt"> = {
+  name: "",
+  type: "hospital",
+  address: "",
+  region: "",
+  town: "",
+  phone: "",
+  website: "",
+  openingHours: "",
+  rating: 0,
+  services: [],
+  lat: 5.6919,
+  lng: 9.5481,
+  image: "",
+  description: "",
+  emergency: false,
+  insuranceAccepted: false,
 };
 
-// Map recenter component
-function MapUpdater({
-  center,
-  zoom,
-}: {
-  center: [number, number];
-  zoom: number;
-}) {
+const CAMEROON_REGIONS = [
+  "Adamawa",
+  "Centre",
+  "East",
+  "Far North",
+  "Littoral",
+  "North",
+  "Northwest",
+  "South",
+  "Southwest",
+  "West",
+];
+
+function MapUpdater({ center, zoom }: { center: [number, number]; zoom: number }) {
   const map = useMap();
   useEffect(() => {
     map.setView(center, zoom);
@@ -146,452 +190,225 @@ function MapUpdater({
   return null;
 }
 
-// Sample data with more comprehensive Cameroon health facilities
-const healthUnitsData: HealthUnit[] = [
-  // Hospitals
-  {
-    id: "1",
-    name: "Central Hospital Yaoundé",
-    type: "hospital",
-    address: "Rue 2008, Bastos, Yaoundé",
-    region: "Centre",
-    town: "Yaoundé",
-    phone: "+237 222 23 45 67",
-    website: "www.centralhospital-yaounde.cm",
-    openingHours: "Open 24/7",
-    rating: 4.5,
-    services: [
-      "Emergency Care",
-      "General Surgery",
-      "Pediatrics",
-      "Maternity",
-      "Radiology",
-    ],
-    lat: 3.8689867,
-    lng: 11.5213344,
-    image:
-      "https://images.unsplash.com/photo-1579684385127-1ef15d508118?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
-    description:
-      "The largest public hospital in Yaoundé offering comprehensive medical services with state-of-the-art facilities.",
-    emergency: true,
-    insuranceAccepted: true,
-  },
-  {
-    id: "2",
-    name: "Laquintinie Hospital",
-    type: "hospital",
-    address: "Rue de la Quarantaine, Bonanjo, Douala",
-    region: "Littoral",
-    town: "Douala",
-    phone: "+237 233 42 15 96",
-    openingHours: "Mon-Sun: 7:00 AM - 9:00 PM",
-    rating: 4.2,
-    services: [
-      "Emergency Care",
-      "Internal Medicine",
-      "Cardiology",
-      "Neurology",
-    ],
-    lat: 4.0510564,
-    lng: 9.7068686,
-    image:
-      "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
-    description:
-      "A premier healthcare institution in Douala with specialized departments and experienced medical staff.",
-    emergency: true,
-    insuranceAccepted: true,
-  },
-  {
-    id: "3",
-    name: "Regional Hospital Bafoussam",
-    type: "hospital",
-    address: "Carrefour des 3 Statues, Bafoussam",
-    region: "West",
-    town: "Bafoussam",
-    phone: "+237 233 44 56 78",
-    openingHours: "Mon-Sun: 8:00 AM - 8:00 PM",
-    rating: 3.9,
-    services: ["General Medicine", "Pediatrics", "Surgery", "Maternity"],
-    lat: 5.4775159,
-    lng: 10.4175854,
-    image:
-      "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
-    description:
-      "Regional hospital serving the West region with comprehensive healthcare services.",
-    emergency: true,
-    insuranceAccepted: true,
-  },
-  {
-    id: "4",
-    name: "Regional Hospital Bamenda",
-    type: "hospital",
-    address: "Up Station, Bamenda",
-    region: "Northwest",
-    town: "Bamenda",
-    phone: "+237 233 36 25 14",
-    openingHours: "Open 24/7",
-    rating: 4.0,
-    services: ["Emergency Care", "Surgery", "Internal Medicine", "Pediatrics"],
-    lat: 5.9596562,
-    lng: 10.1459284,
-    image:
-      "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
-    description:
-      "Major healthcare facility in the Northwest region providing emergency and specialized care.",
-    emergency: true,
-    insuranceAccepted: true,
-  },
-  {
-    id: "5",
-    name: "Garoua Regional Hospital",
-    type: "hospital",
-    address: "Quartier de l'Hôpital, Garoua",
-    region: "North",
-    town: "Garoua",
-    phone: "+237 222 29 12 34",
-    openingHours: "Mon-Sun: 7:30 AM - 6:00 PM",
-    rating: 3.8,
-    services: ["General Medicine", "Pediatrics", "Maternity", "Surgery"],
-    lat: 9.3002649,
-    lng: 13.3971379,
-    image:
-      "https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
-    description:
-      "Serving the northern region with quality healthcare services and specialized treatments.",
-    emergency: true,
-    insuranceAccepted: true,
-  },
-
-  // Clinics
-  {
-    id: "6",
-    name: "Biyem-Assi Clinic",
-    type: "clinic",
-    address: "Biyem-Assi, Yaoundé",
-    region: "Centre",
-    town: "Yaoundé",
-    phone: "+237 222 21 31 41",
-    openingHours: "Mon-Fri: 8:00 AM - 6:00 PM, Sat: 9:00 AM - 1:00 PM",
-    rating: 4.3,
-    services: [
-      "General Consultation",
-      "Vaccinations",
-      "Minor Surgery",
-      "Lab Tests",
-    ],
-    lat: 3.8480325,
-    lng: 11.4696872,
-    image:
-      "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
-    description:
-      "Modern clinic providing comprehensive outpatient services in the Biyem-Assi neighborhood.",
-    insuranceAccepted: true,
-  },
-  {
-    id: "7",
-    name: "Deido Medical Center",
-    type: "clinic",
-    address: "Deido, Douala",
-    region: "Littoral",
-    town: "Douala",
-    phone: "+237 233 42 88 99",
-    openingHours: "Mon-Sat: 7:30 AM - 7:00 PM",
-    rating: 4.1,
-    services: ["General Medicine", "Pediatrics", "Gynecology", "Dental Care"],
-    lat: 4.0498456,
-    lng: 9.7082353,
-    image:
-      "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
-    description:
-      "Well-equipped medical center offering a range of specialist services in the heart of Deido.",
-    insuranceAccepted: true,
-  },
-
-  // Pharmacies
-  {
-    id: "8",
-    name: "Pharmacie du Centre",
-    type: "pharmacy",
-    address: "Avenue Kennedy, Yaoundé",
-    region: "Centre",
-    town: "Yaoundé",
-    phone: "+237 222 22 33 44",
-    openingHours: "Mon-Sat: 7:30 AM - 8:30 PM, Sun: 9:00 AM - 2:00 PM",
-    rating: 4.4,
-    services: [
-      "Prescription Drugs",
-      "Over-the-Counter",
-      "Health Supplements",
-      "Medical Equipment",
-    ],
-    lat: 3.866667,
-    lng: 11.516667,
-    image:
-      "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
-    description:
-      "Central pharmacy offering a wide range of medications and health products with knowledgeable staff.",
-  },
-  {
-    id: "9",
-    name: "Pharmacie des Cocotiers",
-    type: "pharmacy",
-    address: "Rue des Cocotiers, Douala",
-    region: "Littoral",
-    town: "Douala",
-    phone: "+237 233 43 21 09",
-    openingHours: "Mon-Sun: 8:00 AM - 9:00 PM",
-    rating: 4.2,
-    services: [
-      "Prescription Drugs",
-      "Health Products",
-      "Beauty Products",
-      "Baby Care",
-    ],
-    lat: 4.0609487,
-    lng: 9.6987274,
-    image:
-      "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
-    description:
-      "Well-stocked pharmacy with extended hours and delivery service available.",
-  },
-
-  // Laboratories
-  {
-    id: "10",
-    name: "Laboratoire d'Analyses Médicales de Yaoundé",
-    type: "laboratory",
-    address: "Quartier Bastos, Yaoundé",
-    region: "Centre",
-    town: "Yaoundé",
-    phone: "+237 222 21 45 67",
-    website: "www.lamy.cm",
-    openingHours: "Mon-Sat: 7:00 AM - 5:00 PM",
-    rating: 4.6,
-    services: ["Blood Tests", "Urinalysis", "Microbiology", "Hormonal Assays"],
-    lat: 3.8738889,
-    lng: 11.5186111,
-    image:
-      "https://images.unsplash.com/photo-1582719471384-894fbb16e074?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
-    description:
-      "State-of-the-art medical laboratory offering comprehensive diagnostic services with quick turnaround times.",
-    insuranceAccepted: true,
-  },
-  {
-    id: "11",
-    name: "Douala Medical Laboratory",
-    type: "laboratory",
-    address: "Bonanjo, Douala",
-    region: "Littoral",
-    town: "Douala",
-    phone: "+237 233 42 55 66",
-    openingHours: "Mon-Sat: 6:30 AM - 6:00 PM",
-    rating: 4.5,
-    services: [
-      "Clinical Pathology",
-      "Hematology",
-      "Immunology",
-      "Genetic Testing",
-    ],
-    lat: 4.0466859,
-    lng: 9.6995949,
-    image:
-      "https://images.unsplash.com/photo-1582719471384-894fbb16e074?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
-    description:
-      "Advanced diagnostic laboratory with modern equipment and certified technicians.",
-    insuranceAccepted: true,
-  },
-  // Additional facilities across different regions
-  {
-    id: "12",
-    name: "Buea Regional Hospital",
-    type: "hospital",
-    address: "Molyko, Buea",
-    region: "Southwest",
-    town: "Buea",
-    phone: "+237 233 33 22 11",
-    openingHours: "Open 24/7",
-    rating: 4.1,
-    services: ["Emergency Care", "Maternity", "Surgery", "Pediatrics"],
-    lat: 4.1521345,
-    lng: 9.2416673,
-    image:
-      "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
-    description:
-      "Serving the Southwest region with comprehensive healthcare services including emergency care.",
-    emergency: true,
-    insuranceAccepted: true,
-  },
-  {
-    id: "13",
-    name: "Ebolowa District Hospital",
-    type: "hospital",
-    address: "Centre Ville, Ebolowa",
-    region: "South",
-    town: "Ebolowa",
-    phone: "+237 222 28 76 54",
-    openingHours: "Mon-Sun: 7:00 AM - 8:00 PM",
-    rating: 3.7,
-    services: ["General Medicine", "Pediatrics", "Maternity", "Laboratory"],
-    lat: 2.916667,
-    lng: 11.15,
-    image:
-      "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
-    description:
-      "District hospital providing essential healthcare services to the southern region.",
-    emergency: true,
-  },
-  {
-    id: "14",
-    name: "Maroua Regional Hospital",
-    type: "hospital",
-    address: "Quartier Pitoaré, Maroua",
-    region: "Far North",
-    town: "Maroua",
-    phone: "+237 222 29 55 66",
-    openingHours: "Mon-Sun: 8:00 AM - 6:00 PM",
-    rating: 3.8,
-    services: ["General Medicine", "Pediatrics", "Surgery", "Maternity"],
-    lat: 10.5956497,
-    lng: 14.3248522,
-    image:
-      "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
-    description:
-      "Major healthcare facility serving the Far North region with various medical specialties.",
-    emergency: true,
-    insuranceAccepted: true,
-  },
-  {
-    id: "15",
-    name: "Ngaoundéré Protestant Hospital",
-    type: "hospital",
-    address: "Ngaoundéré",
-    region: "Adamawa",
-    town: "Ngaoundéré",
-    phone: "+237 222 25 43 21",
-    openingHours: "Open 24/7",
-    rating: 4.0,
-    services: ["Emergency Care", "Surgery", "Maternity", "Pediatrics"],
-    lat: 7.316667,
-    lng: 13.583333,
-    image:
-      "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
-    description:
-      "Mission hospital providing quality healthcare services to the Adamawa region.",
-    emergency: true,
-    insuranceAccepted: true,
-  },
-  {
-    id: "16",
-    name: "Bertoua Regional Hospital",
-    type: "hospital",
-    address: "Bertoua",
-    region: "East",
-    town: "Bertoua",
-    phone: "+237 222 24 32 10",
-    openingHours: "Mon-Sun: 7:00 AM - 8:00 PM",
-    rating: 3.6,
-    services: ["General Medicine", "Pediatrics", "Maternity", "Surgery"],
-    lat: 4.5775558,
-    lng: 13.6810587,
-    image:
-      "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80",
-    description:
-      "Regional hospital serving the eastern part of Cameroon with essential medical services.",
-    emergency: true,
-  },
-];
-
 const Health_units: React.FC = () => {
   const [healthUnits, setHealthUnits] = useState<HealthUnit[]>([]);
   const [filteredUnits, setFilteredUnits] = useState<HealthUnit[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedRegion, setSelectedRegion] = useState<string>("");
-  const [selectedTown, setSelectedTown] = useState<string>("");
-  const [selectedType, setSelectedType] = useState<string>("");
+  const [selectedRegion, setSelectedRegion] = useState("");
+  const [selectedTown, setSelectedTown] = useState("");
+  const [selectedType, setSelectedType] = useState("");
   const [selectedUnit, setSelectedUnit] = useState<HealthUnit | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [towns, setTowns] = useState<string[]>([]);
-  const [mapCenter, setMapCenter] = useState<[number, number]>([
-    5.6919, 9.5481,
-  ]); // Cameroon center
-  const [mapZoom, setMapZoom] = useState<number>(7);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([5.6919, 9.5481]);
+  const [mapZoom, setMapZoom] = useState(7);
   const [activeFilter, setActiveFilter] = useState(false);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "map">("list");
   const [showMapModal, setShowMapModal] = useState(false);
+
+  // CRUD state
+  const [showFormModal, setShowFormModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formData, setFormData] = useState({ ...EMPTY_FORM });
+  const [servicesInput, setServicesInput] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [deleteAlert, setDeleteAlert] = useState<{ show: boolean; id: string; name: string }>({
+    show: false,
+    id: "",
+    name: "",
+  });
+
+  const [presentToast] = useIonToast();
   const mapRef = useRef<L.Map>(null);
   const modalMapRef = useRef<L.Map>(null);
 
-  // Load data
+  // Real-time Firestore listener
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setHealthUnits(healthUnitsData);
-      setFilteredUnits(healthUnitsData);
-      setIsLoading(false);
-    }, 1000);
-
-    return () => clearTimeout(timer);
+    const q = query(collection(db, "healthUnits"), orderBy("createdAt", "desc"));
+    const unsub = onSnapshot(
+      q,
+      (snapshot) => {
+        const units: HealthUnit[] = snapshot.docs.map((d) => ({
+          id: d.id,
+          ...(d.data() as Omit<HealthUnit, "id">),
+        }));
+        setHealthUnits(units);
+        setFilteredUnits(units);
+        setIsLoading(false);
+      },
+      () => {
+        // If index not ready yet, fallback without ordering
+        const q2 = query(collection(db, "healthUnits"));
+        onSnapshot(q2, (snapshot) => {
+          const units: HealthUnit[] = snapshot.docs.map((d) => ({
+            id: d.id,
+            ...(d.data() as Omit<HealthUnit, "id">),
+          }));
+          setHealthUnits(units);
+          setFilteredUnits(units);
+          setIsLoading(false);
+        });
+      }
+    );
+    return () => unsub();
   }, []);
 
-  // Extract unique regions and towns
+  // Towns derived from region filter
   useEffect(() => {
     if (healthUnits.length > 0) {
-      const uniqueRegions = Array.from(
-        new Set(healthUnits.map((unit) => unit.region))
-      );
       const uniqueTowns = selectedRegion
-        ? Array.from(
-            new Set(
-              healthUnits
-                .filter((unit) => unit.region === selectedRegion)
-                .map((unit) => unit.town)
-            )
-          )
-        : Array.from(new Set(healthUnits.map((unit) => unit.town)));
+        ? Array.from(new Set(healthUnits.filter((u) => u.region === selectedRegion).map((u) => u.town)))
+        : Array.from(new Set(healthUnits.map((u) => u.town)));
       setTowns(uniqueTowns);
     }
   }, [healthUnits, selectedRegion]);
 
-  // Filter health units
+  // Filter logic
   useEffect(() => {
     let results = healthUnits;
-
     if (searchTerm) {
       results = results.filter(
-        (unit) =>
-          unit.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          unit.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          unit.services.some((service) =>
-            service.toLowerCase().includes(searchTerm.toLowerCase())
-          )
+        (u) =>
+          u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          u.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          u.services.some((s) => s.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
-
-    if (selectedRegion) {
-      results = results.filter((unit) => unit.region === selectedRegion);
-    }
-
-    if (selectedTown) {
-      results = results.filter((unit) => unit.town === selectedTown);
-    }
-
-    if (selectedType) {
-      results = results.filter((unit) => unit.type === selectedType);
-    }
-
+    if (selectedRegion) results = results.filter((u) => u.region === selectedRegion);
+    if (selectedTown) results = results.filter((u) => u.town === selectedTown);
+    if (selectedType) results = results.filter((u) => u.type === selectedType);
     setFilteredUnits(results);
-
-    // Update map center if filtered results exist
     if (results.length > 0) {
       setMapCenter([results[0].lat, results[0].lng]);
       setMapZoom(selectedRegion || selectedTown || selectedType ? 10 : 7);
     }
   }, [searchTerm, selectedRegion, selectedTown, selectedType, healthUnits]);
 
-  const handleMarkerClick = (unit: HealthUnit) => {
+  // ─── CRUD handlers ────────────────────────────────────────────────────────
+
+  const openCreateModal = () => {
+    setIsEditing(false);
+    setEditingId(null);
+    setFormData({ ...EMPTY_FORM });
+    setServicesInput("");
+    setShowFormModal(true);
+  };
+
+  const openEditModal = (unit: HealthUnit) => {
+    setIsEditing(true);
+    setEditingId(unit.id);
+    setFormData({
+      name: unit.name,
+      type: unit.type,
+      address: unit.address,
+      region: unit.region,
+      town: unit.town,
+      phone: unit.phone,
+      website: unit.website ?? "",
+      openingHours: unit.openingHours,
+      rating: unit.rating,
+      services: unit.services,
+      lat: unit.lat,
+      lng: unit.lng,
+      image: unit.image,
+      description: unit.description ?? "",
+      emergency: unit.emergency ?? false,
+      insuranceAccepted: unit.insuranceAccepted ?? false,
+    });
+    setServicesInput(unit.services.join(", "));
+    setShowFormModal(true);
+  };
+
+  const handleSave = async () => {
+    if (!formData.name.trim() || !formData.address.trim() || !formData.phone.trim()) {
+      presentToast({ message: "Name, address and phone are required.", color: "warning", duration: 2500 });
+      return;
+    }
+    setIsSaving(true);
+    const services = servicesInput
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const payload = {
+      ...formData,
+      services,
+      rating: Number(formData.rating),
+      lat: Number(formData.lat),
+      lng: Number(formData.lng),
+    };
+    try {
+      if (isEditing && editingId) {
+        await updateDoc(doc(db, "healthUnits", editingId), {
+          ...payload,
+          updatedAt: serverTimestamp(),
+        });
+        presentToast({ message: "Health unit updated successfully.", color: "success", duration: 2000 });
+      } else {
+        await addDoc(collection(db, "healthUnits"), {
+          ...payload,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+        presentToast({ message: "Health unit added successfully.", color: "success", duration: 2000 });
+      }
+      setShowFormModal(false);
+    } catch (err) {
+      console.error(err);
+      presentToast({ message: "Failed to save. Please try again.", color: "danger", duration: 2500 });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, "healthUnits", id));
+      presentToast({ message: "Health unit deleted.", color: "success", duration: 2000 });
+    } catch (err) {
+      console.error(err);
+      presentToast({ message: "Failed to delete.", color: "danger", duration: 2500 });
+    }
+  };
+
+  // ─── Helpers ──────────────────────────────────────────────────────────────
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case "hospital":   return "#ff4757";
+      case "clinic":     return "#ffa502";
+      case "pharmacy":   return "#2ed573";
+      case "laboratory": return "#1e90ff";
+      default:           return "#57606f";
+    }
+  };
+
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case "hospital":   return medical;
+      case "clinic":     return pulseOutline;
+      case "pharmacy":   return heartOutline;
+      case "laboratory": return shieldCheckmarkOutline;
+      default:           return medical;
+    }
+  };
+
+  const getMarkerIcon = (type: string) => {
+    switch (type) {
+      case "hospital":   return hospitalIcon;
+      case "clinic":     return clinicIcon;
+      case "pharmacy":   return pharmacyIcon;
+      case "laboratory": return laboratoryIcon;
+      default:           return hospitalIcon;
+    }
+  };
+
+  const focusOnUnit = (unit: HealthUnit) => {
     setSelectedUnit(unit);
     setMapCenter([unit.lat, unit.lng]);
     setMapZoom(14);
+    setShowMapModal(true);
   };
 
   const clearFilters = () => {
@@ -602,73 +419,7 @@ const Health_units: React.FC = () => {
     setActiveFilter(false);
   };
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case "hospital":
-        return "#ff4757";
-      case "clinic":
-        return "#ffa502";
-      case "pharmacy":
-        return "#2ed573";
-      case "laboratory":
-        return "#1e90ff";
-      default:
-        return "#57606f";
-    }
-  };
-
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case "hospital":
-        return medical;
-      case "clinic":
-        return pulseOutline;
-      case "pharmacy":
-        return heartOutline;
-      case "laboratory":
-        return shieldCheckmarkOutline;
-      default:
-        return medical;
-    }
-  };
-
-  const getMarkerIcon = (type: string) => {
-    switch (type) {
-      case "hospital":
-        return hospitalIcon;
-      case "clinic":
-        return clinicIcon;
-      case "pharmacy":
-        return pharmacyIcon;
-      case "laboratory":
-        return laboratoryIcon;
-      default:
-        return hospitalIcon;
-    }
-  };
-
-  const toggleCardExpand = (id: string) => {
-    setExpandedCard(expandedCard === id ? null : id);
-  };
-
-  const toggleViewMode = () => {
-    setViewMode(viewMode === "list" ? "map" : "list");
-  };
-
-  const openMapModal = () => {
-    setShowMapModal(true);
-  };
-
-  const closeMapModal = () => {
-    setShowMapModal(false);
-  };
-
-  const focusOnUnit = (unit: HealthUnit) => {
-    setSelectedUnit(unit);
-    setMapCenter([unit.lat, unit.lng]);
-    setMapZoom(14);
-    setShowMapModal(true);
-  };
+  // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
     <IonPage className="health-units-page">
@@ -679,21 +430,10 @@ const Health_units: React.FC = () => {
           </IonButtons>
           <IonTitle>Health Facilities</IonTitle>
           <IonButtons slot="end">
-            <IonButton
-              onClick={toggleViewMode}
-              fill="clear"
-              className="view-toggle-button"
-            >
-              <IonIcon
-                slot="icon-only"
-                icon={viewMode === "list" ? mapOutline : listOutline}
-              />
+            <IonButton onClick={() => setViewMode(viewMode === "list" ? "map" : "list")} fill="clear">
+              <IonIcon slot="icon-only" icon={viewMode === "list" ? mapOutline : listOutline} />
             </IonButton>
-            <IonButton
-              onClick={() => setActiveFilter(!activeFilter)}
-              fill="clear"
-              className="filter-button"
-            >
+            <IonButton onClick={() => setActiveFilter(!activeFilter)} fill="clear">
               <IonIcon slot="icon-only" icon={filter} />
             </IonButton>
           </IonButtons>
@@ -701,7 +441,7 @@ const Health_units: React.FC = () => {
       </IonHeader>
 
       <IonContent fullscreen className="health-units-content">
-        {/* Search Section */}
+        {/* Search */}
         <div className="search-section">
           <IonSearchbar
             value={searchTerm}
@@ -713,7 +453,7 @@ const Health_units: React.FC = () => {
           />
         </div>
 
-        {/* Filters Section */}
+        {/* Filters */}
         <AnimatePresence>
           {activeFilter && (
             <motion.div
@@ -728,19 +468,10 @@ const Health_units: React.FC = () => {
                   <IonCol size="12" sizeMd="4">
                     <IonItem className="filter-item">
                       <IonLabel position="stacked">Region</IonLabel>
-                      <IonSelect
-                        value={selectedRegion}
-                        placeholder="All Regions"
-                        onIonChange={(e) => setSelectedRegion(e.detail.value)}
-                        interface="popover"
-                      >
+                      <IonSelect value={selectedRegion} placeholder="All Regions" onIonChange={(e) => setSelectedRegion(e.detail.value)} interface="popover">
                         <IonSelectOption value="">All Regions</IonSelectOption>
-                        {Array.from(
-                          new Set(healthUnits.map((unit) => unit.region))
-                        ).map((region) => (
-                          <IonSelectOption key={region} value={region}>
-                            {region}
-                          </IonSelectOption>
+                        {CAMEROON_REGIONS.map((r) => (
+                          <IonSelectOption key={r} value={r}>{r}</IonSelectOption>
                         ))}
                       </IonSelect>
                     </IonItem>
@@ -748,54 +479,30 @@ const Health_units: React.FC = () => {
                   <IonCol size="12" sizeMd="4">
                     <IonItem className="filter-item">
                       <IonLabel position="stacked">Town</IonLabel>
-                      <IonSelect
-                        value={selectedTown}
-                        placeholder="All Towns"
-                        onIonChange={(e) => setSelectedTown(e.detail.value)}
-                        interface="popover"
-                        disabled={!selectedRegion}
-                      >
+                      <IonSelect value={selectedTown} placeholder="All Towns" onIonChange={(e) => setSelectedTown(e.detail.value)} interface="popover" disabled={!selectedRegion}>
                         <IonSelectOption value="">All Towns</IonSelectOption>
-                        {towns.map((town) => (
-                          <IonSelectOption key={town} value={town}>
-                            {town}
-                          </IonSelectOption>
+                        {towns.map((t) => (
+                          <IonSelectOption key={t} value={t}>{t}</IonSelectOption>
                         ))}
                       </IonSelect>
                     </IonItem>
                   </IonCol>
                   <IonCol size="12" sizeMd="4">
                     <IonItem className="filter-item">
-                      <IonLabel position="stacked">Facility Type</IonLabel>
-                      <IonSelect
-                        value={selectedType}
-                        placeholder="All Types"
-                        onIonChange={(e) => setSelectedType(e.detail.value)}
-                        interface="popover"
-                      >
+                      <IonLabel position="stacked">Type</IonLabel>
+                      <IonSelect value={selectedType} placeholder="All Types" onIonChange={(e) => setSelectedType(e.detail.value)} interface="popover">
                         <IonSelectOption value="">All Types</IonSelectOption>
-                        <IonSelectOption value="hospital">
-                          Hospital
-                        </IonSelectOption>
+                        <IonSelectOption value="hospital">Hospital</IonSelectOption>
                         <IonSelectOption value="clinic">Clinic</IonSelectOption>
-                        <IonSelectOption value="pharmacy">
-                          Pharmacy
-                        </IonSelectOption>
-                        <IonSelectOption value="laboratory">
-                          Laboratory
-                        </IonSelectOption>
+                        <IonSelectOption value="pharmacy">Pharmacy</IonSelectOption>
+                        <IonSelectOption value="laboratory">Laboratory</IonSelectOption>
                       </IonSelect>
                     </IonItem>
                   </IonCol>
                 </IonRow>
                 <IonRow>
                   <IonCol>
-                    <IonButton
-                      expand="block"
-                      fill="clear"
-                      onClick={clearFilters}
-                      className="clear-filters"
-                    >
+                    <IonButton expand="block" fill="clear" onClick={clearFilters} className="clear-filters">
                       Reset Filters
                     </IonButton>
                   </IonCol>
@@ -805,134 +512,67 @@ const Health_units: React.FC = () => {
           )}
         </AnimatePresence>
 
-        {/* Map Section - Full Screen */}
+        {/* Map full view */}
         {viewMode === "map" && (
           <div className="map-section-full">
             <div className="map-container-full">
-              <MapContainer
-                center={mapCenter}
-                zoom={mapZoom}
-                className="map-full"
-                ref={mapRef}
-              >
-                <TileLayer
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                />
+              <MapContainer center={mapCenter} zoom={mapZoom} className="map-full" ref={mapRef}>
+                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap contributors' />
                 <MapUpdater center={mapCenter} zoom={mapZoom} />
                 {filteredUnits.map((unit) => (
-                  <Marker
-                    key={unit.id}
-                    position={[unit.lat, unit.lng]}
-                    eventHandlers={{
-                      click: () => handleMarkerClick(unit),
-                    }}
-                    icon={getMarkerIcon(unit.type)}
-                  >
-                    <Popup className="map-popup">
+                  <Marker key={unit.id} position={[unit.lat, unit.lng]} icon={getMarkerIcon(unit.type)} eventHandlers={{ click: () => { setSelectedUnit(unit); setMapCenter([unit.lat, unit.lng]); setMapZoom(14); } }}>
+                    <Popup>
                       <div className="popup-content">
                         <h3>{unit.name}</h3>
-                        <p>
-                          <IonIcon icon={locationOutline} /> {unit.address}
-                        </p>
-                        <p>
-                          <IonIcon icon={callOutline} /> {unit.phone}
-                        </p>
-                        <IonButton
-                          size="small"
-                          fill="solid"
-                          color="primary"
-                          onClick={() => focusOnUnit(unit)}
-                        >
-                          View Details
-                        </IonButton>
+                        <p><IonIcon icon={locationOutline} /> {unit.address}</p>
+                        <p><IonIcon icon={callOutline} /> {unit.phone}</p>
                       </div>
                     </Popup>
                   </Marker>
                 ))}
               </MapContainer>
             </div>
-
-            <IonFab
-              vertical="bottom"
-              horizontal="end"
-              slot="fixed"
-              className="map-controls"
-            >
-              <IonFabButton
-                size="small"
-                color="light"
-                onClick={() => {
-                  if (mapRef.current) {
-                    mapRef.current.setView([5.6919, 9.5481], 7);
-                  }
-                }}
-              >
+            <IonFab vertical="bottom" horizontal="end" slot="fixed" className="map-controls">
+              <IonFabButton size="small" color="light" onClick={() => mapRef.current?.setView([5.6919, 9.5481], 7)}>
                 <IonIcon icon={locateOutline} />
               </IonFabButton>
             </IonFab>
           </div>
         )}
 
-        {/* Results Summary */}
+        {/* Results summary */}
         <div className="results-summary">
           <IonChip color="primary" className="results-chip">
-            <IonLabel>
-              {filteredUnits.length}{" "}
-              {filteredUnits.length === 1 ? "Facility" : "Facilities"} Found
-            </IonLabel>
+            <IonLabel>{filteredUnits.length} {filteredUnits.length === 1 ? "Facility" : "Facilities"} Found</IonLabel>
           </IonChip>
-          {selectedRegion && (
-            <IonChip color="medium" outline className="filter-chip">
-              <IonLabel>{selectedRegion}</IonLabel>
-              <IonIcon icon={locationOutline} />
-            </IonChip>
-          )}
-          {selectedTown && (
-            <IonChip color="medium" outline className="filter-chip">
-              <IonLabel>{selectedTown}</IonLabel>
-            </IonChip>
-          )}
+          {selectedRegion && <IonChip color="medium" outline className="filter-chip"><IonLabel>{selectedRegion}</IonLabel></IonChip>}
+          {selectedTown && <IonChip color="medium" outline className="filter-chip"><IonLabel>{selectedTown}</IonLabel></IonChip>}
           {selectedType && (
-            <IonChip
-              color={getTypeColor(selectedType)}
-              outline
-              className="filter-chip"
-            >
-              <IonLabel>
-                {selectedType.charAt(0).toUpperCase() + selectedType.slice(1)}
-              </IonLabel>
-              <IonIcon icon={getTypeIcon(selectedType)} />
+            <IonChip outline className="filter-chip" style={{ "--color": getTypeColor(selectedType) } as React.CSSProperties}>
+              <IonLabel>{selectedType.charAt(0).toUpperCase() + selectedType.slice(1)}</IonLabel>
             </IonChip>
           )}
         </div>
 
-        {/* Loading State */}
+        {/* Loading */}
         {isLoading && (
           <div className="loading-container">
             <IonSpinner name="crescent" color="primary" />
-            <p>Finding health facilities near you...</p>
+            <p>Loading health facilities...</p>
           </div>
         )}
 
-        {/* No Results State */}
+        {/* Empty state */}
         <AnimatePresence>
           {!isLoading && filteredUnits.length === 0 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="no-results"
-            >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="no-results">
               <IonCard className="empty-state-card">
                 <IonCardContent>
                   <div className="empty-state-content">
                     <IonIcon icon={medical} className="empty-state-icon" />
                     <h3>No Facilities Found</h3>
-                    <p>Try adjusting your filters or search term</p>
-                    <IonButton fill="clear" onClick={clearFilters}>
-                      Clear All Filters
-                    </IonButton>
+                    <p>Add a new facility or adjust your filters.</p>
+                    <IonButton fill="clear" onClick={clearFilters}>Clear All Filters</IonButton>
                   </div>
                 </IonCardContent>
               </IonCard>
@@ -940,227 +580,159 @@ const Health_units: React.FC = () => {
           )}
         </AnimatePresence>
 
-        {/* Health Units List */}
+        {/* List view */}
         {viewMode === "list" && (
           <div className="health-units-list">
             <AnimatePresence>
-              {!isLoading &&
-                filteredUnits.map((unit) => (
-                  <motion.div
-                    key={unit.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.3 }}
-                    layout
-                  >
-                    <IonCard
-                      className={`health-unit-card ${
-                        expandedCard === unit.id ? "expanded" : ""
-                      }`}
-                    >
-                      <div
-                        className="card-image-container"
-                        style={{ backgroundImage: `url(${unit.image})` }}
-                      >
-                        <div className="card-overlay">
-                          <IonBadge
-                            className="type-badge"
-                            style={{ backgroundColor: getTypeColor(unit.type) }}
-                          >
-                            <IonIcon icon={getTypeIcon(unit.type)} />
-                            {unit.type.charAt(0).toUpperCase() +
-                              unit.type.slice(1)}
-                          </IonBadge>
-                          {unit.emergency && (
-                            <IonBadge
-                              color="danger"
-                              className="emergency-badge"
-                            >
-                              Emergency Services
-                            </IonBadge>
-                          )}
-                        </div>
+              {!isLoading && filteredUnits.map((unit) => (
+                <motion.div
+                  key={unit.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                  layout
+                >
+                  <IonCard className={`health-unit-card ${expandedCard === unit.id ? "expanded" : ""}`}>
+                    <div className="card-image-container" style={{ backgroundImage: `url(${unit.image || "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80"})` }}>
+                      <div className="card-overlay">
+                        <IonBadge className="type-badge" style={{ backgroundColor: getTypeColor(unit.type) }}>
+                          <IonIcon icon={getTypeIcon(unit.type)} />
+                          {unit.type.charAt(0).toUpperCase() + unit.type.slice(1)}
+                        </IonBadge>
+                        {unit.emergency && <IonBadge color="danger" className="emergency-badge">Emergency</IonBadge>}
+                      </div>
+                      {/* Admin action buttons overlay */}
+                      <div className="admin-card-actions">
+                        <IonButton
+                          fill="solid"
+                          color="light"
+                          size="small"
+                          onClick={(e) => { e.stopPropagation(); openEditModal(unit); }}
+                        >
+                          <IonIcon slot="icon-only" icon={create} />
+                        </IonButton>
+                        <IonButton
+                          fill="solid"
+                          color="danger"
+                          size="small"
+                          onClick={(e) => { e.stopPropagation(); setDeleteAlert({ show: true, id: unit.id, name: unit.name }); }}
+                        >
+                          <IonIcon slot="icon-only" icon={trash} />
+                        </IonButton>
+                      </div>
+                    </div>
+
+                    <IonCardHeader className="card-header">
+                      <IonCardTitle>{unit.name}</IonCardTitle>
+                      <IonCardSubtitle>
+                        <IonIcon icon={locationOutline} /> {unit.town}, {unit.region}
+                      </IonCardSubtitle>
+                      <div className="rating-container">
+                        {[...Array(5)].map((_, i) => (
+                          <IonIcon key={i} icon={star} color={i < Math.floor(unit.rating) ? "warning" : "medium"} className="rating-star" />
+                        ))}
+                        <span className="rating-text">{Number(unit.rating).toFixed(1)}</span>
+                      </div>
+                    </IonCardHeader>
+
+                    <IonCardContent className="card-content">
+                      <div className="basic-info">
+                        <IonItem lines="none" className="info-item">
+                          <IonIcon slot="start" icon={callOutline} color="primary" />
+                          <IonLabel>{unit.phone}</IonLabel>
+                        </IonItem>
+                        <IonItem lines="none" className="info-item">
+                          <IonIcon slot="start" icon={timeOutline} color="primary" />
+                          <IonLabel>{unit.openingHours}</IonLabel>
+                        </IonItem>
+                        {unit.website && (
+                          <IonItem lines="none" className="info-item">
+                            <IonIcon slot="start" icon={globeOutline} color="primary" />
+                            <IonLabel>
+                              <a href={`https://${unit.website}`} target="_blank" rel="noopener noreferrer">Visit Website</a>
+                            </IonLabel>
+                          </IonItem>
+                        )}
                       </div>
 
-                      <IonCardHeader className="card-header">
-                        <IonCardTitle>{unit.name}</IonCardTitle>
-                        <IonCardSubtitle>
-                          <IonIcon icon={locationOutline} /> {unit.town},{" "}
-                          {unit.region}
-                        </IonCardSubtitle>
-                        <div className="rating-container">
-                          {[...Array(5)].map((_, i) => (
-                            <IonIcon
-                              key={i}
-                              icon={star}
-                              color={
-                                i < Math.floor(unit.rating)
-                                  ? "warning"
-                                  : "medium"
-                              }
-                              className="rating-star"
-                            />
-                          ))}
-                          <span className="rating-text">
-                            {unit.rating.toFixed(1)}
-                          </span>
-                        </div>
-                      </IonCardHeader>
-
-                      <IonCardContent className="card-content">
-                        <div className="basic-info">
-                          <IonItem lines="none" className="info-item">
-                            <IonIcon
-                              slot="start"
-                              icon={callOutline}
-                              color="primary"
-                            />
-                            <IonLabel>{unit.phone}</IonLabel>
-                          </IonItem>
-                          <IonItem lines="none" className="info-item">
-                            <IonIcon
-                              slot="start"
-                              icon={timeOutline}
-                              color="primary"
-                            />
-                            <IonLabel>{unit.openingHours}</IonLabel>
-                          </IonItem>
-                          {unit.website && (
-                            <IonItem lines="none" className="info-item">
-                              <IonIcon
-                                slot="start"
-                                icon={globeOutline}
-                                color="primary"
-                              />
-                              <IonLabel>
-                                <a
-                                  href={`https://${unit.website}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  Visit Website
-                                </a>
-                              </IonLabel>
-                            </IonItem>
-                          )}
-                        </div>
-
-                        {expandedCard === unit.id && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: "auto" }}
-                            exit={{ opacity: 0, height: 0 }}
-                            transition={{ duration: 0.3 }}
-                            className="expanded-content"
-                          >
-                            <p className="description">{unit.description}</p>
-
-                            <div className="services-section">
-                              <h4>Services Offered</h4>
-                              <div className="services-container">
-                                {unit.services.map((service) => (
-                                  <IonChip
-                                    key={service}
-                                    outline
-                                    className="service-chip"
-                                  >
-                                    <IonLabel>{service}</IonLabel>
-                                  </IonChip>
-                                ))}
-                              </div>
-                            </div>
-
-                            <div className="facility-features">
-                              {unit.insuranceAccepted && (
-                                <IonChip color="success" outline>
-                                  <IonIcon icon={shieldCheckmarkOutline} />
-                                  <IonLabel>Insurance Accepted</IonLabel>
-                                </IonChip>
-                              )}
-                              {unit.emergency && (
-                                <IonChip color="danger" outline>
-                                  <IonIcon icon={pulseOutline} />
-                                  <IonLabel>Emergency Services</IonLabel>
-                                </IonChip>
-                              )}
-                            </div>
-
-                            <IonButton
-                              expand="block"
-                              fill="solid"
-                              color="primary"
-                              className="action-button"
-                              onClick={() => focusOnUnit(unit)}
-                            >
-                              <IonIcon slot="start" icon={navigateOutline} />
-                              View on Map
-                            </IonButton>
-                          </motion.div>
-                        )}
-
-                        <IonButton
-                          fill="clear"
-                          expand="block"
-                          className="expand-button"
-                          onClick={() => toggleCardExpand(unit.id)}
+                      {expandedCard === unit.id && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="expanded-content"
                         >
-                          <IonIcon
-                            icon={
-                              expandedCard === unit.id ? chevronUp : chevronDown
-                            }
-                            slot="end"
-                          />
-                          {expandedCard === unit.id
-                            ? "Show Less"
-                            : "More Details"}
-                        </IonButton>
-                      </IonCardContent>
-                    </IonCard>
-                  </motion.div>
-                ))}
+                          {unit.description && <p className="description">{unit.description}</p>}
+                          <div className="services-section">
+                            <h4>Services Offered</h4>
+                            <div className="services-container">
+                              {unit.services.map((service) => (
+                                <IonChip key={service} outline className="service-chip">
+                                  <IonLabel>{service}</IonLabel>
+                                </IonChip>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="facility-features">
+                            {unit.insuranceAccepted && (
+                              <IonChip color="success" outline>
+                                <IonIcon icon={shieldCheckmarkOutline} />
+                                <IonLabel>Insurance Accepted</IonLabel>
+                              </IonChip>
+                            )}
+                            {unit.emergency && (
+                              <IonChip color="danger" outline>
+                                <IonIcon icon={pulseOutline} />
+                                <IonLabel>Emergency Services</IonLabel>
+                              </IonChip>
+                            )}
+                          </div>
+                          <IonButton expand="block" fill="solid" color="primary" className="action-button" onClick={() => focusOnUnit(unit)}>
+                            <IonIcon slot="start" icon={navigateOutline} />
+                            View on Map
+                          </IonButton>
+                        </motion.div>
+                      )}
+
+                      <IonButton fill="clear" expand="block" className="expand-button" onClick={() => setExpandedCard(expandedCard === unit.id ? null : unit.id)}>
+                        <IonIcon icon={expandedCard === unit.id ? chevronUp : chevronDown} slot="end" />
+                        {expandedCard === unit.id ? "Show Less" : "More Details"}
+                      </IonButton>
+                    </IonCardContent>
+                  </IonCard>
+                </motion.div>
+              ))}
             </AnimatePresence>
           </div>
         )}
+
+        {/* FAB – Add new */}
+        <IonFab vertical="bottom" horizontal="end" slot="fixed">
+          <IonFabButton color="primary" onClick={openCreateModal}>
+            <IonIcon icon={add} />
+          </IonFabButton>
+        </IonFab>
       </IonContent>
 
-      {/* Map Modal for List View */}
-      <IonModal isOpen={showMapModal} onDidDismiss={closeMapModal}>
+      {/* ── Map Modal ─────────────────────────────────────────────────────── */}
+      <IonModal isOpen={showMapModal} onDidDismiss={() => setShowMapModal(false)}>
         <ModalHeader>
           <ModalToolbar>
             <ModalButtons slot="start">
-              <IonButton onClick={closeMapModal}>
-                <IonIcon icon={close} />
-              </IonButton>
+              <IonButton onClick={() => setShowMapModal(false)}><IonIcon icon={close} /></IonButton>
             </ModalButtons>
             <ModalTitle>Health Facility Location</ModalTitle>
           </ModalToolbar>
         </ModalHeader>
         <ModalContent>
           <div className="map-modal-container">
-            <MapContainer
-              center={
-                selectedUnit ? [selectedUnit.lat, selectedUnit.lng] : mapCenter
-              }
-              zoom={15}
-              className="map-modal"
-              ref={modalMapRef}
-            >
-              <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              />
+            <MapContainer center={selectedUnit ? [selectedUnit.lat, selectedUnit.lng] : mapCenter} zoom={15} className="map-modal" ref={modalMapRef}>
+              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap contributors' />
               {selectedUnit && (
-                <Marker
-                  position={[selectedUnit.lat, selectedUnit.lng]}
-                  icon={getMarkerIcon(selectedUnit.type)}
-                >
-                  <Popup>
-                    <div>
-                      <h3>{selectedUnit.name}</h3>
-                      <p>{selectedUnit.address}</p>
-                    </div>
-                  </Popup>
+                <Marker position={[selectedUnit.lat, selectedUnit.lng]} icon={getMarkerIcon(selectedUnit.type)}>
+                  <Popup><div><h3>{selectedUnit.name}</h3><p>{selectedUnit.address}</p></div></Popup>
                 </Marker>
               )}
             </MapContainer>
@@ -1168,17 +740,273 @@ const Health_units: React.FC = () => {
           {selectedUnit && (
             <div className="modal-unit-info">
               <h2>{selectedUnit.name}</h2>
-              <p>
-                <IonIcon icon={locationOutline} /> {selectedUnit.address},{" "}
-                {selectedUnit.town}
-              </p>
-              <p>
-                <IonIcon icon={callOutline} /> {selectedUnit.phone}
-              </p>
+              <p><IonIcon icon={locationOutline} /> {selectedUnit.address}, {selectedUnit.town}</p>
+              <p><IonIcon icon={callOutline} /> {selectedUnit.phone}</p>
             </div>
           )}
         </ModalContent>
       </IonModal>
+
+      {/* ── Create / Edit Modal ───────────────────────────────────────────── */}
+      <IonModal isOpen={showFormModal} onDidDismiss={() => setShowFormModal(false)}>
+        <ModalHeader>
+          <ModalToolbar>
+            <ModalButtons slot="start">
+              <IonButton onClick={() => setShowFormModal(false)} disabled={isSaving}>
+                <IonIcon icon={close} />
+              </IonButton>
+            </ModalButtons>
+            <ModalTitle>{isEditing ? "Edit Facility" : "Add New Facility"}</ModalTitle>
+            <ModalButtons slot="end">
+              <IonButton onClick={handleSave} disabled={isSaving} strong>
+                {isSaving ? <IonSpinner name="crescent" /> : <IonIcon icon={save} slot="start" />}
+                {isSaving ? "Saving..." : "Save"}
+              </IonButton>
+            </ModalButtons>
+          </ModalToolbar>
+        </ModalHeader>
+        <ModalContent className="ion-padding">
+          <IonGrid>
+            {/* Name */}
+            <IonRow>
+              <IonCol size="12">
+                <IonItem>
+                  <IonLabel position="stacked">Facility Name *</IonLabel>
+                  <IonInput
+                    value={formData.name}
+                    onIonChange={(e) => setFormData({ ...formData, name: e.detail.value! })}
+                    placeholder="e.g. Central Hospital Yaoundé"
+                    clearInput
+                  />
+                </IonItem>
+              </IonCol>
+            </IonRow>
+
+            {/* Type */}
+            <IonRow>
+              <IonCol size="12" sizeMd="6">
+                <IonItem>
+                  <IonLabel position="stacked">Type *</IonLabel>
+                  <IonSelect value={formData.type} onIonChange={(e) => setFormData({ ...formData, type: e.detail.value })} interface="popover">
+                    <IonSelectOption value="hospital">Hospital</IonSelectOption>
+                    <IonSelectOption value="clinic">Clinic</IonSelectOption>
+                    <IonSelectOption value="pharmacy">Pharmacy</IonSelectOption>
+                    <IonSelectOption value="laboratory">Laboratory</IonSelectOption>
+                  </IonSelect>
+                </IonItem>
+              </IonCol>
+              <IonCol size="12" sizeMd="6">
+                <IonItem>
+                  <IonLabel position="stacked">Rating (0–5)</IonLabel>
+                  <IonInput
+                    type="number"
+                    min={0}
+                    max={5}
+                    step={0.1}
+                    value={String(formData.rating)}
+                    onIonChange={(e) => setFormData({ ...formData, rating: parseFloat(e.detail.value!) || 0 })}
+                  />
+                </IonItem>
+              </IonCol>
+            </IonRow>
+
+            {/* Address */}
+            <IonRow>
+              <IonCol size="12">
+                <IonItem>
+                  <IonLabel position="stacked">Address *</IonLabel>
+                  <IonInput
+                    value={formData.address}
+                    onIonChange={(e) => setFormData({ ...formData, address: e.detail.value! })}
+                    placeholder="Street address"
+                    clearInput
+                  />
+                </IonItem>
+              </IonCol>
+            </IonRow>
+
+            {/* Region & Town */}
+            <IonRow>
+              <IonCol size="12" sizeMd="6">
+                <IonItem>
+                  <IonLabel position="stacked">Region *</IonLabel>
+                  <IonSelect value={formData.region} onIonChange={(e) => setFormData({ ...formData, region: e.detail.value })} interface="popover">
+                    <IonSelectOption value="">Select Region</IonSelectOption>
+                    {CAMEROON_REGIONS.map((r) => (
+                      <IonSelectOption key={r} value={r}>{r}</IonSelectOption>
+                    ))}
+                  </IonSelect>
+                </IonItem>
+              </IonCol>
+              <IonCol size="12" sizeMd="6">
+                <IonItem>
+                  <IonLabel position="stacked">Town *</IonLabel>
+                  <IonInput
+                    value={formData.town}
+                    onIonChange={(e) => setFormData({ ...formData, town: e.detail.value! })}
+                    placeholder="e.g. Yaoundé"
+                    clearInput
+                  />
+                </IonItem>
+              </IonCol>
+            </IonRow>
+
+            {/* Phone & Website */}
+            <IonRow>
+              <IonCol size="12" sizeMd="6">
+                <IonItem>
+                  <IonLabel position="stacked">Phone *</IonLabel>
+                  <IonInput
+                    type="tel"
+                    value={formData.phone}
+                    onIonChange={(e) => setFormData({ ...formData, phone: e.detail.value! })}
+                    placeholder="+237 222 22 33 44"
+                    clearInput
+                  />
+                </IonItem>
+              </IonCol>
+              <IonCol size="12" sizeMd="6">
+                <IonItem>
+                  <IonLabel position="stacked">Website</IonLabel>
+                  <IonInput
+                    type="url"
+                    value={formData.website}
+                    onIonChange={(e) => setFormData({ ...formData, website: e.detail.value! })}
+                    placeholder="www.example.cm"
+                    clearInput
+                  />
+                </IonItem>
+              </IonCol>
+            </IonRow>
+
+            {/* Opening Hours */}
+            <IonRow>
+              <IonCol size="12">
+                <IonItem>
+                  <IonLabel position="stacked">Opening Hours</IonLabel>
+                  <IonInput
+                    value={formData.openingHours}
+                    onIonChange={(e) => setFormData({ ...formData, openingHours: e.detail.value! })}
+                    placeholder="e.g. Mon-Fri: 8:00 AM – 6:00 PM"
+                    clearInput
+                  />
+                </IonItem>
+              </IonCol>
+            </IonRow>
+
+            {/* Services */}
+            <IonRow>
+              <IonCol size="12">
+                <IonItem>
+                  <IonLabel position="stacked">Services (comma-separated)</IonLabel>
+                  <IonInput
+                    value={servicesInput}
+                    onIonChange={(e) => setServicesInput(e.detail.value!)}
+                    placeholder="e.g. Emergency Care, Surgery, Pediatrics"
+                  />
+                </IonItem>
+              </IonCol>
+            </IonRow>
+
+            {/* Description */}
+            <IonRow>
+              <IonCol size="12">
+                <IonItem>
+                  <IonLabel position="stacked">Description</IonLabel>
+                  <IonTextarea
+                    value={formData.description}
+                    onIonChange={(e) => setFormData({ ...formData, description: e.detail.value! })}
+                    placeholder="Brief description of the facility..."
+                    rows={3}
+                    autoGrow
+                  />
+                </IonItem>
+              </IonCol>
+            </IonRow>
+
+            {/* Image URL */}
+            <IonRow>
+              <IonCol size="12">
+                <IonItem>
+                  <IonLabel position="stacked">Image URL</IonLabel>
+                  <IonInput
+                    value={formData.image}
+                    onIonChange={(e) => setFormData({ ...formData, image: e.detail.value! })}
+                    placeholder="https://..."
+                    clearInput
+                  />
+                </IonItem>
+              </IonCol>
+            </IonRow>
+
+            {/* Coordinates */}
+            <IonRow>
+              <IonCol size="6">
+                <IonItem>
+                  <IonLabel position="stacked">Latitude</IonLabel>
+                  <IonInput
+                    type="number"
+                    step={0.000001}
+                    value={String(formData.lat)}
+                    onIonChange={(e) => setFormData({ ...formData, lat: parseFloat(e.detail.value!) || 0 })}
+                  />
+                </IonItem>
+              </IonCol>
+              <IonCol size="6">
+                <IonItem>
+                  <IonLabel position="stacked">Longitude</IonLabel>
+                  <IonInput
+                    type="number"
+                    step={0.000001}
+                    value={String(formData.lng)}
+                    onIonChange={(e) => setFormData({ ...formData, lng: parseFloat(e.detail.value!) || 0 })}
+                  />
+                </IonItem>
+              </IonCol>
+            </IonRow>
+
+            {/* Toggles */}
+            <IonRow>
+              <IonCol size="6">
+                <IonItem lines="none">
+                  <IonLabel>Emergency Services</IonLabel>
+                  <IonToggle
+                    checked={formData.emergency}
+                    onIonChange={(e) => setFormData({ ...formData, emergency: e.detail.checked })}
+                    slot="end"
+                  />
+                </IonItem>
+              </IonCol>
+              <IonCol size="6">
+                <IonItem lines="none">
+                  <IonLabel>Insurance Accepted</IonLabel>
+                  <IonToggle
+                    checked={formData.insuranceAccepted}
+                    onIonChange={(e) => setFormData({ ...formData, insuranceAccepted: e.detail.checked })}
+                    slot="end"
+                  />
+                </IonItem>
+              </IonCol>
+            </IonRow>
+          </IonGrid>
+        </ModalContent>
+      </IonModal>
+
+      {/* ── Delete Confirm Alert ──────────────────────────────────────────── */}
+      <IonAlert
+        isOpen={deleteAlert.show}
+        onDidDismiss={() => setDeleteAlert({ show: false, id: "", name: "" })}
+        header="Delete Facility"
+        message={`Are you sure you want to delete "${deleteAlert.name}"? This action cannot be undone.`}
+        buttons={[
+          { text: "Cancel", role: "cancel" },
+          {
+            text: "Delete",
+            role: "destructive",
+            handler: () => handleDelete(deleteAlert.id),
+          },
+        ]}
+      />
     </IonPage>
   );
 };

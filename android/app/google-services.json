@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "770997904222",
+    "project_id": "homecare-1c228",
+    "storage_bucket": "homecare-1c228.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:770997904222:android:9112aad2350e75ffc225cf",
+        "android_client_info": {
+          "package_name": "com.ZT.HomeCre237"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "770997904222-upkuve0qgasnfham5q31rc1qoj218vuv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAaG8tqPb9pKBIS3X0uUx-BrBuyKTRdZ7Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "770997904222-upkuve0qgasnfham5q31rc1qoj218vuv.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

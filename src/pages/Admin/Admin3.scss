@@ -571,7 +571,6 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
   box-shadow: $shadow;
   margin: 0;
-  border-left: 4px solid var(--ion-color-primary);
 
   &:hover {
     transform: translateY(-4px);
@@ -744,8 +743,8 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   ion-card-content { padding: 14px; }
 }
 
-.lab-result-card { border-left: 4px solid var(--ion-color-primary); }
-.prescription-card { border-left: 4px solid var(--ion-color-success); }
+.lab-result-card { }
+.prescription-card { }
 
 .info-grid,
 .prescription-grid {

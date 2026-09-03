@@ -1,4 +1,5 @@
 // AppointmentBooking.scss
+@use '../../theme/hc-form.scss';
 ion-toolbar {
   border-bottom: 1px solid var(--ion-background-color-step-150, #d7d8da);
 }
@@ -12,7 +13,7 @@ ion-toolbar {
 .filters-container {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 12px;
   margin-bottom: 16px;
 
   .filter-item {
@@ -20,6 +21,60 @@ ion-toolbar {
     min-width: 200px;
   }
 }
+
+// ── Input field style matching Health Units ─────────────────────────────────
+// Light theme
+.filter-item,
+.form-item {
+  --border-radius: 12px;
+  --padding-start: 14px;
+  --inner-padding-end: 14px;
+  --padding-top: 8px;
+  --padding-bottom: 8px;
+  --min-height: 62px;
+  --background: var(--ion-item-background, #ffffff);
+  --border-color: #dde1f5;
+  --border-width: 1px;
+  --border-style: solid;
+  --inner-border-width: 0;
+  --highlight-color-focused: var(--ion-color-primary, #3b7dd8);
+  border-radius: 12px;
+  margin-bottom: 12px;
+
+  ion-label,
+  ion-label[position="stacked"],
+  ion-label[position="floating"] {
+    font-size: 0.78rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--ion-color-medium) !important;
+    margin-bottom: 4px;
+  }
+
+  ion-input,
+  ion-textarea,
+  ion-select {
+    font-size: 0.93rem;
+    color: var(--ion-text-color);
+  }
+}
+
+// Dark mode overrides
+@media (prefers-color-scheme: dark) {
+  .filter-item,
+  .form-item {
+    --background: var(--ion-item-background, #1a1d27);
+    --border-color: var(--ion-color-step-150, #252839);
+  }
+}
+
+body.dark .filter-item,
+body.dark .form-item {
+  --background: var(--ion-item-background, #1a1d27);
+  --border-color: var(--ion-color-step-150, #252839);
+}
+
 .booking-card {
   border: none;
   box-shadow: none;
@@ -244,11 +299,7 @@ ion-toolbar {
       color: var(--ion-color-dark);
     }
 
-    .form-item {
-      margin-bottom: 16px;
-      --padding-start: 0;
-      --inner-padding-end: 0;
-    }
+    // .form-item style comes from the shared rule above
 
     .book-btn {
       margin-top: 24px;
@@ -404,13 +455,6 @@ ion-toolbar {
   }
 }
 
-// Form items
-.form-item {
-  margin-bottom: 16px;
-  --padding-start: 0;
-  --inner-padding-end: 0;
-}
-
 // Update button in appointment cards
 .appointment-actions {
   display: flex;
@@ -531,14 +575,19 @@ ion-textarea {
 /* Unified style to match reference "Today's Appointment" visual language */
 .appointment-content {
   --background: linear-gradient(180deg, #edf0ff 0%, #f8f9ff 100%);
+  --padding-start: 0;
+  --padding-end: 0;
+  --padding-top: 0;
+  --padding-bottom: 0;
 }
 
 .appointment-segment {
-  margin: 12px 12px 10px;
+  margin: 12px 0 10px;
   padding: 4px;
-  border-radius: 16px;
+  border-radius: 0;
   background: #f1f3fd;
-  border: 1px solid #e3e8fb;
+  border-top: 1px solid #e3e8fb;
+  border-bottom: 1px solid #e3e8fb;
 }
 
 .appointment-segment-btn {
@@ -550,11 +599,10 @@ ion-textarea {
 }
 
 .todays-appointment-panel {
-  margin: 0 12px 12px;
-  border-radius: 26px;
+  margin: 0 0 12px;
+  border-radius: 0;
   background: #fefeff;
-  border: 1px solid #e3e8fb;
-  
+  border-bottom: 1px solid #e3e8fb;
   padding: 16px;
 }
 
@@ -709,14 +757,16 @@ ion-textarea {
 
 .booking-section,
 .appointments-section {
-  padding: 0 12px 12px;
+  padding: 0;
 }
 
 .booking-card {
   margin: 0;
-  border-radius: 24px;
-  border: 1px solid #e4e8fb;
-  
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  border-bottom: 1px solid #e4e8fb;
   --background: #fefeff;
 }
 
@@ -735,11 +785,56 @@ ion-textarea {
 }
 
 .filters-container .filter-item {
-  --background: #f7f8ff;
-  border: 1px solid #e6eafc;
-  border-radius: 14px;
-  --padding-start: 10px;
-  --inner-padding-end: 10px;
+  --border-radius: 12px;
+  --padding-start: 14px;
+  --inner-padding-end: 14px;
+  --padding-top: 8px;
+  --padding-bottom: 8px;
+  --min-height: 62px;
+  --background: #ffffff;
+  --border-color: #dde1f5;
+  --border-width: 1px;
+  --border-style: solid;
+  --highlight-color-focused: var(--ion-color-primary, #3b7dd8);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 12px;
+
+  ion-label {
+    font-size: 0.78rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--ion-color-medium, #92949c) !important;
+  }
+
+  ion-select,
+  ion-input {
+    font-size: 0.93rem !important;
+    color: var(--ion-text-color, #1a1a2e) !important;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .filters-container .filter-item {
+    --background: var(--ion-item-background, #1a1d27);
+    --border-color: var(--ion-color-step-150, #252839);
+
+    ion-select,
+    ion-input {
+      color: var(--ion-text-color, #e8eaf0) !important;
+    }
+  }
+}
+
+body.dark .filters-container .filter-item {
+  --background: var(--ion-item-background, #1a1d27);
+  --border-color: var(--ion-color-step-150, #252839);
+
+  ion-select,
+  ion-input {
+    color: var(--ion-text-color, #e8eaf0) !important;
+  }
 }
 
 .doctor-search {
@@ -810,14 +905,19 @@ ion-textarea {
   }
 
   .appointment-segment {
-    background: var(--background);
-    border: 1px solid #2a2f57;
+    background: var(--ion-item-background, #1a1d27);
+    border-top: 1px solid #2a2f57;
+    border-bottom: 1px solid #2a2f57;
+    border-left: none;
+    border-right: none;
   }
 
   .todays-appointment-panel {
-    background: var(--background);
-    border: 1px solid #2a2f57;
-    
+    background: var(--ion-item-background, #1a1d27);
+    border-bottom: 1px solid #2a2f57;
+    border-top: none;
+    border-left: none;
+    border-right: none;
   }
 
   .todays-headline h2 {
@@ -866,9 +966,11 @@ ion-textarea {
   }
 
   .booking-card {
-    --background: var(--background);
-    border: 1px solid #2a2f57;
-    
+    --background: var(--ion-item-background, #1a1d27);
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    border-bottom: 1px solid #2a2f57;
   }
 
   .booking-card ion-card-title {
@@ -907,6 +1009,72 @@ ion-textarea {
   .appointment-card {
     border: 1px solid #2a2f57;
     
+  }
+
+  .appointment-card .appointment-header {
+    border-bottom: 1px dashed #2a2f57;
+  }
+}
+
+// body.dark mirror (for in-app dark toggle)
+body.dark {
+  .appointment-content {
+    --background: var(--ion-background-color, #0f1117);
+  }
+
+  .appointment-segment {
+    background: var(--ion-item-background, #1a1d27);
+    border-top: 1px solid #2a2f57;
+    border-bottom: 1px solid #2a2f57;
+    border-left: none;
+    border-right: none;
+  }
+
+  .todays-appointment-panel {
+    background: var(--ion-item-background, #1a1d27);
+    border-bottom: 1px solid #2a2f57;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+  }
+
+  .booking-card {
+    --background: var(--ion-item-background, #1a1d27);
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    border-bottom: 1px solid #2a2f57;
+  }
+
+  .booking-card ion-card-title { color: #eef0ff; }
+  .booking-card ion-card-subtitle { color: #aab0cb; }
+
+  .todays-headline h2 { color: #aeb5ff; }
+  .todays-headline p  { color: #b5bbd6; }
+
+  .date-pill {
+    background: #202448;
+    border: 1px solid #2a2f57;
+  }
+
+  .todays-chip {
+    background: #202448;
+    color: #c3c9e8;
+    border: 1px solid #2a2f57;
+  }
+
+  .todays-item {
+    background: #1e2241;
+    border: 1px solid #2a2f57;
+  }
+
+  .todays-item-meta h4 { color: #eef0ff; }
+  .todays-item-meta p  { color: #b1b7d3; }
+  .todays-empty        { color: #b0b6d6; }
+
+  .doctor-card,
+  .appointment-card {
+    border: 1px solid #2a2f57;
   }
 
   .appointment-card .appointment-header {
@@ -1020,4 +1188,21 @@ body.dark .appt-seg-btn {
   background: var(--ion-item-background, #1e2030);
   color: var(--ion-color-medium);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.rated-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ion-color-warning-shade);
+  background: rgba(var(--ion-color-warning-rgb), 0.12);
+  border-radius: 20px;
+  padding: 4px 10px;
+  white-space: nowrap;
+
+  ion-icon {
+    font-size: 13px;
+  }
 }

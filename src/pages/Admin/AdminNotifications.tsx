@@ -16,6 +16,7 @@ import {
 import { db } from "../../firebaseconfig";
 import { useNotifications } from "../../context/NotificationContext";
 import "../Patient/NotificationPage.scss";
+import "../../theme/hc-form.scss";
 
 const AdminNotifications: React.FC = () => {
   const { notifications, unreadCount, markAsRead, clearAll } = useNotifications();
@@ -170,18 +171,19 @@ const AdminNotifications: React.FC = () => {
               ))}
             </div>
 
-            <IonItem className="form-item" style={{ marginBottom: 14 }}>
-              <IonLabel position="floating">Title*</IonLabel>
-              <IonInput value={title} onIonInput={(e) => setTitle(e.detail.value!)} />
+            <IonItem className="hc-form-item">
+              <IonLabel position="stacked">Title *</IonLabel>
+              <IonInput value={title} onIonInput={(e) => setTitle(e.detail.value!)} placeholder="Notification title" />
             </IonItem>
 
-            <IonItem className="form-item" style={{ marginBottom: 20 }}>
-              <IonLabel position="floating">Message*</IonLabel>
+            <IonItem className="hc-form-item">
+              <IonLabel position="stacked">Message *</IonLabel>
               <IonTextarea
                 value={body}
                 onIonInput={(e) => setBody(e.detail.value!)}
                 rows={4}
                 autoGrow
+                placeholder="Write your message here…"
               />
             </IonItem>
 

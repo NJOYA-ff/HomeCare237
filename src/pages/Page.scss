@@ -9,7 +9,10 @@
   display: none !important;
 }
 
-ion-content {
+/* Restrict overflow only on auth/form pages that use fixed-position containers */
+.signup-content,
+.signin-content,
+.recovery-content {
   overflow-y: hidden !important;
   overflow-x: hidden !important;
 }
@@ -658,5 +661,68 @@ ion-content {
 
   .signup-button2 {
     font-size: 0.85rem;
+  }
+}
+
+/* ── Google Sign-In ───────────────────────────────────────── */
+.or-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0;
+
+  &::before,
+  &::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--ion-color-step-200, #d8d8d8);
+  }
+
+  span {
+    font-size: 12px;
+    color: var(--ion-color-medium);
+    white-space: nowrap;
+  }
+}
+
+.google-signin-btn {
+  --background: #fff;
+  --background-hover: #f5f5f5;
+  --color: #3c4043;
+  --border-radius: 12px;
+  --border-color: #dadce0;
+  --border-style: solid;
+  --border-width: 1px;
+  --box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  height: 44px;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+  margin: 0;
+}
+
+.google-icon {
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+body.dark {
+  .google-signin-btn {
+    --background: #2d2d2d;
+    --background-hover: #3a3a3a;
+    --color: #e8eaed;
+    --border-color: #5f6368;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .google-signin-btn {
+    --background: #2d2d2d;
+    --background-hover: #3a3a3a;
+    --color: #e8eaed;
+    --border-color: #5f6368;
   }
 }

@@ -579,7 +579,6 @@ const Admin_patient: React.FC = () => {
                     <IonItem
                       className={`patient-item ${patient.status}`}
                       lines="none"
-                      style={{ borderLeft: `4px solid ${patient.status === "active" ? "var(--ion-color-success)" : "var(--ion-color-medium)"}` }}
                     >
                       {/* Avatar with status dot */}
                       <div slot="start" className="p-avatar">

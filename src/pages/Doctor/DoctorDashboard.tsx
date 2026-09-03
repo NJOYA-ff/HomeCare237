@@ -70,6 +70,7 @@ import { onAuthStateChanged, User } from "firebase/auth";
 import { AnimatePresence, motion, Variants } from "framer-motion";
 import { FiMenu } from "react-icons/fi";
 import { useNotifications } from "../../context/NotificationContext";
+import { useSettings } from "../../context/SettingsContext";
 
 // Updated Types to match your appointments data structure
 interface Appointment {
@@ -222,6 +223,7 @@ const listItemVariants: CustomVariants = {
 };
 
 const DoctorDashboard: React.FC = () => {
+  const { t } = useSettings();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [doctorProfile, setDoctorProfile] = useState<DoctorProfile | null>(
     null,
@@ -656,9 +658,9 @@ const DoctorDashboard: React.FC = () => {
 
   const getGreeting = (): string => {
     const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 18) return "Good afternoon";
-    return "Good evening";
+    if (hour < 12) return t("goodMorning");
+    if (hour < 18) return t("goodAfternoon");
+    return t("goodEvening");
   };
 
   // FIXED: Better date comparison for appointments
@@ -761,9 +763,9 @@ const DoctorDashboard: React.FC = () => {
         <IonRefresher slot="fixed" onIonRefresh={doRefresh}>
           <IonRefresherContent
             pullingIcon={arrowDownCircle}
-            pullingText="Pull to refresh"
+            pullingText={t("pullToRefresh")}
             refreshingSpinner="circles"
-            refreshingText="Refreshing..."
+            refreshingText={t("refreshing")}
           ></IonRefresherContent>
         </IonRefresher>
 
@@ -775,7 +777,7 @@ const DoctorDashboard: React.FC = () => {
               className="loading-spinner"
             />
             <IonText className="ion-text-center ion-padding">
-              <p>Loading your dashboard...</p>
+              <p>{t("loadingDashboard")}</p>
             </IonText>
           </div>
         ) : (
@@ -788,8 +790,8 @@ const DoctorDashboard: React.FC = () => {
                   {doctorProfile ? `Dr. ${doctorProfile.name}` : "Doctor"}
                 </h1>
                 <p>
-                  Here's your schedule for{" "}
-                  {segment === "today" ? "today" : "upcoming days"}
+                  Here&apos;s your schedule for{" "}
+                  {segment === "today" ? t("todayAppointments").toLowerCase() : t("upcomingAppointments").toLowerCase()}
                 </p>
               </IonText>
             </div>
@@ -809,7 +811,7 @@ const DoctorDashboard: React.FC = () => {
                         <IonIcon icon={calendar} color="primary" />
                       </div>
                       <IonCardTitle>{stats.totalAppointments}</IonCardTitle>
-                      <IonNote>Appointments</IonNote>
+                      <IonNote>{t("appointments")}</IonNote>
                     </IonCardContent>
                   </IonCard>
                 </IonCol>
@@ -826,7 +828,7 @@ const DoctorDashboard: React.FC = () => {
                         <IonIcon icon={person} color="secondary" />
                       </div>
                       <IonCardTitle>{stats.totalPatients}</IonCardTitle>
-                      <IonNote>Patients</IonNote>
+                      <IonNote>{t("patients")}</IonNote>
                     </IonCardContent>
                   </IonCard>
                 </IonCol>
@@ -842,7 +844,7 @@ const DoctorDashboard: React.FC = () => {
                         <IonIcon icon={GroupAddIcon} color="success" />
                       </div>
                       <IonCardTitle>{receivedReferrals.length}</IonCardTitle>
-                      <IonNote>Referrals</IonNote>
+                      <IonNote>{t("referPatients")}</IonNote>
                     </IonCardContent>
                   </IonCard>
                 </IonCol>
@@ -858,7 +860,7 @@ const DoctorDashboard: React.FC = () => {
                         <IonIcon icon={star} color="warning" />
                       </div>
                       <IonCardTitle>{stats.rating}/5</IonCardTitle>
-                      <IonNote>Rating</IonNote>
+                      <IonNote>{t("profile")}</IonNote>
                     </IonCardContent>
                   </IonCard>
                 </IonCol>
@@ -869,20 +871,20 @@ const DoctorDashboard: React.FC = () => {
             <div className="appointments-section ion-padding">
               <div className="section-header">
                 <IonText color="dark">
-                  <h2>Appointments</h2>
+                  <h2>{t("appointments")}</h2>
                   <p className="appointment-count">
                     {getDayAppointments().length}{" "}
-                    {segment === "today" ? "today" : "upcoming"}
+                    {segment === "today" ? t("todayAppointments").toLowerCase() : t("upcomingAppointments").toLowerCase()}
                   </p>
                 </IonText>
 
                 <div className="controls-container">
                   <IonSegment value={segment} onIonChange={handleSegmentChange}>
                     <IonSegmentButton value="today">
-                      <IonLabel>Today</IonLabel>
+                      <IonLabel>{t("todayAppointments")}</IonLabel>
                     </IonSegmentButton>
                     <IonSegmentButton value="upcoming">
-                      <IonLabel>Upcoming</IonLabel>
+                      <IonLabel>{t("upcomingAppointments")}</IonLabel>
                     </IonSegmentButton>
                   </IonSegment>
                 </div>
@@ -912,16 +914,16 @@ const DoctorDashboard: React.FC = () => {
                         onIonChange={handleStatusFilterChange}
                       >
                         <IonSegmentButton value="all">
-                          <IonLabel>All</IonLabel>
+                          <IonLabel>{t("allStatuses")}</IonLabel>
                         </IonSegmentButton>
                         <IonSegmentButton value="confirmed">
-                          <IonLabel>Confirmed</IonLabel>
+                          <IonLabel>{t("confirmed")}</IonLabel>
                         </IonSegmentButton>
                         <IonSegmentButton value="pending">
-                          <IonLabel>Pending</IonLabel>
+                          <IonLabel>{t("pending")}</IonLabel>
                         </IonSegmentButton>
                         <IonSegmentButton value="completed">
-                          <IonLabel>Completed</IonLabel>
+                          <IonLabel>{t("completed")}</IonLabel>
                         </IonSegmentButton>
                       </IonSegment>
                     </motion.div>
@@ -993,7 +995,7 @@ const DoctorDashboard: React.FC = () => {
                 <div className="empty-state">
                   <IonIcon icon={calendar} color="medium" />
                   <IonText color="medium">
-                    <p>No {segment} appointments found</p>
+                    <p>{segment === "today" ? t("noAppointmentsToday") : t("noUpcomingAppts")}</p>
                   </IonText>
                   <IonButton
                     fill="clear"
@@ -1003,7 +1005,7 @@ const DoctorDashboard: React.FC = () => {
                       setSearchText("");
                     }}
                   >
-                    Clear filters
+                    {t("refresh")}
                   </IonButton>
                 </div>
               )}
@@ -1018,9 +1020,9 @@ const DoctorDashboard: React.FC = () => {
             >
               <IonCard className="activity-card">
                 <IonCardHeader>
-                  <IonCardTitle>Recent Patients</IonCardTitle>
+                  <IonCardTitle>{t("myPatients")}</IonCardTitle>
                   <IonCardSubtitle>
-                    {recentPatients.length} patients
+                    {recentPatients.length} {t("patients")}
                   </IonCardSubtitle>
                 </IonCardHeader>
                 <IonCardContent>
@@ -1059,7 +1061,7 @@ const DoctorDashboard: React.FC = () => {
                     <div className="empty-state ion-text-center ion-padding">
                       <IonIcon icon={person} color="medium" size="large" />
                       <IonText color="medium">
-                        <p>No recent patients found</p>
+                        <p>{t("noData")}</p>
                       </IonText>
                     </div>
                   )}
@@ -1073,7 +1075,7 @@ const DoctorDashboard: React.FC = () => {
         <IonModal isOpen={showModal} onDidDismiss={() => setShowModal(false)}>
           <IonHeader>
             <IonToolbar>
-              <IonTitle>Appointment Details</IonTitle>
+              <IonTitle>{t("viewDetails")}</IonTitle>
               <IonButtons slot="end">
                 <IonButton onClick={() => setShowModal(false)}>
                   <IonIcon icon={close} />
@@ -1109,14 +1111,14 @@ const DoctorDashboard: React.FC = () => {
                   <IonItem>
                     <IonIcon icon={time} slot="start" color="primary" />
                     <IonLabel>
-                      <p>Time</p>
+                      <p>{t("tabAppt")}</p>
                       <h3>{selectedAppointment.time}</h3>
                     </IonLabel>
                   </IonItem>
                   <IonItem>
                     <IonIcon icon={calendar} slot="start" color="primary" />
                     <IonLabel>
-                      <p>Date</p>
+                      <p>{t("appointments")}</p>
                       <h3>{formatDisplayDate(selectedAppointment.date)}</h3>
                     </IonLabel>
                   </IonItem>
@@ -1124,7 +1126,7 @@ const DoctorDashboard: React.FC = () => {
                     <IonItem>
                       <IonIcon icon={location} slot="start" color="primary" />
                       <IonLabel>
-                        <p>Location</p>
+                        <p>{t("healthUnits")}</p>
                         <h3>{selectedAppointment.address}</h3>
                       </IonLabel>
                     </IonItem>
@@ -1132,10 +1134,10 @@ const DoctorDashboard: React.FC = () => {
                   <IonItem>
                     <IonIcon icon={videocam} slot="start" color="primary" />
                     <IonLabel>
-                      <p>Type</p>
+                      <p>{t("consult")}</p>
                       <h3>
                         {selectedAppointment.type === "virtual"
-                          ? "Virtual Consultation"
+                          ? t("virtualConsultation")
                           : "In-Person Visit"}
                       </h3>
                     </IonLabel>
@@ -1144,7 +1146,7 @@ const DoctorDashboard: React.FC = () => {
                     <IonItem>
                       <IonIcon icon={medical} slot="start" color="primary" />
                       <IonLabel>
-                        <p>Service</p>
+                        <p>{t("diagnoses")}</p>
                         <h3>{selectedAppointment.service}</h3>
                       </IonLabel>
                     </IonItem>
@@ -1153,7 +1155,7 @@ const DoctorDashboard: React.FC = () => {
                     <IonItem>
                       <IonIcon icon={documents} slot="start" color="primary" />
                       <IonLabel>
-                        <p>Symptoms</p>
+                        <p>{t("diagnoses")}</p>
                         <h3>{selectedAppointment.symptoms}</h3>
                       </IonLabel>
                     </IonItem>
@@ -1180,7 +1182,7 @@ const DoctorDashboard: React.FC = () => {
                           )
                         }
                       >
-                        Confirm Appointment
+                        {t("confirmed")}
                       </IonButton>
                       <IonButton
                         expand="block"
@@ -1193,7 +1195,7 @@ const DoctorDashboard: React.FC = () => {
                           )
                         }
                       >
-                        Cancel Appointment
+                        {t("cancelAppointment")}
                       </IonButton>
                     </>
                   )}
@@ -1209,21 +1211,21 @@ const DoctorDashboard: React.FC = () => {
                         )
                       }
                     >
-                      Mark as Completed
+                      {t("completed")}
                     </IonButton>
                   )}
                   <IonButton expand="block" color="primary">
                     <IonIcon icon={call} slot="start" />
-                    Call Patient
+                    {t("consult")}
                   </IonButton>
                   <IonButton expand="block" color="secondary" fill="outline">
                     <IonIcon icon={chatbubbleEllipses} slot="start" />
-                    Send Message
+                    {t("smsPatient")}
                   </IonButton>
                   {selectedAppointment.type === "virtual" && (
                     <IonButton expand="block" color="tertiary">
                       <IonIcon icon={videocam} slot="start" />
-                      Start Video Call
+                      {t("virtualConsultation")}
                     </IonButton>
                   )}
                 </div>

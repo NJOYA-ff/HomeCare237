@@ -1,9 +1,133 @@
 /* QuickSignIn.css
    Styles for the PIN/biometric quick sign-in widget shown on signin pages.
    The PIN keypad is rendered as a modal bottom-sheet overlay via a React portal.
+
+   Theme support:
+   - Light mode:  clean card-style look on a light background
+   - Dark mode:   glass/frosted look on the deep-blue gradient background
+   Both @media (prefers-color-scheme: dark) and body.dark are covered.
 */
 
-/* ── Wrapper (inline section — button + divider only) ────────────────────── */
+/* ── Component-level CSS variables (light defaults) ─────────────────────── */
+.quick-signin-wrapper,
+.qs-modal-backdrop {
+  --qs-divider-color:     rgba(0, 0, 0, 0.18);
+  --qs-divider-text:      rgba(0, 0, 0, 0.45);
+
+  --qs-btn-bg:            rgba(59, 125, 216, 0.08);
+  --qs-btn-bg-hover:      rgba(59, 125, 216, 0.15);
+  --qs-btn-border:        rgba(59, 125, 216, 0.35);
+  --qs-btn-border-hover:  rgba(59, 125, 216, 0.55);
+  --qs-btn-color:         #1a2a4a;
+  --qs-btn-sub-color:     rgba(26, 42, 74, 0.55);
+  --qs-icon-color:        #3b7dd8;
+
+  --qs-switch-color:      rgba(26, 42, 74, 0.5);
+  --qs-switch-hover:      #1a2a4a;
+
+  --qs-cancel-color:      rgba(26, 42, 74, 0.45);
+  --qs-cancel-hover-bg:   rgba(26, 42, 74, 0.07);
+  --qs-cancel-hover-color:#1a2a4a;
+
+  --qs-loading-color:     rgba(26, 42, 74, 0.8);
+
+  --qs-pin-label-color:   #1a2a4a;
+  --qs-pin-user-color:    rgba(26, 42, 74, 0.5);
+
+  --qs-dot-border:        rgba(26, 42, 74, 0.35);
+  --qs-dot-filled-bg:     #3b7dd8;
+  --qs-dot-filled-border: #3b7dd8;
+
+  --qs-key-bg:            rgba(26, 42, 74, 0.06);
+  --qs-key-bg-active:     rgba(26, 42, 74, 0.14);
+  --qs-key-border:        rgba(26, 42, 74, 0.15);
+  --qs-key-color:         #1a2a4a;
+
+  --qs-backdrop-bg:       rgba(244, 245, 248, 0.97);
+}
+
+/* ── Dark mode variable overrides ────────────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  .quick-signin-wrapper,
+  .qs-modal-backdrop {
+    --qs-divider-color:     rgba(255, 255, 255, 0.2);
+    --qs-divider-text:      rgba(255, 255, 255, 0.45);
+
+    --qs-btn-bg:            rgba(255, 255, 255, 0.08);
+    --qs-btn-bg-hover:      rgba(255, 255, 255, 0.14);
+    --qs-btn-border:        rgba(255, 255, 255, 0.18);
+    --qs-btn-border-hover:  rgba(255, 255, 255, 0.3);
+    --qs-btn-color:         #fff;
+    --qs-btn-sub-color:     rgba(255, 255, 255, 0.6);
+    --qs-icon-color:        rgba(255, 255, 255, 0.9);
+
+    --qs-switch-color:      rgba(255, 255, 255, 0.6);
+    --qs-switch-hover:      rgba(255, 255, 255, 0.9);
+
+    --qs-cancel-color:      rgba(255, 255, 255, 0.55);
+    --qs-cancel-hover-bg:   rgba(255, 255, 255, 0.08);
+    --qs-cancel-hover-color:rgba(255, 255, 255, 0.85);
+
+    --qs-loading-color:     rgba(255, 255, 255, 0.85);
+
+    --qs-pin-label-color:   #fff;
+    --qs-pin-user-color:    rgba(255, 255, 255, 0.55);
+
+    --qs-dot-border:        rgba(255, 255, 255, 0.45);
+    --qs-dot-filled-bg:     #fff;
+    --qs-dot-filled-border: #fff;
+
+    --qs-key-bg:            rgba(255, 255, 255, 0.1);
+    --qs-key-bg-active:     rgba(255, 255, 255, 0.22);
+    --qs-key-border:        rgba(255, 255, 255, 0.15);
+    --qs-key-color:         #fff;
+
+    --qs-backdrop-bg:       linear-gradient(160deg, #1a2a4a 0%, #0d1b35 100%);
+  }
+}
+
+body.dark .quick-signin-wrapper,
+body.dark .qs-modal-backdrop {
+  --qs-divider-color:     rgba(255, 255, 255, 0.2);
+  --qs-divider-text:      rgba(255, 255, 255, 0.45);
+
+  --qs-btn-bg:            rgba(255, 255, 255, 0.08);
+  --qs-btn-bg-hover:      rgba(255, 255, 255, 0.14);
+  --qs-btn-border:        rgba(255, 255, 255, 0.18);
+  --qs-btn-border-hover:  rgba(255, 255, 255, 0.3);
+  --qs-btn-color:         #fff;
+  --qs-btn-sub-color:     rgba(255, 255, 255, 0.6);
+  --qs-icon-color:        rgba(255, 255, 255, 0.9);
+
+  --qs-switch-color:      rgba(255, 255, 255, 0.6);
+  --qs-switch-hover:      rgba(255, 255, 255, 0.9);
+
+  --qs-cancel-color:      rgba(255, 255, 255, 0.55);
+  --qs-cancel-hover-bg:   rgba(255, 255, 255, 0.08);
+  --qs-cancel-hover-color:rgba(255, 255, 255, 0.85);
+
+  --qs-loading-color:     rgba(255, 255, 255, 0.85);
+
+  --qs-pin-label-color:   #fff;
+  --qs-pin-user-color:    rgba(255, 255, 255, 0.55);
+
+  --qs-dot-border:        rgba(255, 255, 255, 0.45);
+  --qs-dot-filled-bg:     #fff;
+  --qs-dot-filled-border: #fff;
+
+  --qs-key-bg:            rgba(255, 255, 255, 0.1);
+  --qs-key-bg-active:     rgba(255, 255, 255, 0.22);
+  --qs-key-border:        rgba(255, 255, 255, 0.15);
+  --qs-key-color:         #fff;
+
+  --qs-backdrop-bg:       linear-gradient(160deg, #1a2a4a 0%, #0d1b35 100%);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   INLINE SECTION  —  wrapper, divider, button
+══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Wrapper ──────────────────────────────────────────────────────────────── */
 .quick-signin-wrapper {
   width: 100%;
   margin-top: 8px;
@@ -15,7 +139,7 @@
   align-items: center;
   gap: 10px;
   margin: 16px 0 12px;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--qs-divider-text);
   font-size: 12px;
   letter-spacing: 0.04em;
 }
@@ -25,7 +149,7 @@
   content: "";
   flex: 1;
   height: 1px;
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--qs-divider-color);
 }
 
 /* ── Main quick-sign-in button ────────────────────────────────────────────── */
@@ -35,26 +159,26 @@
   gap: 14px;
   width: 100%;
   padding: 14px 18px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid var(--qs-btn-border);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--qs-btn-bg);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   cursor: pointer;
   transition: background 0.2s, border-color 0.2s;
-  color: #fff;
+  color: var(--qs-btn-color);
   text-align: left;
 }
 
 .qs-button:hover {
-  background: rgba(255, 255, 255, 0.14);
-  border-color: rgba(255, 255, 255, 0.3);
+  background: var(--qs-btn-bg-hover);
+  border-color: var(--qs-btn-border-hover);
 }
 
 .qs-icon {
   font-size: 28px;
   flex-shrink: 0;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--qs-icon-color);
 }
 
 .qs-button-text {
@@ -66,12 +190,12 @@
 .qs-button-title {
   font-size: 15px;
   font-weight: 600;
-  color: #fff;
+  color: var(--qs-btn-color);
 }
 
 .qs-button-sub {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--qs-btn-sub-color);
 }
 
 /* ── Switch / cancel links ────────────────────────────────────────────────── */
@@ -80,7 +204,7 @@
   margin: 10px auto 0;
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--qs-switch-color);
   font-size: 13px;
   cursor: pointer;
   text-decoration: underline;
@@ -88,7 +212,7 @@
 }
 
 .qs-switch-btn:hover {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--qs-switch-hover);
 }
 
 .qs-cancel-btn {
@@ -99,7 +223,7 @@
   margin: 6px auto 0;
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--qs-cancel-color);
   font-size: 14px;
   cursor: pointer;
   padding: 8px 16px;
@@ -108,8 +232,63 @@
 }
 
 .qs-cancel-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.85);
+  background: var(--qs-cancel-hover-bg);
+  color: var(--qs-cancel-hover-color);
+}
+
+/* ── Modal placeholder (keeps layout stable while modal is open) ─────────── */
+.qs-modal-placeholder {
+  height: 52px; /* same height as the button so page doesn't jump */
+}
+
+/* ── Error (inline, biometric errors only) ────────────────────────────────── */
+.qs-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0 0 12px;
+  color: #ff6b6b;
+  font-size: 13px;
+  text-align: center;
+}
+
+.qs-error ion-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   MODAL OVERLAY  —  rendered via React portal into document.body
+   so it always sits above IonContent scroll containers and other stacking
+   contexts.
+══════════════════════════════════════════════════════════════════════════════ */
+
+.qs-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: var(--qs-backdrop-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+}
+
+/* Full-page sheet */
+.qs-modal-sheet {
+  width: 100%;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px 48px;
+}
+
+/* Hide the drag handle on full-page modal */
+.qs-sheet-handle {
+  display: none;
 }
 
 /* ── Loading (inside modal sheet) ─────────────────────────────────────────── */
@@ -119,7 +298,7 @@
   justify-content: center;
   gap: 12px;
   padding: 40px 0;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--qs-loading-color);
   font-size: 16px;
 }
 
@@ -134,14 +313,14 @@
 .qs-pin-label {
   font-size: 18px;
   font-weight: 600;
-  color: #fff;
+  color: var(--qs-pin-label-color);
   margin: 0 0 4px;
   text-align: center;
 }
 
 .qs-pin-user {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--qs-pin-user-color);
   margin: 0 0 20px;
   text-align: center;
 }
@@ -175,14 +354,14 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.45);
+  border: 2px solid var(--qs-dot-border);
   background: transparent;
   transition: background 0.15s, border-color 0.15s;
 }
 
 .qs-pin-dot.filled {
-  background: #fff;
-  border-color: #fff;
+  background: var(--qs-dot-filled-bg);
+  border-color: var(--qs-dot-filled-border);
 }
 
 /* Keypad */
@@ -204,9 +383,9 @@
   flex: 1;
   height: 60px;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  border: 1px solid var(--qs-key-border);
+  background: var(--qs-key-bg);
+  color: var(--qs-key-color);
   font-size: 22px;
   font-weight: 500;
   cursor: pointer;
@@ -215,7 +394,7 @@
 }
 
 .qs-key:active:not(:disabled) {
-  background: rgba(255, 255, 255, 0.22);
+  background: var(--qs-key-bg-active);
   transform: scale(0.93);
 }
 
@@ -229,59 +408,4 @@
 .qs-key:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-/* ── Error ────────────────────────────────────────────────────────────────── */
-.qs-error {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  margin: 0 0 12px;
-  color: #ff6b6b;
-  font-size: 13px;
-  text-align: center;
-}
-
-.qs-error ion-icon {
-  font-size: 16px;
-  flex-shrink: 0;
-}
-
-/* ── Modal placeholder (keeps layout stable while modal is open) ─────────── */
-.qs-modal-placeholder {
-  height: 52px; /* same height as the button so page doesn't jump */
-}
-
-/* ══════════════════════════════════════════════════════════════════════════════
-   MODAL OVERLAY  —  rendered via React portal into document.body
-   so it always sits above IonContent scroll containers and other stacking
-   contexts.
-══════════════════════════════════════════════════════════════════════════════ */
-
-.qs-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 99999;
-  background: linear-gradient(160deg, #1a2a4a 0%, #0d1b35 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow-y: auto;
-}
-
-/* Full-page sheet */
-.qs-modal-sheet {
-  width: 100%;
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 48px 24px 48px;
-}
-
-/* Hide the drag handle on full-page modal */
-.qs-sheet-handle {
-  display: none;
 }

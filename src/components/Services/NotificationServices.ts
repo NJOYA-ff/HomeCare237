@@ -131,6 +131,9 @@ class NotificationService {
   async scheduleLocalNotification(
     notification: NotificationPayload
   ): Promise<void> {
+    // Respect the user's notifications toggle
+    if (localStorage.getItem("hc_notifications") === "false") return;
+
     try {
       // Request permission for local notifications
       const permission = await LocalNotifications.requestPermissions();
@@ -140,6 +143,9 @@ class NotificationService {
         return;
       }
 
+      // Respect the user's sound toggle
+      const soundEnabled = localStorage.getItem("hc_sound") !== "false";
+
       const options: ScheduleOptions = {
         notifications: [
           {
@@ -147,8 +153,8 @@ class NotificationService {
             title: notification.title,
             body: notification.body,
             extra: notification.data || {},
-            schedule: { at: new Date(Date.now() + 1000) }, // Schedule for 1 second later
-            sound: "beep.wav",
+            schedule: { at: new Date(Date.now() + 1000) },
+            sound: soundEnabled ? "beep.wav" : undefined,
             attachments: undefined,
             actionTypeId: "",
           },

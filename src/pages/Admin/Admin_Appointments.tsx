@@ -336,8 +336,7 @@ const Admin_Appointments: React.FC = () => {
                   exit={{ opacity: 0, x: -80 }}
                   transition={{ duration: 0.25 }}
                 >
-                  <IonItem className="appointment-item" lines="none"
-                    style={{ borderLeft: `4px solid var(--ion-color-${getStatusColor(appointment.status)})` }}>
+                  <IonItem className="appointment-item" lines="none">
                     <div slot="start" style={{
                       width: 44, height: 44, borderRadius: "50%", flexShrink: 0,
                       background: `var(--ion-color-${getStatusColor(appointment.status)})`,

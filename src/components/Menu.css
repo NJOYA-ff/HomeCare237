@@ -1,11 +1,14 @@
 /* ===== SIDE MENU ===== */
 ion-menu ion-content {
   --background: var(--ion-item-background, #fff);
-  --padding-bottom: env(safe-area-inset-bottom);
+  --padding-top: env(safe-area-inset-top, 0px);
+  --padding-bottom: env(safe-area-inset-bottom, 0px);
+  --padding-start: 0;
+  --padding-end: 0;
 }
 
 ion-menu ion-list {
-  padding: 12px 0;
+  padding: calc(12px + env(safe-area-inset-top, 0px)) 0 calc(12px + env(safe-area-inset-bottom, 0px));
   background: transparent;
 }
 

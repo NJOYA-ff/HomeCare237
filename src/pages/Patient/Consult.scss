@@ -97,6 +97,7 @@
 // ── Doctor list (WhatsApp contact style) ──────────────────────
 .wa-doctor-list {
   background: var(--ion-background-color);
+  padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
 }
 
 .wa-doctor-item {

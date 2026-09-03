@@ -35,6 +35,7 @@ import {
   IonFooter,
 } from "@ionic/react";
 import { useNotifications } from "../../context/NotificationContext";
+import { useChatContext } from "../../context/ChatContext";
 import { db, auth, storage } from "../../firebaseconfig";
 import {
   attach,
@@ -198,6 +199,7 @@ const Consult: React.FC = () => {
   const [contactName, setContactName] = useState("John Doe");
 
   const { sendLocalNotification } = useNotifications();
+  const { setChatOpen } = useChatContext();
   const [fileToUpload, setFileToUpload] = useState<{
     file: File | null;
     type: "image" | "document";
@@ -512,6 +514,7 @@ const Consult: React.FC = () => {
       stopRecordingWithoutSend();
     }
     pauseAllAudio();
+    setChatOpen(false);
   });
 
   useEffect(() => {
@@ -592,6 +595,7 @@ const Consult: React.FC = () => {
     if (existingChat) {
       setSelectedChat(existingChat);
       setSelectedDoctor(doctor);
+      setChatOpen(true);
     } else {
       // Create new chat session
       try {
@@ -614,6 +618,7 @@ const Consult: React.FC = () => {
 
         setSelectedChat(newChat);
         setSelectedDoctor(doctor);
+        setChatOpen(true);
 
         // Add welcome message
         await addDoc(collection(db, "chats", docRef.id, "messages"), {
@@ -1131,6 +1136,7 @@ const Consult: React.FC = () => {
     setAttachments([]);
     setNewMessage("");
     pauseAllAudio();
+    setChatOpen(false);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

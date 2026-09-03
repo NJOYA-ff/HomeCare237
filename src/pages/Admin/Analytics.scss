@@ -22,6 +22,13 @@
 
   &:hover { transform: translateY(-4px); box-shadow: 0 6px 22px rgba(56, 128, 255, 0.13); }
 
+  ion-card-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 14px 8px !important;
+  }
+
   ion-icon {
     font-size: 22px;
     margin-right: 6px;
@@ -29,16 +36,20 @@
   }
 
   h2 {
-    font-size: 1.9rem;
+    font-size: 1.7rem;
     font-weight: 700;
-    margin: 8px 0 4px;
+    margin: 6px 0 2px;
     color: var(--ion-color-dark);
   }
 
   p {
-    margin: 0;
+    margin: 0 0 4px;
     color: var(--ion-color-medium);
-    font-size: 0.85rem;
+    font-size: 0.82rem;
+  }
+
+  ion-badge {
+    margin-top: 2px;
   }
 }
 

@@ -89,6 +89,7 @@ import {
   FaBone,
 } from "react-icons/fa";
 import "./Appointment.scss";
+import RatingModal from "../../components/RatingModal";
 
 // Types
 interface Doctor {
@@ -136,6 +137,7 @@ interface Appointment {
   consultationFee: number;
   doctor?: Doctor;
   patientDetails?: PatientDetails;
+  rated?: boolean;
 }
 
 // Regions of Cameroon
@@ -248,6 +250,12 @@ const Book_Appointment: React.FC = () => {
   const [doctorsLoaded, setDoctorsLoaded] = useState<boolean>(false);
   const { sendLocalNotification } = useNotifications();
   const prevStatusesRef = useRef<Record<string, string>>({});
+
+  // ── Rating state ──────────────────────────────────────────
+  const [ratingModalOpen, setRatingModalOpen] = useState(false);
+  const [ratingAppointment, setRatingAppointment] = useState<Appointment | null>(null);
+  // Track which appointment IDs this patient has already rated (local, refreshed on load)
+  const [ratedAppointments, setRatedAppointments] = useState<Set<string>>(new Set());
 
   // Get current user
   useEffect(() => {
@@ -531,6 +539,7 @@ const Book_Appointment: React.FC = () => {
               consultationFee: data.consultationFee || 5000,
               createdAt: data.createdAt?.toDate?.() || data.createdAt,
               updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
+              rated: data.rated || false,
             } as Appointment;
 
             // Get doctor data for this appointment
@@ -547,6 +556,14 @@ const Book_Appointment: React.FC = () => {
             appointmentsList.length,
           );
           setAppointments(appointmentsList);
+
+          // Track which completed appointments this patient already rated
+          const ratedIds = new Set<string>(
+            appointmentsList
+              .filter((a) => (a as any).rated === true)
+              .map((a) => a.id)
+          );
+          setRatedAppointments(ratedIds);
         },
         (error) => {
           console.error("Error in real-time appointments listener:", error);
@@ -872,6 +889,49 @@ const Book_Appointment: React.FC = () => {
   const handleViewAppointment = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
     setViewMode("viewAppointment");
+  };
+
+  // ── Rating handler ────────────────────────────────────────
+  const handleRateDoctor = async (stars: number, comment: string) => {
+    if (!ratingAppointment || !currentUser) return;
+
+    const doctorId = ratingAppointment.doctorId;
+    const appointmentId = ratingAppointment.id;
+
+    try {
+      // 1. Save the rating document
+      await addDoc(collection(db, "ratings"), {
+        doctorId,
+        patientId: currentUser.uid,
+        appointmentId,
+        stars,
+        comment,
+        createdAt: new Date().toISOString(),
+      });
+
+      // 2. Recalculate the doctor's average rating
+      const ratingsSnap = await getDocs(
+        query(collection(db, "ratings"), where("doctorId", "==", doctorId))
+      );
+      const allStars = ratingsSnap.docs.map((d) => d.data().stars as number);
+      const avg = allStars.reduce((a, b) => a + b, 0) / allStars.length;
+
+      await updateDoc(doc(db, "doctors", doctorId), {
+        rating: Math.round(avg * 10) / 10,
+        reviews: allStars.length,
+      });
+
+      // 3. Mark appointment as rated
+      await updateDoc(doc(db, "appointments", appointmentId), {
+        rated: true,
+      });
+
+      // 4. Update local rated set
+      setRatedAppointments((prev) => new Set([...prev, appointmentId]));
+    } finally {
+      setRatingModalOpen(false);
+      setRatingAppointment(null);
+    }
   };
 
   // Safe function to get available slots
@@ -1651,6 +1711,28 @@ const Book_Appointment: React.FC = () => {
                                     </IonButton>
                                   </>
                                 )}
+
+                                {appointment.status === "completed" && (
+                                  ratedAppointments.has(appointment.id) || appointment.rated ? (
+                                    <div className="rated-badge">
+                                      <IonIcon icon={star} color="warning" />
+                                      <span>Rated</span>
+                                    </div>
+                                  ) : (
+                                    <IonButton
+                                      fill="solid"
+                                      color="warning"
+                                      size="small"
+                                      onClick={() => {
+                                        setRatingAppointment(appointment);
+                                        setRatingModalOpen(true);
+                                      }}
+                                    >
+                                      <IonIcon icon={star} slot="start" />
+                                      Rate Doctor
+                                    </IonButton>
+                                  )
+                                )}
                               </div>
                             </IonCardContent>
                           </IonCard>
@@ -2137,6 +2219,14 @@ const Book_Appointment: React.FC = () => {
             </IonCard>
           </div>
         ) : null}
+
+        <RatingModal
+          isOpen={ratingModalOpen}
+          onDidDismiss={() => { setRatingModalOpen(false); setRatingAppointment(null); }}
+          doctorName={ratingAppointment?.doctorName ?? ""}
+          doctorAvatar={ratingAppointment?.doctor?.avatar}
+          onSubmit={handleRateDoctor}
+        />
       </IonContent>
     </IonPage>
   );

@@ -1,4 +1,33 @@
 /* Doc_diagnoses.scss */
+@use '../../theme/hc-form.scss';
+
+// ── Full-page layout ──────────────────────────────────────────
+.diag-content {
+  --padding-start: 0;
+  --padding-end: 0;
+  --padding-top: 0;
+  --padding-bottom: 0;
+}
+
+.diag-grid {
+  padding: 0;
+  margin: 0;
+
+  ion-row {
+    margin: 0;
+  }
+
+  ion-col {
+    padding: 0;
+  }
+
+  ion-card {
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+    border-bottom: 1px solid var(--ion-color-light-shade);
+  }
+}
 
 /* Patient Selection Section */
 .selected-patient {
@@ -311,6 +340,63 @@ ion-card-header.diagnoses {
 
 ion-card-content.diagnoses {
   padding: 16px;
+
+  // ── Health-Units-matched input rows ─────────────────────────────
+  ion-item {
+    --border-radius: 12px;
+    --padding-start: 14px;
+    --inner-padding-end: 14px;
+    --padding-top: 8px;
+    --padding-bottom: 8px;
+    --min-height: 62px;
+    --background: #ffffff;
+    --border-color: #dde1f5;
+    --border-width: 1px;
+    --border-style: solid;
+    --highlight-color-focused: var(--ion-color-primary, #3b7dd8);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 12px;
+
+    ion-label[position="stacked"] {
+      font-size: 0.78rem !important;
+      font-weight: 600 !important;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: var(--ion-color-medium, #92949c) !important;
+    }
+
+    ion-input,
+    ion-textarea,
+    ion-select {
+      font-size: 0.93rem !important;
+      color: var(--ion-text-color, #1a1a2e) !important;
+    }
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  ion-card-content.diagnoses ion-item {
+    --background: var(--ion-item-background, #1a1d27);
+    --border-color: var(--ion-color-step-150, #252839);
+
+    ion-input,
+    ion-textarea,
+    ion-select {
+      color: var(--ion-text-color, #e8eaf0) !important;
+    }
+  }
+}
+
+body.dark ion-card-content.diagnoses ion-item {
+  --background: var(--ion-item-background, #1a1d27);
+  --border-color: var(--ion-color-step-150, #252839);
+
+  ion-input,
+  ion-textarea,
+  ion-select {
+    color: var(--ion-text-color, #e8eaf0) !important;
+  }
 }
 
 // /* Button Styles */

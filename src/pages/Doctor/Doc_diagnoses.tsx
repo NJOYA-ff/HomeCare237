@@ -867,8 +867,8 @@ const DoctorDiagnoses: React.FC = () => {
           <IonTitle>Diagnosis</IonTitle>
         </IonToolbar>
       </IonHeader>
-      <IonContent fullscreen className="ion-padding">
-        <IonGrid>
+      <IonContent fullscreen className="diag-content">
+        <IonGrid className="diag-grid">
           <IonRow>
             <IonCol size="12">
               <IonCard>

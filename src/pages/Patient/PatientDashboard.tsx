@@ -167,6 +167,7 @@ declare global {
 import { FiMenu } from "react-icons/fi";
 import Menu from "@material-design-icons/svg/round/menu_open.svg";
 import { useNotifications } from "../../context/NotificationContext";
+import { useSettings } from "../../context/SettingsContext";
 // Interfaces for type safety
 interface UserData {
   id: string;
@@ -217,6 +218,7 @@ interface CategoryColor {
 }
 
 const PatientDashboard: React.FC = () => {
+  const { t } = useSettings();
   const [currentState, setCurrentState] = useState<string>("healthy");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -754,9 +756,9 @@ const PatientDashboard: React.FC = () => {
         <IonRefresher slot="fixed" onIonRefresh={doRefresh}>
           <IonRefresherContent
             pullingIcon={arrowDownCircle}
-            pullingText="Pull to refresh"
+            pullingText={t("pullToRefresh")}
             refreshingSpinner="circles"
-            refreshingText="Refreshing..."
+            refreshingText={t("refreshing")}
           ></IonRefresherContent>
         </IonRefresher>
 
@@ -764,9 +766,9 @@ const PatientDashboard: React.FC = () => {
         <IonAlert
           isOpen={showAlert}
           onDidDismiss={() => setShowAlert(false)}
-          header="Error"
+          header={t("error")}
           message={alertMessage}
-          buttons={["OK"]}
+          buttons={[t("ok")]}
         />
 
         <IonToast
@@ -786,7 +788,7 @@ const PatientDashboard: React.FC = () => {
               className="loading-spinner"
             />
             <IonText className="ion-text-center ion-padding">
-              <p>Loading your dashboard...</p>
+              <p>{t("loadingDashboard")}</p>
             </IonText>
           </div>
         ) : (
@@ -794,15 +796,15 @@ const PatientDashboard: React.FC = () => {
             <div className="patient-home-shell">
               <IonCard className="patient-home-intro">
                 <IonCardContent>
-                  <p className="tiny-greeting">Hello {userData.name || ""}!</p>
-                  <h2 className="home-title">Find your Specialist</h2>
+                  <p className="tiny-greeting">{t("helloGreeting")} {userData.name || ""}!</p>
+                  <h2 className="home-title">{t("findSpecialist")}</h2>
                   <br />
                   <div className="home-search-wrap">
                     <IonIcon icon={searchOutline} />
                     <input
                       value={doctorQuery}
                       onChange={(e) => setDoctorQuery(e.target.value)}
-                      placeholder="Search specialist category"
+                      placeholder={t("searchSpecialist")}
                     />
                     <IonButton fill="clear" size="small">
                       <IonIcon icon={chatbubbleEllipsesOutline} />
@@ -810,7 +812,7 @@ const PatientDashboard: React.FC = () => {
                   </div>
 
                   <div className="home-section-head">
-                    <h3>Categories</h3>
+                    <h3>{t("categories")}</h3>
                     <IonButton
                       fill="clear"
                       size="small"
@@ -819,7 +821,7 @@ const PatientDashboard: React.FC = () => {
                         setShowCategoryPopover(true);
                       }}
                     >
-                      See all
+                      {t("seeAll")}
                     </IonButton>
                   </div>
 
@@ -846,7 +848,7 @@ const PatientDashboard: React.FC = () => {
                         );
                       })
                     ) : (
-                      <p className="empty-state-text">No category found.</p>
+                      <p className="empty-state-text">{t("noCategoryFound")}</p>
                     )}
                   </div>
                   {selectedCategory && (
@@ -882,9 +884,9 @@ const PatientDashboard: React.FC = () => {
               <IonCard className="home-upcoming-card">
                 <IonCardContent>
                   <div className="home-section-head">
-                    <h3>Upcoming Appointment</h3>
+                    <h3>{t("upcomingAppointment")}</h3>
                     <IonButton fill="clear" size="small" routerLink="/patient/book_appointment?tab=myAppointments">
-                      See all
+                      {t("seeAll")}
                     </IonButton>
                   </div>
 
@@ -918,7 +920,7 @@ const PatientDashboard: React.FC = () => {
                       </IonButton>
                     </div>
                   ) : (
-                    <p className="empty-state-text">No upcoming appointments</p>
+                    <p className="empty-state-text">{t("noUpcomingAppointments")}</p>
                   )}
                   <IonPopover
                     isOpen={upcomingAppointmentPopover.show}
@@ -947,7 +949,7 @@ const PatientDashboard: React.FC = () => {
                           });
                         }}
                       >
-                        <IonLabel>View Details</IonLabel>
+                        <IonLabel>{t("viewDetails")}</IonLabel>
                       </IonListItem>
                       <IonListItem
                         button
@@ -960,7 +962,7 @@ const PatientDashboard: React.FC = () => {
                           })
                         }
                       >
-                        <IonLabel>Reschedule</IonLabel>
+                        <IonLabel>{t("reschedule")}</IonLabel>
                       </IonListItem>
                       <IonListItem
                         button
@@ -974,7 +976,7 @@ const PatientDashboard: React.FC = () => {
                           });
                         }}
                       >
-                        <IonLabel color="danger">Cancel Appointment</IonLabel>
+                        <IonLabel color="danger">{t("cancelAppointment")}</IonLabel>
                       </IonListItem>
                     </IonList>
                   </IonPopover>
@@ -984,13 +986,13 @@ const PatientDashboard: React.FC = () => {
               <IonCard className="home-top-doctors-card">
                 <IonCardContent>
                   <div className="home-section-head">
-                    <h3>Top Doctor&apos;s For You</h3>
+                    <h3>{t("topDoctors")}</h3>
                     <IonButton
                       fill="clear"
                       size="small"
                       routerLink="/patient/specialties?all=1"
                     >
-                      See all
+                      {t("seeAll")}
                     </IonButton>
                   </div>
 
@@ -1021,13 +1023,13 @@ const PatientDashboard: React.FC = () => {
                                 : undefined
                             }
                           >
-                            Book Now
+                            {t("bookNow")}
                           </IonButton>
                         </div>
                       ))
                     ) : (
                       <p className="empty-state-text">
-                        No doctors match this search right now.
+                        {t("noDoctorsMatch")}
                       </p>
                     )}
                   </div>
@@ -1037,7 +1039,17 @@ const PatientDashboard: React.FC = () => {
 
             {/* Chatbot */}
             <VoiceflowChat />
-            <IonFab vertical="bottom" horizontal="end" slot="fixed">
+            <IonFab
+              vertical="bottom"
+              horizontal="end"
+              slot="fixed"
+              style={{
+                // Push the FAB above the tab bar AND the device safe area
+                // (home indicator on iPhone, gesture bar on Android)
+                marginBottom: "calc(56px + env(safe-area-inset-bottom, 0px))",
+                marginRight: "env(safe-area-inset-right, 0px)",
+              }}
+            >
               <IonFabButton
                 className="chatbot"
                 aria-label="Open chat"
