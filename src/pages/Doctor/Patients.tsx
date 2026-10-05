@@ -1,3 +1,4 @@
+import { EmptyState, ErrorState, SkeletonCard, SkeletonGroup, SkeletonList } from "../../components/ui";
 import React, { useState, useEffect } from "react";
 import {
   IonContent,
@@ -12,7 +13,6 @@ import {
   IonCardSubtitle,
   IonCardContent,
   IonChip,
-  IonIcon,
   IonButtons,
   IonButton,
   IonModal,
@@ -24,20 +24,8 @@ import {
   IonItem,
   IonList,
   IonBackButton,
-  IonText,
 } from "@ionic/react";
 import { db, auth } from "../../firebaseconfig";
-import {
-  call,
-  location,
-  calendar,
-  medical,
-  alertCircle,
-  close,
-  filter,
-  male,
-  female,
-} from "ionicons/icons";
 import {
   collection,
   getDocs,
@@ -53,7 +41,9 @@ import {
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import "./Patients.scss";
+import { DEFAULT_AVATAR, getDocumentImageUrl, handleImageError } from "../../utils/profileImageStorage";
 import { motion } from "framer-motion";
+import { medicalOutline, peopleOutline, timeOutline } from "ionicons/icons";
 
 
 // Define patient interface
@@ -92,6 +82,10 @@ const Patients: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [loading, setLoading] = useState(true);
+  /** Set when a Firestore read fails, so the page can offer a recovery path. */
+  const [loadError, setLoadError] = useState<string | null>(null);
+  /** Bumped by the error state's "Try again" action to re-run the loaders. */
+  const [reloadKey, setReloadKey] = useState(0);
   const [medicalHistory, setMedicalHistory] = useState<MedicalHistory[]>([]);
   const [doctorId, setDoctorId] = useState<string | null>(null);
   const [relatedPatientIds, setRelatedPatientIds] = useState<string[]>([]);
@@ -140,6 +134,7 @@ const Patients: React.FC = () => {
       },
       (error) => {
         console.error("Error listening to appointments:", error);
+        setLoadError(error.message || "Lost connection to the appointments service.");
         setLoading(false);
       },
     );
@@ -161,6 +156,7 @@ const Patients: React.FC = () => {
 
       try {
         setLoading(true);
+        setLoadError(null);
         const patientsData: Patient[] = [];
         const batchSize = 10;
         for (let i = 0; i < relatedPatientIds.length; i += batchSize) {
@@ -170,7 +166,10 @@ const Patients: React.FC = () => {
             where(documentId(), "in", batch),
           );
           const snapshot = await getDocs(q);
-          snapshot.forEach((docSnap) => {
+          // `for…of` rather than `forEach` so the avatar can be resolved
+          // asynchronously (legacy documents store a Storage *path*, which has
+          // to be turned into a download URL).
+          for (const docSnap of snapshot.docs) {
             const data = docSnap.data() as any;
             patientsData.push({
               id: docSnap.id,
@@ -178,9 +177,7 @@ const Patients: React.FC = () => {
               age: data.age,
               sex: data.sex,
               contact: data.contact,
-              photo:
-                data.photo ||
-                "https://ionicframework.com/docs/img/demos/avatar.svg",
+              photo: await getDocumentImageUrl(data),
               town: data.town,
               street: data.street,
               lastVisit: data.lastVisit,
@@ -190,7 +187,7 @@ const Patients: React.FC = () => {
               createdAt: data.createdAt,
               updatedAt: data.updatedAt,
             });
-          });
+          }
         }
 
         patientsData.sort((a, b) => a.name.localeCompare(b.name));
@@ -198,12 +195,17 @@ const Patients: React.FC = () => {
         setLoading(false);
       } catch (error) {
         console.error("Error loading related patients:", error);
+        setLoadError(
+          error instanceof Error
+            ? error.message
+            : "Unexpected error while loading patient records.",
+        );
         setLoading(false);
       }
     };
 
     loadPatientsByIds();
-  }, [doctorId, relatedPatientIds]);
+  }, [doctorId, relatedPatientIds, reloadKey]);
 
   // Fetch medical history for selected patient
   const fetchMedicalHistory = async (patientId: string) => {
@@ -342,23 +344,27 @@ const Patients: React.FC = () => {
       </IonHeader>
       <IonContent fullscreen>
         {loading ? (
-          <div className="loading-container">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              className="loading-spinner"
-            />
-            <IonText className="ion-text-center ion-padding">
-              <p>Loading patients...</p>
-            </IonText>
-          </div>
+          <SkeletonGroup label="Loading patients" className="ion-padding">
+            <SkeletonCard metric />
+            <SkeletonList rows={5} />
+          </SkeletonGroup>
+        ) : loadError ? (
+          <ErrorState
+            className="ion-padding"
+            title="We couldn't load your patients"
+            description="This is usually a connection problem — your records are safe. Try again, or clear the search if you were filtering."
+            detail={loadError}
+            onRetry={() => setReloadKey((key) => key + 1)}
+            onSecondary={searchText.trim() ? () => setSearchText("") : undefined}
+            secondaryLabel="Clear search"
+          />
         ) : (
           // Show patient list
           <>
             {filteredPatients.length > 0 ? (
               <IonCard className="activity-card">
                 <IonCardHeader>
-                  <IonCardTitle>Patients</IonCardTitle>
+            
                   <IonCardSubtitle>
                     {filteredPatients.length} patients
                   </IonCardSubtitle>
@@ -374,7 +380,11 @@ const Patients: React.FC = () => {
                         onClick={() => openPatientDetail(patient)}
                       >
                         <IonAvatar slot="start">
-                          <img src={patient.photo} alt={patient.name} />
+                          <img
+                            src={patient.photo || DEFAULT_AVATAR}
+                            alt={patient.name}
+                            onError={handleImageError}
+                          />
                         </IonAvatar>
                         <IonLabel>
                           <h2>{patient.name}</h2>
@@ -383,20 +393,10 @@ const Patients: React.FC = () => {
                           </p>
                         </IonLabel>
                         <div className="patient-status">
-                          <IonChip
-                            color={
-                              patient.status === "stable"
-                                ? "success"
-                                : patient.status === "recovering"
-                                ? "warning"
-                                : "danger"
-                            }
-                          >
-                            {patient.status}
-                          </IonChip>
+                        
                           <p className="last-checkup">
-                            <IonIcon icon={calendar} />
-                            {formatLastVisit(patient.lastVisit)}
+                            <span className="last-visit-label">Last visit:</span>
+                            <span className="last-visit-date">{formatLastVisit(patient.lastVisit)}</span>
                           </p>
                         </div>
                       </IonItem>
@@ -405,10 +405,16 @@ const Patients: React.FC = () => {
                 </IonCardContent>
               </IonCard>
             ) : (
-              <div className="no-results">
-                <IonIcon icon={alertCircle} size="large" />
-                <p>No patients found</p>
-              </div>
+              <EmptyState
+                className="ion-padding"
+                icon={peopleOutline}
+                title="No patients found"
+                description={
+                  searchText.trim()
+                    ? `No matches for "${searchText.trim()}". Try a different name or condition.`
+                    : "Patients linked to your account will appear here."
+                }
+              />
             )}
           </>
         )}
@@ -419,8 +425,8 @@ const Patients: React.FC = () => {
             <IonToolbar>
               <IonTitle>Patient Details</IonTitle>
               <IonButtons slot="end">
-                <IonButton onClick={() => setShowModal(false)}>
-                  <IonIcon icon={close} />
+                <IonButton onClick={() => setShowModal(false)} className="close-btn">
+                  <span className="close-btn-text">Close</span>
                 </IonButton>
               </IonButtons>
             </IonToolbar>
@@ -431,31 +437,29 @@ const Patients: React.FC = () => {
                 <div className="patient-profile">
                   <IonAvatar className="profile-avatar">
                     <img
-                      src={selectedPatient.photo}
+                      src={selectedPatient.photo || DEFAULT_AVATAR}
+                      onError={handleImageError}
                       alt={selectedPatient.name}
                     />
                   </IonAvatar>
                   <h1>{selectedPatient.name}</h1>
-                  <p>
-                    {selectedPatient.age} years •
-                    {selectedPatient.sex === "male" ? (
-                      <IonIcon icon={male} color="primary" />
-                    ) : (
-                      <IonIcon icon={female} color="danger" />
-                    )}{" "}
-                    •{selectedPatient.bloodType}
-                  </p>
-                  <IonChip
-                    color={
-                      selectedPatient.status === "stable"
-                        ? "success"
-                        : selectedPatient.status === "recovering"
-                        ? "warning"
-                        : "danger"
-                    }
-                  >
-                    {selectedPatient.status}
-                  </IonChip>
+                  <div className="profile-meta">
+                    <span>
+                      <span className="meta-dot"></span>
+                      <span className="meta-label">{selectedPatient.age} years</span>
+                    </span>
+                    <span>
+                      <span className="meta-dot"></span>
+                      <span className="meta-label">{selectedPatient.sex === "male" ? "Male" : "Female"}</span>
+                    </span>
+                    {selectedPatient.bloodType && (
+                      <span>
+                        <span className="meta-dot"></span>
+                        <span className="meta-label">Blood type: {selectedPatient.bloodType}</span>
+                      </span>
+                    )}
+                  </div>
+                  
                 </div>
 
                 <IonCard className="info-card">
@@ -464,14 +468,14 @@ const Patients: React.FC = () => {
                   </IonCardHeader>
                   <IonCardContent>
                     <IonList>
-                      <IonItem>
-                        <IonIcon icon={call} slot="start" />
-                        <IonLabel>{selectedPatient.contact}</IonLabel>
+                      <IonItem className="contact-item">
+                        <div className="contact-type">Phone:</div>
+                        <IonLabel className="contact-value">{selectedPatient.contact}</IonLabel>
                       </IonItem>
-                      <IonItem>
-                        <IonIcon icon={location} slot="start" />
-                        <IonLabel>
-                          {selectedPatient.town} - {selectedPatient.street}
+                      <IonItem className="contact-item">
+                        <div className="contact-type">Address:</div>
+                        <IonLabel className="contact-value">
+                          {selectedPatient.town}, {selectedPatient.street}
                         </IonLabel>
                       </IonItem>
                     </IonList>
@@ -483,14 +487,21 @@ const Patients: React.FC = () => {
                     <IonCardTitle>Medical Conditions</IonCardTitle>
                   </IonCardHeader>
                   <IonCardContent>
-                    <div className="conditions">
-                      {selectedPatient.conditions.map((condition, index) => (
-                        <IonChip key={index} color="primary">
-                          <IonIcon icon={medical} />
-                          <IonLabel>{condition}</IonLabel>
-                        </IonChip>
-                      ))}
-                    </div>
+                    {selectedPatient.conditions.length === 0 ? (
+                      <EmptyState
+                        icon={medicalOutline}
+                        title="No conditions recorded"
+                        description="No medical conditions have been logged for this patient."
+                      />
+                    ) : (
+                      <div className="conditions">
+                        {selectedPatient.conditions.map((condition, index) => (
+                          <IonChip key={index} color="primary" className="condition-chip">
+                            {condition}
+                          </IonChip>
+                        ))}
+                      </div>
+                    )}
                   </IonCardContent>
                 </IonCard>
 
@@ -525,7 +536,11 @@ const Patients: React.FC = () => {
                           </IonAccordion>
                         ))
                       ) : (
-                        <p>No medical history records found.</p>
+                        <EmptyState
+                          icon={timeOutline}
+                          title="No medical history records"
+                          description="Visit records and clinical notes for this patient will appear here."
+                        />
                       )}
                     </IonAccordionGroup>
                   </IonCardContent>

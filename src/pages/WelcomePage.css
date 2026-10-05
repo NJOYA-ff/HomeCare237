@@ -1,5 +1,5 @@
 .welcome-content {
-  --background: linear-gradient(135deg, var(--ion-color-primary-shade) 0%, var(--ion-color-primary) 50%, var(--ion-color-primary-tint) 100%);
+  --background: var(--hc-gradient-funnel);
   position: fixed;
   overflow: hidden;
 }
@@ -15,7 +15,7 @@
 .circle {
   position: absolute;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(var(--hc-glass-ink-rgb), 0.1);
 }
 
 .circle-1 {
@@ -55,18 +55,20 @@
 }
 
 .welcome-title h1 {
-  color: white;
+  color: var(--hc-glass-ink);
   font-weight: bold;
   font-size: 1.4rem;
   margin-bottom: 10px;
 }
 
 .welcome-title span {
-  color: #bbdefb;
+  /* Accent within the headline: the brand tint channel reads as "brighter
+     white" against the gradient without needing its own value. */
+  color: rgba(var(--ion-color-primary-tint-rgb), 0.55);
 }
 
 .welcome-subtitle {
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(var(--hc-glass-ink-rgb), 0.9);
   font-size: 1rem;
   margin-bottom: 30px;
   display: block;
@@ -78,21 +80,21 @@
 }
 
 .signin-button {
-  --background: linear-gradient(90deg, var(--ion-color-primary-shade) 0%, var(--ion-color-primary) 100%);
-  --background-activated: #0d47a1;
+  --background: var(--hc-gradient-brand);
+  --background-activated: var(--ion-color-primary-shade);
   --border-radius: 12px;
   height: 50px;
   font-weight: bold;
   margin-top: 20px;
-  
-  color: white;
+
+  color: var(--hc-glass-ink);
 }
 
 .signup-button {
-  color: white;
-  --background-hover: rgba(255, 255, 255, 0.1);
-  --background-activated: rgba(255, 255, 255, 0.2);
-  --border-color: rgba(255, 255, 255, 0.1);
+  color: var(--hc-glass-ink);
+  --background-hover: rgba(var(--hc-glass-ink-rgb), 0.1);
+  --background-activated: rgba(var(--hc-glass-ink-rgb), 0.2);
+  --border-color: rgba(var(--hc-glass-ink-rgb), 0.1);
   --border-radius: 12px;
   height: 50px;
   margin-top: 20px;

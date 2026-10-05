@@ -31,7 +31,6 @@ import {
   IonInput,
   IonTextarea,
   IonToggle,
-  IonAlert,
   useIonToast,
   IonHeader as ModalHeader,
   IonToolbar as ModalToolbar,
@@ -39,6 +38,7 @@ import {
   IonContent as ModalContent,
   IonButtons as ModalButtons,
 } from "@ionic/react";
+import { MessageBox } from "../../components/ui/MessageBox";
 import {
   locationOutline,
   callOutline,
@@ -608,16 +608,16 @@ const Health_units: React.FC = () => {
                           fill="solid"
                           color="light"
                           size="small"
-                          onClick={(e) => { e.stopPropagation(); openEditModal(unit); }}
-                        >
+                          onClick={(e) => { e.stopPropagation(); openEditModal(unit); }
+                      }  >
                           <IonIcon slot="icon-only" icon={create} />
                         </IonButton>
                         <IonButton
                           fill="solid"
                           color="danger"
                           size="small"
-                          onClick={(e) => { e.stopPropagation(); setDeleteAlert({ show: true, id: unit.id, name: unit.name }); }}
-                        >
+                          onClick={(e) => { e.stopPropagation(); setDeleteAlert({ show: true, id: unit.id, name: unit.name }); }
+                      }  >
                           <IonIcon slot="icon-only" icon={trash} />
                         </IonButton>
                       </div>
@@ -802,7 +802,7 @@ const Health_units: React.FC = () => {
                     type="number"
                     min={0}
                     max={5}
-                    step={0.1}
+                    step="0.1"
                     value={String(formData.rating)}
                     onIonChange={(e) => setFormData({ ...formData, rating: parseFloat(e.detail.value!) || 0 })}
                   />
@@ -946,7 +946,7 @@ const Health_units: React.FC = () => {
                   <IonLabel position="stacked">Latitude</IonLabel>
                   <IonInput
                     type="number"
-                    step={0.000001}
+                    step="0.000001"
                     value={String(formData.lat)}
                     onIonChange={(e) => setFormData({ ...formData, lat: parseFloat(e.detail.value!) || 0 })}
                   />
@@ -957,7 +957,7 @@ const Health_units: React.FC = () => {
                   <IonLabel position="stacked">Longitude</IonLabel>
                   <IonInput
                     type="number"
-                    step={0.000001}
+                    step="0.000001"
                     value={String(formData.lng)}
                     onIonChange={(e) => setFormData({ ...formData, lng: parseFloat(e.detail.value!) || 0 })}
                   />
@@ -993,19 +993,26 @@ const Health_units: React.FC = () => {
       </IonModal>
 
       {/* ── Delete Confirm Alert ──────────────────────────────────────────── */}
-      <IonAlert
+      <MessageBox
         isOpen={deleteAlert.show}
-        onDidDismiss={() => setDeleteAlert({ show: false, id: "", name: "" })}
-        header="Delete Facility"
+        title="Delete Facility"
         message={`Are you sure you want to delete "${deleteAlert.name}"? This action cannot be undone.`}
-        buttons={[
-          { text: "Cancel", role: "cancel" },
+        tone="danger"
+        actions={[
           {
-            text: "Delete",
-            role: "destructive",
-            handler: () => handleDelete(deleteAlert.id),
+            label: "Cancel",
+            color: "medium",
+            onClick: () => setDeleteAlert({ show: false, id: "", name: "" }),
+          },
+          {
+            /* Deleting a facility is unrecoverable, so the confirm action carries
+               the danger colour. */
+            label: "Delete",
+            color: "danger",
+            onClick: () => handleDelete(deleteAlert.id),
           },
         ]}
+        onDismiss={() => setDeleteAlert({ show: false, id: "", name: "" })}
       />
     </IonPage>
   );

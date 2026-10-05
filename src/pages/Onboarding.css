@@ -1,0 +1,147 @@
+/* Onboarding (landing page + role pickers).
+ *
+ * Frosted bottom sheet with two side-by-side tabs, and a wavy blue artwork
+ * with floating spheres behind the content.
+ *
+ * Colours come from theme/variables.css: the backdrop ramp is the shared
+ * --hc-gradient-funnel, and the glass tint is an alpha of --hc-glass-ink-rgb.
+ * The back control is not styled here — it is the shared .auth-back in
+ * hc-auth.scss (flat grey disc, no border), shared with the auth screens. */
+
+.ob-content {
+  --background: var(--hc-gradient-funnel);
+  position: fixed;
+  overflow: hidden;
+}
+
+.ob-bg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+/* Animated spheres in background */
+.ob-orb {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(var(--hc-glass-ink-rgb), 0.1);
+}
+
+.ob-orb-1 {
+  width: 300px;
+  height: 300px;
+  top: -100px;
+  left: -100px;
+}
+
+.ob-orb-2 {
+  width: 200px;
+  height: 200px;
+  top: 40%;
+  right: 20%;
+}
+
+.ob-orb-3 {
+  width: 150px;
+  height: 150px;
+  top: 18%;
+  right: -40px;
+}
+
+.ob-grid {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+
+.ob-spread {
+  display: contents;
+}
+
+/* Frosted-glass sheet pinned to the bottom, split into two tabs. */
+.ob-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  min-height: 88px;
+  margin: 0;
+  padding: 0 0 env(safe-area-inset-bottom, 0px);
+  border-radius: 28px 28px 0 0;
+  -webkit-backdrop-filter: blur(var(--hc-glass-blur)) saturate(1.4);
+
+}
+
+/* One of the two tabs of the bottom sheet. */
+.ob-tab {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--hc-glass-ink);
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 22px 12px;
+  cursor: pointer;
+}
+
+/* Active tab: lifted white card with the accent colour on the label,
+ * rounded like the sheet, hugging its side apart from a small gap. */
+.ob-tab-active {
+  background: var(--hc-surface);
+  color: var(--ion-color-primary-shade);
+  font-weight: 700;
+  border-radius: 26px 0 0;
+  margin: 6px 0 0 6px;
+  padding: calc(22px - 6px) calc(12px - 6px);
+  box-shadow: 0 8px 20px rgba(var(--ion-color-primary-shade-rgb), 0.28);
+}
+
+/* Plain HTML buttons do not get an OS focus ring on mobile; keep one for
+ * keyboard users, on the same glass theme. */
+.ob-tab:focus-visible,
+.ob-tab-active:focus-visible {
+  outline: 2px solid var(--hc-glass-ink);
+  outline-offset: -4px;
+}
+
+/* ── Galaxy S8+ (360px) responsive ── */
+@media (max-width: 380px) {
+  .ob-sheet {
+    min-height: 76px;
+  }
+
+  .ob-tab {
+    font-size: 0.95rem;
+    padding: 18px 10px;
+  }
+
+  .ob-tab-active {
+    padding: calc(18px - 6px) calc(10px - 6px);
+  }
+
+  .ob-orb-1 {
+    width: 200px;
+    height: 200px;
+  }
+
+  .ob-orb-2 {
+    width: 140px;
+    height: 140px;
+  }
+
+  .ob-orb-3 {
+    width: 110px;
+    height: 110px;
+  }
+}

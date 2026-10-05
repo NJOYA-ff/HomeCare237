@@ -1,9 +1,8 @@
-// This module supports two modes:
-// - Browser mode: when used in the frontend, it will POST to a backend endpoint
-//   `/api/twilio/send` to keep secrets server-side.
-// - Server mode: when executed in a Node environment (no `window`) it will
-//   dynamically import the Twilio SDK and send SMS directly (useful for
-//   serverless functions or Node servers).
+// Browser-safe Twilio SMS client.
+//
+// The Twilio Node SDK must never be bundled into the app because it pulls in
+// server-only modules and would expose the wrong boundary for secrets. The
+// frontend only calls the local API server; the server owns Twilio credentials.
 
 // Helper to safely read environment variables in both Node and Vite/browser builds.
 const readEnv = (key: string): string => {
@@ -33,72 +32,6 @@ const readEnv = (key: string): string => {
   return "";
 };
 
-// Environment variables for server mode (Twilio credentials)
-// Prefer Twilio API Key + Secret (safer for server-side usage). Fall back to
-// AUTH token if API Key is not provided to maintain compatibility.
-const accountSid = readEnv("TWILIO_ACCOUNT_SID");
-const apiKey = readEnv("TWILIO_API_KEY");
-const apiSecret = readEnv("TWILIO_API_SECRET");
-const authToken = readEnv("TWILIO_AUTH_TOKEN");
-const twilioPhoneNumber = readEnv("TWILIO_PHONE_NUMBER");
-
-let nodeClient: any = null;
-let twilioInitialized = false;
-
-const ensureNodeClient = async () => {
-  if (nodeClient) return nodeClient;
-
-  // Check if we have minimum required credentials
-  const hasApiCredentials = apiKey && apiSecret && accountSid;
-  const hasAuthTokenCredentials = accountSid && authToken;
-
-  if (!hasApiCredentials && !hasAuthTokenCredentials) {
-    console.warn(
-      "No Twilio credentials available. Need either API Key + Secret + Account SID, or Account SID + Auth Token."
-    );
-    return null;
-  }
-
-  try {
-    // Dynamic import so bundlers don't pull twilio into browser builds
-    // Use await import() syntax
-    const twilioModule = await import("twilio");
-
-    // The imported module shape can vary between environments/bundlers
-    let Twilio: any;
-
-    if (typeof twilioModule === "function") {
-      Twilio = twilioModule;
-    } else if (typeof twilioModule.default === "function") {
-      Twilio = twilioModule.default;
-    } else if (typeof twilioModule.Twilio === "function") {
-      Twilio = twilioModule.Twilio;
-    } else {
-      console.error(
-        "Unable to find Twilio constructor in module:",
-        twilioModule
-      );
-      return null;
-    }
-
-    // Create client with API Key + Secret if available (preferred method)
-    if (hasApiCredentials) {
-      console.debug("Creating Twilio client with API Key + Secret");
-      nodeClient = new Twilio(apiKey, apiSecret, { accountSid });
-    } else if (hasAuthTokenCredentials) {
-      // Fall back to auth token for backwards compatibility
-      console.debug("Creating Twilio client with Auth Token");
-      nodeClient = new Twilio(accountSid, authToken);
-    }
-
-    twilioInitialized = true;
-    return nodeClient;
-  } catch (err) {
-    console.error("Failed to initialize Twilio SDK:", err);
-    return null;
-  }
-};
-
 export interface SMSData {
   to: string;
   body: string;
@@ -109,102 +42,47 @@ export interface SMSData {
 }
 
 export const sendSMS = async (smsData: SMSData) => {
-  // If running in browser, proxy to backend endpoint to avoid exposing creds
-  if (typeof window !== "undefined" && window.document) {
-    // Allow calling a real server-side Twilio endpoint
-    const endpointUrl =
-      readEnv("TWILIO_ENDPOINT_URL") ||
-      readEnv("VITE_TWILIO_ENDPOINT_URL") ||
-      "";
+  const apiBase = readEnv("VITE_API_BASE_URL").replace(/\/+$/, "");
+  const targetUrl = `${apiBase}/api/twilio/send`;
 
-    // Use provided endpoint URL or default to local API route
-    const targetUrl = "/api/twilio/send";
-
-    try {
-      const res = await fetch(targetUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(smsData),
-      });
-
-      if (!res.ok) {
-        let errorText = `HTTP ${res.status}`;
-        try {
-          const errorData = await res.json();
-          errorText =
-            errorData.error || errorData.message || JSON.stringify(errorData);
-        } catch {
-          try {
-            errorText = await res.text();
-          } catch {
-            // Ignore if can't read response
-          }
-        }
-        console.error("Twilio proxy failed:", res.status, errorText);
-        return {
-          success: false,
-          status: res.status,
-          error: errorText,
-        };
-      }
-
-      const data = await res.json();
-      console.log("SMS delegating to backend succeeded", data);
-      return { success: true, ...data };
-    } catch (error: any) {
-      console.error("Error sending SMS via backend proxy:", error);
-      return {
-        success: false,
-        error: error?.message || "Network error",
-      };
-    }
-  }
-
-  // Server-side: use Twilio SDK directly
   try {
-    const client = await ensureNodeClient();
-    if (!client) {
-      return {
-        success: false,
-        error: "Twilio client not available. Check your credentials.",
-      };
-    }
-
-    if (!twilioPhoneNumber) {
-      return {
-        success: false,
-        error: "Twilio phone number not configured",
-      };
-    }
-
-    // Validate phone number format
-    const validatedTo = validateAndFormatPhoneNumber(smsData.to);
-    if (!validatedTo) {
-      return {
-        success: false,
-        error: "Invalid phone number format",
-      };
-    }
-
-    const message = await client.messages.create({
-      body: smsData.body,
-      from: twilioPhoneNumber,
-      to: validatedTo,
+    const res = await fetch(targetUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(smsData),
     });
 
-    console.log("SMS sent successfully (server mode):", message.sid);
-    return {
-      success: true,
-      messageSid: message.sid,
-      status: message.status,
-    };
+    if (!res.ok) {
+      let errorText = `HTTP ${res.status}`;
+      try {
+        const errorData = await res.json();
+        errorText =
+          errorData.error || errorData.message || JSON.stringify(errorData);
+      } catch {
+        try {
+          errorText = await res.text();
+        } catch {
+          // Ignore if the response body cannot be read.
+        }
+      }
+      console.error("Twilio proxy failed:", res.status, errorText);
+      return {
+        success: false,
+        status: res.status,
+        error: errorText,
+      };
+    }
+
+    const data = await res.json();
+    console.log("SMS delegated to backend successfully", data);
+    return { success: true, ...data };
   } catch (error: any) {
-    console.error("Error sending SMS (server mode):", error);
+    console.error("Error sending SMS via backend proxy:", error);
     return {
       success: false,
-      error: error?.message || "Unknown error sending SMS",
+      error: error?.message || "Network error",
     };
   }
 };
@@ -235,11 +113,11 @@ export const sendAppointmentStatusSMS = async (
 
   switch (status) {
     case "accepted":
-      body = `✅ Appointment Confirmed!\n\nDoctor: ${appointmentData.doctorName}\nDate: ${formattedDate}\nTime: ${formattedTime}\nStatus: ACCEPTED\n\nYour appointment has been confirmed by the doctor. Please arrive 15 minutes early.`;
+      body = `Appointment Confirmed!\n\nDoctor: ${appointmentData.doctorName}\nDate: ${formattedDate}\nTime: ${formattedTime}\nStatus: ACCEPTED\n\nYour appointment has been confirmed by the doctor. Please arrive 15 minutes early.`;
       break;
 
     case "rejected":
-      body = `❌ Appointment Rejected\n\nDoctor: ${
+      body = `Appointment Rejected\n\nDoctor: ${
         appointmentData.doctorName
       }\nDate: ${formattedDate}\nTime: ${formattedTime}\nStatus: REJECTED\n\nThe doctor has rejected your appointment request. Please book another appointment.${
         appointmentData.reason ? `\nReason: ${appointmentData.reason}` : ""
@@ -247,7 +125,7 @@ export const sendAppointmentStatusSMS = async (
       break;
 
     case "cancelled":
-      body = `⚠️ Appointment Cancelled\n\nDoctor: ${
+      body = `Appointment Cancelled\n\nDoctor: ${
         appointmentData.doctorName
       }\nDate: ${formattedDate}\nTime: ${formattedTime}\nStatus: CANCELLED\n\nYour appointment has been cancelled.${
         appointmentData.reason ? `\nReason: ${appointmentData.reason}` : ""
@@ -255,7 +133,7 @@ export const sendAppointmentStatusSMS = async (
       break;
 
     case "rescheduled":
-      body = `📅 Appointment Rescheduled\n\nDoctor: ${
+      body = `Appointment Rescheduled\n\nDoctor: ${
         appointmentData.doctorName
       }\nNew Date: ${formattedDate}\nNew Time: ${formattedTime}\nStatus: RESCHEDULED\n\nYour appointment has been rescheduled.${
         appointmentData.reason ? `\nReason: ${appointmentData.reason}` : ""

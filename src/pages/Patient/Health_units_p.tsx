@@ -1,3 +1,4 @@
+import LoadingHelix from "../../components/LoadingHelix";
 import React, { useState, useEffect, useRef } from "react";
 import {
   IonContent,
@@ -18,7 +19,6 @@ import {
   IonIcon,
   IonButtons,
   IonButton,
-  IonSpinner,
   IonChip,
   IonBadge,
   IonGrid,
@@ -28,6 +28,7 @@ import {
   IonFab,
   IonFabButton,
   IonModal,
+  IonText,
   IonHeader as ModalHeader,
   IonToolbar as ModalToolbar,
   IonTitle as ModalTitle,
@@ -383,8 +384,10 @@ const Health_units_p: React.FC = () => {
         {/* Loading */}
         {isLoading && (
           <div className="loading-container">
-            <IonSpinner name="crescent" color="primary" />
-            <p>Finding health facilities near you...</p>
+            <LoadingHelix />
+            <IonText className="ion-text-center ion-padding">
+              <p>Finding health facilities near you...</p>
+            </IonText>
           </div>
         )}
 
@@ -420,7 +423,16 @@ const Health_units_p: React.FC = () => {
                   layout
                 >
                   <IonCard className={`health-unit-card ${expandedCard === unit.id ? "expanded" : ""}`}>
-                    <div className="card-image-container" style={{ backgroundImage: `url(${unit.image || "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80"})` }}>
+                    <div className="card-image-container">
+                      <img
+                        src={unit.image || "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80"}
+                        alt={unit.name}
+                        className="card-image"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src =
+                            "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80";
+                        }}
+                      />
                       <div className="card-overlay">
                         <IonBadge className="type-badge" style={{ backgroundColor: getTypeColor(unit.type) }}>
                           <IonIcon icon={getTypeIcon(unit.type)} />

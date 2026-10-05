@@ -1,0 +1,492 @@
+// ============================================================
+// Soft chart cards — SoftChartCards.scss
+// Reference: light-lavender dashboard (white rounded cards,
+// violet icon chips, green/rose delta pills, bar sparklines,
+// dot legend rows, soft stat chips).
+// ============================================================
+
+.soft-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+
+  ion-icon { font-size: 12px; }
+
+  &--up {
+    background: rgba(16, 185, 129, 0.12);
+    color: #0ea371;
+  }
+
+  &--down {
+    background: rgba(244, 63, 94, 0.1);
+    color: #e11d48;
+  }
+}
+
+// ---- KPI stat card --------------------------------------------------
+
+.soft-kpi {
+  --soft-violet: #7c5cff;
+
+  margin: 5px;
+  padding: 14px 16px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(124, 92, 255, 0.08);
+  background: var(--ion-card-background, #fff);
+  box-shadow: 0 6px 20px rgba(124, 92, 255, 0.07);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+
+  &--tappable {
+    cursor: pointer;
+
+    &:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(124, 92, 255, 0.14); }
+    &:active { transform: scale(0.985); }
+  }
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  &__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    background: rgba(124, 92, 255, 0.12);
+    color: #7c5cff;
+    flex-shrink: 0;
+
+    ion-icon { font-size: 16px; }
+  }
+
+  &__label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--ion-color-medium, #9298ad);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__value-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+
+  &__value {
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: var(--ion-text-color, #232839);
+    line-height: 1.1;
+    letter-spacing: -0.4px;
+  }
+
+  &__spark {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 34px;
+    margin-bottom: 10px;
+  }
+
+  &__bar {
+    flex: 1;
+    min-width: 3px;
+    border-radius: 4px;
+    background: rgba(124, 92, 255, 0.28);
+    transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+
+    &--current { background: #7c5cff; }
+  }
+
+  &__footers {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding-top: 9px;
+    border-top: 1px solid rgba(148, 153, 175, 0.16);
+  }
+
+  &__footer {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+
+    &:last-child { text-align: right; }
+  }
+
+  &__footer-label {
+    font-size: 0.66rem;
+    font-weight: 600;
+    color: var(--ion-color-medium, #9298ad);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  &__footer-value {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--ion-text-color, #3b4054);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+// ---- Chart card header ---------------------------------------------
+
+.soft-chart-card {
+  --soft-violet: #7c5cff;
+
+  margin: 5px;
+  padding: 16px 18px 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(124, 92, 255, 0.08);
+  background: var(--ion-card-background, #fff);
+  box-shadow: 0 8px 24px rgba(124, 92, 255, 0.08);
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  &__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: rgba(124, 92, 255, 0.12);
+    color: #7c5cff;
+    flex-shrink: 0;
+
+    ion-icon { font-size: 18px; }
+  }
+
+  &__titles { flex: 1; min-width: 0; }
+
+  &__title {
+    margin: 0;
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: var(--ion-text-color, #232839);
+    line-height: 1.25;
+  }
+
+  &__subtitle {
+    margin: 2px 0 0;
+    font-size: 0.74rem;
+    color: var(--ion-color-medium, #9298ad);
+    line-height: 1.3;
+  }
+
+  &__action {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(124, 92, 255, 0.16);
+    background: rgba(124, 92, 255, 0.07);
+    color: #6d3af5;
+    font-size: 0.72rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  ion-card-content { padding-top: 2px; }
+}
+
+// ---- Chart & gauge canvas areas --------------------------------------
+
+.soft-chart-area {
+  position: relative;
+  height: 300px;
+}
+
+.soft-gauge-area {
+  position: relative;
+  height: 190px;
+  // The 210° fan leaves empty space below the arc, so the legend rows are
+  // pulled up to sit right under it.
+  margin-bottom: -26px;
+}
+
+.soft-card-empty {
+  margin: 10px 0 4px;
+  font-size: 0.8rem;
+  text-align: center;
+  color: var(--ion-color-medium, #9298ad);
+}
+
+// ---- Legend under chart cards -----------------------------------------
+
+.soft-chart-card__legend {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(124, 92, 255, 0.08);
+}
+
+// ---- KPI grid alignment ------------------------------------------------
+
+.soft-kpi-grid {
+  // Stretch each card to the tallest one in the row.
+  ion-col > div { height: 100%; }
+  .soft-kpi { height: calc(100% - 10px); }
+}
+
+// ---- Stat chips row -------------------------------------------------
+
+.soft-stat-chips {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.soft-stat-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(124, 92, 255, 0.06);
+  border: 1px solid rgba(124, 92, 255, 0.08);
+
+  &__label {
+    font-size: 0.66rem;
+    font-weight: 600;
+    color: var(--ion-color-medium, #9298ad);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  &__value {
+    font-size: 1.02rem;
+    font-weight: 800;
+    color: var(--ion-text-color, #232839);
+    line-height: 1.1;
+  }
+}
+
+// ---- Legend rows (gauge / list cards) ------------------------------
+
+.soft-legend-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 6px;
+}
+
+.soft-legend-row {
+  padding: 7px 2px;
+  border-bottom: 1px dashed rgba(148, 153, 175, 0.18);
+
+  &:last-child { border-bottom: none; }
+
+  &__main {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  &__label {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--ion-text-color, #3b4054);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__hint {
+    font-size: 0.7rem;
+    color: var(--ion-color-medium, #9298ad);
+    white-space: nowrap;
+  }
+
+  &__value {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--ion-text-color, #232839);
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__track {
+    height: 6px;
+    margin-top: 6px;
+    margin-left: 17px;
+    border-radius: 999px;
+    background: rgba(124, 92, 255, 0.1);
+    overflow: hidden;
+  }
+
+  &__fill {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #a78bfa, #7c5cff);
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+// ---- Mobile (≤575px): breathe ------------------------------------------
+// On phones the gauge/legend stack and the status chips crowd each other, so
+// the vertical rhythm is opened up and the chips become full-width rows.
+@media (max-width: 575.98px) {
+  .soft-chart-card {
+    padding: 14px 14px 12px;
+
+    &__head {
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    &__titles { flex: 1 1 auto; }
+
+    &__subtitle { margin-top: 3px; }
+
+    // Drops onto its own line when the title needs the full width.
+    &__action { margin-left: auto; }
+  }
+
+  // Gauge: the -26px pull that tucks the legend under the fan is too strong on
+  // short screens — soften it so the first row is not glued to the arc.
+  .soft-gauge-area {
+    height: 178px;
+    margin-bottom: -6px;
+  }
+
+  .soft-chart-area { height: 250px; }
+
+  .soft-legend-rows {
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .soft-legend-row {
+    padding: 11px 2px;
+
+    &__main {
+      row-gap: 4px;
+      column-gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    &__label { flex: 1 1 auto; }
+
+    // Long hints (upcoming-appointment rows) drop to their own line instead of
+    // squeezing the value out of the row.
+    &__hint {
+      flex: 0 1 auto;
+      min-width: 0;
+      white-space: normal;
+    }
+
+    &__value { margin-left: auto; }
+
+    &__track {
+      margin-top: 9px;
+      margin-left: 19px;
+      height: 7px;
+    }
+  }
+
+  // Rows carrying a long descriptive hint (upcoming appointments): the hint
+  // gets its own line under the label instead of squeezing the value.
+  .soft-chart-card--stacked-hints .soft-legend-row__hint {
+    flex: 1 1 100%;
+    order: 3;
+  }
+
+  // Status chips: stack one per line — label left, count + delta right.
+  .soft-stat-chips {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .soft-stat-chip {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 11px 14px;
+
+    &__row { gap: 8px; }
+
+    &__value { font-size: 1.08rem; }
+  }
+}
+
+// ---- Dark mode ------------------------------------------------------
+
+body.dark {
+  .soft-kpi,
+  .soft-chart-card {
+    border-color: rgba(167, 139, 250, 0.16);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.32);
+  }
+
+  .soft-kpi__bar { background: rgba(167, 139, 250, 0.35); }
+  .soft-kpi__bar--current { background: #a78bfa; }
+
+  .soft-kpi__icon,
+  .soft-chart-card__icon {
+    background: rgba(167, 139, 250, 0.16);
+    color: #a78bfa;
+  }
+
+  .soft-chart-card__action {
+    background: rgba(167, 139, 250, 0.12);
+    border-color: rgba(167, 139, 250, 0.24);
+    color: #c4b5fd;
+  }
+
+  .soft-stat-chip {
+    background: rgba(167, 139, 250, 0.1);
+    border-color: rgba(167, 139, 250, 0.16);
+  }
+
+  .soft-legend-row { border-bottom-color: rgba(148, 153, 175, 0.22); }
+  .soft-kpi__footers { border-top-color: rgba(148, 153, 175, 0.22); }
+}
+

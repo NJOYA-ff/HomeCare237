@@ -15,8 +15,17 @@ import PatientDashboard from "../pages/Patient/PatientDashboard";
 import Profile from "../pages/Patient/Profile";
 import SpecialtiesPage from "../pages/Patient/Specialties";
 import NotificationsPage from "../pages/Patient/NotificationPage";
+import Medications from "../pages/Patient/Medications";
+import Vitals from "../pages/Patient/Vitals";
+import SOS from "../pages/Patient/SOS";
+import Timeline from "../pages/Patient/Timeline";
+import Articles from "../pages/Patient/Articles";
+import Receipts from "../pages/Patient/Receipts";
 import SettingsPage from "../pages/Settings/SettingsPage";
 import PatientSettings from "../pages/Settings/PatientSettings";
+import PrivacyPolicy from "../pages/Settings/PrivacyPolicy";
+import TermsConditions from "../pages/Settings/TermsConditions";
+import ContactUs from "../pages/Settings/ContactUs";
 import {
   FaFileMedical,
   FaCalendarAlt,
@@ -57,6 +66,17 @@ const Tabs: React.FC = () => {
         <Route path="/notifications" exact><NotificationsPage /></Route>
         <Route path="/patient/diagnoses" exact><Diagnoses /></Route>
         <Route path="/patient/settings" exact><PatientSettings /></Route>
+        <Route path="/patient/privacy-policy" exact><PrivacyPolicy /></Route>
+        <Route path="/patient/terms" exact><TermsConditions /></Route>
+        <Route path="/patient/contact" exact><ContactUs /></Route>
+        <Route path="/patient/medications" exact><Medications /></Route>
+        <Route path="/patient/vitals" exact><Vitals /></Route>
+        <Route path="/patient/sos" exact><SOS /></Route>
+        <Route path="/patient/timeline" exact><Timeline /></Route>
+        <Route path="/patient/articles" exact><Articles /></Route>
+        <Route path="/patient/receipts" exact><Receipts /></Route>
+        {/* Catch-all: redirect any unmatched path (e.g. /landingpage after Google OAuth) */}
+        <Redirect to="/patient/dashboard" />
       </IonRouterOutlet>
 
       <IonTabBar slot="bottom" className="custom-tab-bar" style={chatOpen ? { display: "none" } : {}}>

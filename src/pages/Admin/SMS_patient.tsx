@@ -27,13 +27,13 @@ import {
   IonThumbnail,
   useIonViewWillEnter,
   useIonViewWillLeave,
-  IonAlert,
   IonProgressBar,
   IonImg,
   useIonActionSheet,
   IonBackButton,
   IonFooter,
 } from "@ionic/react";
+import { MessageBox } from "../../components/ui/MessageBox";
 import {
   attach,
   medical,
@@ -1073,20 +1073,20 @@ const SMS_patient: React.FC = () => {
                 {msg.attachments.map((att, index: number) => (
                   <div key={index} className="attachment">
                     {att.type === "image" && (
-                      <div className="image-attachment" onClick={() => { setSelectedImage(att.url); setShowImageModal(true); }}>
+                      <div className="image-attachment" onClick={() => { setSelectedImage(att.url); setShowImageModal(true);} }>
                         <IonThumbnail><IonImg src={att.url} alt={att.name} /></IonThumbnail>
                         <div className="attachment-details">
                           <IonLabel>{att.name}</IonLabel>
-                          <IonButton fill="clear" size="small" onClick={(e) => { e.stopPropagation(); downloadFile(att); }}><IonIcon icon={downloadOutline} /></IonButton>
+                          <IonButton fill="clear" size="small" onClick={(e) => { e.stopPropagation(); downloadFile(att);} }><IonIcon icon={downloadOutline} /></IonButton>
                         </div>
                       </div>
                     )}
                     {att.type === "document" && (
-                      <div className="document-attachment" onClick={() => { setSelectedDocument(att); setShowDocumentModal(true); }}>
+                      <div className="document-attachment" onClick={() => { setSelectedDocument(att); setShowDocumentModal(true);} }>
                         <IonIcon icon={document} size="large" />
                         <div className="attachment-details">
                           <IonLabel>{att.name}</IonLabel>
-                          <IonButton fill="clear" size="small" onClick={(e) => { e.stopPropagation(); downloadFile(att); }}><IonIcon icon={downloadOutline} /></IonButton>
+                          <IonButton fill="clear" size="small" onClick={(e) => { e.stopPropagation(); downloadFile(att);} }><IonIcon icon={downloadOutline} /></IonButton>
                         </div>
                       </div>
                     )}
@@ -1162,7 +1162,7 @@ const SMS_patient: React.FC = () => {
               </div>
               <IonButtons slot="end">
                 <IonButton className="call-button" onClick={() => setIsCallModalOpen(true)}><IonIcon icon={callOutline} /></IonButton>
-                <IonButton className="call-button" onClick={() => { setRoomToken("room-" + Date.now()); setIsVideoModalOpen(true); }}><IonIcon icon={videocamOutline} /></IonButton>
+                <IonButton className="call-button" onClick={() => { setRoomToken("room-" + Date.now()); setIsVideoModalOpen(true);} }><IonIcon icon={videocamOutline} /></IonButton>
               </IonButtons>
             </>
           ) : (
@@ -1336,7 +1336,20 @@ const SMS_patient: React.FC = () => {
           </IonContent>
         </IonModal>
 
-        <IonAlert isOpen={showAlert} onDidDismiss={() => setShowAlert(false)} header={"Microphone Access"} message={alertMessage} buttons={["OK"]} />
+<MessageBox
+          isOpen={showAlert}
+          title="Microphone Access"
+          message={alertMessage}
+          tone="danger"
+          actions={[
+            {
+              label: "OK",
+              color: "primary",
+              onClick: () => setShowAlert(false),
+            },
+          ]}
+          onDismiss={() => setShowAlert(false)}
+        />
       </IonContent>
       {selectedPatient && (
         <IonFooter>
@@ -1423,7 +1436,7 @@ const SMS_patient: React.FC = () => {
                           </IonText>
                         </div>
                         <div className="recording-actions">
-                          <IonButton fill="clear" color="danger" className="recording-action-btn cancel" onClick={() => { stopRecordingWithoutSend(); }}>
+                          <IonButton fill="clear" color="danger" className="recording-action-btn cancel" onClick={() => { stopRecordingWithoutSend();} }>
                             <IonIcon icon={trashOutline} />
                           </IonButton>
                           <IonButton fill="solid" color="primary" className="recording-action-btn send" onClick={stopRecordingAndSend}>
@@ -1444,8 +1457,8 @@ const SMS_patient: React.FC = () => {
         onClose={() => setIsCallModalOpen(false)}
         targetId={selectedPatient?.id || ""}
         targetCollection="patients"
-        onSwitchToVideo={() => { setIsCallModalOpen(false); setRoomToken("room-" + Date.now()); setIsVideoModalOpen(true); }}
-      />
+        onSwitchToVideo={() => { setIsCallModalOpen(false); setRoomToken("room-" + Date.now()); setIsVideoModalOpen(true); }
+    }  />
       <VideoChatModal
         isOpen={isVideoModalOpen}
         onClose={() => setIsVideoModalOpen(false)}

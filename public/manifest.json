@@ -1,52 +1,60 @@
 {
-  "short_name": "Ionic App",
-  "name": "My Ionic App",
+  "short_name": "HomeCare237",
+  "name": "HomeCare237 — Telemedicine & Home Care",
+  "description": "Telemedicine, appointment booking, medication management and emergency care for Cameroon.",
   "icons": [
     {
-      "src": "../icons/icon-48.webp",
-      "type": "image/png",
+      "src": "/icons/icon-48.webp",
+      "type": "image/webp",
       "sizes": "48x48",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "../icons/icon-72.webp",
-      "type": "image/png",
+      "src": "/icons/icon-72.webp",
+      "type": "image/webp",
       "sizes": "72x72",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "../icons/icon-96.webp",
-      "type": "image/png",
+      "src": "/icons/icon-96.webp",
+      "type": "image/webp",
       "sizes": "96x96",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "../icons/icon-128.webp",
-      "type": "image/png",
+      "src": "/icons/icon-128.webp",
+      "type": "image/webp",
       "sizes": "128x128",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "../icons/icon-192.webp",
-      "type": "image/png",
+      "src": "/icons/icon-192.webp",
+      "type": "image/webp",
       "sizes": "192x192",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "../icons/icon-256.webp",
-      "type": "image/png",
+      "src": "/icons/icon-256.webp",
+      "type": "image/webp",
       "sizes": "256x256",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "../icons/icon-512.webp",
-      "type": "image/png",
+      "src": "/icons/icon-512.webp",
+      "type": "image/webp",
       "sizes": "512x512",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.webp",
+      "type": "image/webp",
+      "sizes": "512x512",
+      "purpose": "maskable"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
   "display": "standalone",
-  "theme_color": "#ffffff",
-  "background_color": "#ffffff"
+  "theme_color": "#2563eb",
+  "background_color": "#f8fafc"
 }
+

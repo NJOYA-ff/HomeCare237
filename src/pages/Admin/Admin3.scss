@@ -154,8 +154,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 // ---- Header -----------------------------------------------
 .header-toolbar-p {
   --background: var(--ion-background-color);
-  --border-width: 0 0 1px 0;
-  --border-color: var(--ion-color-step-100);
+  --border-width: 0;
 
   .patient-title {
     font-size: 1.1rem;
@@ -166,8 +165,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
 .header-toolbar {
   --background: var(--ion-background-color);
-  --border-width: 0 0 1px 0;
-  --border-color: var(--ion-color-step-100);
+  --border-width: 0;
 
   .doctors-title {
     font-weight: 700;
@@ -178,8 +176,10 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
 .filter-toolbar {
   --background: var(--ion-background-color);
-  --border-width: 0 0 1px 0;
-  --border-color: var(--ion-color-step-100);
+  --border-width: 0;
+  /* Horizontal inset comes from the toolbar container (see
+     `.admin-scope ion-toolbar` in theme/variables.css) so it stays
+     identical across every admin filter bar. */
   padding: 6px 0 10px;
 }
 
@@ -190,6 +190,12 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   --background: var(--ion-color-step-50, rgba(0,0,0,0.04));
   --border-radius: 10px;
   --box-shadow: none;
+}
+
+// Full-width variant used when the status filter was removed.
+// No extra horizontal padding — the toolbar container already insets it.
+.search-bar--full {
+  padding: 0;
 }
 
 .status-filter {
@@ -238,13 +244,18 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   .empty-action { --border-radius: 20px; }
 }
 
-// ---- Patient list -----------------------------------------
+// ---- Patient list (shares the doctor/admin card system) ----
+.patients-section {
+  padding: 14px;
+}
+
 .patient-list {
   background: transparent;
-  padding: 4px 0;
+  padding: 0;
 }
 
 .patient-item {
+  --border-radius: $radius;
   --padding-start: 14px;
   --padding-end: 12px;
   --inner-padding-end: 0;
@@ -253,7 +264,14 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: $shadow;
   transition: $transition;
 
-  &:hover { box-shadow: $shadow-hover; transform: translateY(-2px); }
+  &:hover { box-shadow: $shadow-hover; }
+}
+
+// Address can be long — let it take a full row and truncate gracefully.
+.p-contact-item--addr {
+  max-width: 100%;
+  flex: 1 1 100%;
+  min-width: 0;
 }
 
 .patient-avatar {
@@ -920,7 +938,8 @@ ion-modal {
   }
 
   .admins-section,
-  .doctors-section { padding: 10px; }
+  .doctors-section,
+  .patients-section { padding: 10px; }
 
   .detail-row { flex-direction: column; align-items: flex-start; gap: 3px; }
 }
@@ -931,7 +950,7 @@ ion-modal {
 }
 
 // ---- Dark mode --------------------------------------------
-@media (prefers-color-scheme: dark) {
+body.dark {
   .diagnosis-card { background: var(--ion-item-background, #1a1d27); }
   .diagnosis-details-container { background: var(--ion-item-background, #1a1d27); }
   .lab-result-item { background: var(--ion-color-step-100, #1e2130); }
@@ -945,4 +964,100 @@ body.dark {
   .lab-result-item { background: var(--ion-color-step-100, #1e2130); }
   .info-card, .lab-result-card, .prescription-card { background: var(--ion-item-background, #1a1d27); }
   .stat-badge { background: var(--ion-color-step-100, #1e2130); }
+}
+
+// ---- Loading state (Admin_DoctorAccounts & shared) -------
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 16px;
+
+  p {
+    font-size: 0.9rem;
+    color: var(--ion-color-medium);
+    margin: 0;
+  }
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid var(--ion-color-step-150, rgba(56, 128, 255, 0.15));
+  border-top-color: var(--ion-color-primary);
+  flex-shrink: 0;
+}
+
+// ---- Diagnosis patient banner ----------------------------
+.diag-patient-banner {
+  display: flex;
+  align-items: center;
+  padding: 14px 16px 10px;
+  background: var(--ion-background-color);
+  border-bottom: 1px solid var(--ion-color-step-100);
+}
+
+// ---- Diagnosis stats strip --------------------------------
+.diag-stats-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 10px 16px;
+  background: var(--ion-background-color);
+  border-bottom: 1px solid var(--ion-color-step-100);
+  margin-bottom: 4px;
+}
+
+.diag-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+}
+
+.diag-stat-value {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--ion-color-dark);
+  line-height: 1;
+}
+
+.diag-stat-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--ion-color-medium);
+}
+
+.diag-stat-divider {
+  width: 1px;
+  height: 28px;
+  background: var(--ion-color-step-150);
+  flex-shrink: 0;
+}
+
+// ---- Diagnosis section label in modal --------------------
+.diag-section-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: var(--ion-color-medium);
+  margin: 16px 0 8px;
+
+  &:first-child { margin-top: 0; }
+}
+
+// ---- Inline empty message --------------------------------
+.diag-empty-inline {
+  font-size: 0.85rem;
+  color: var(--ion-color-medium);
+  text-align: center;
+  padding: 14px 0;
+  font-style: italic;
 }

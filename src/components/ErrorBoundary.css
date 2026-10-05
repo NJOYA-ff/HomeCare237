@@ -1,0 +1,8 @@
+.error-boundary-card {
+  margin: 2rem 1rem;
+  text-align: center;
+}
+
+.error-boundary-card ion-card-title {
+  color: var(--ion-color-danger);
+}

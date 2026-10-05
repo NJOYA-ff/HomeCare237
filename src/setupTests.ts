@@ -5,10 +5,19 @@
 import '@testing-library/jest-dom/extend-expect';
 
 // Mock matchmedia
-window.matchMedia = window.matchMedia || function() {
+// jsdom does not implement window.matchMedia, so we provide a full
+// MediaQueryList-shaped object. Components such as SettingsContext subscribe
+// with addEventListener("change", …) / removeEventListener(…).
+window.matchMedia = window.matchMedia || function (query: string) {
   return {
       matches: false,
+      media: query,
+      onchange: null,
       addListener: function() {},
-      removeListener: function() {}
-  };
+      removeListener: function() {},
+      addEventListener: function() {},
+      removeEventListener: function() {},
+      dispatchEvent: function() { return false; },
+  } as unknown as MediaQueryList;
 };
+

@@ -840,6 +840,32 @@ ion-card:active {
   }
 }
 
+/* ════════════════════════════════════════════════════════════════
+   Shared loading state — used by all patient pages
+   ════════════════════════════════════════════════════════════════ */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+  gap: 16px;
+
+  p {
+    margin: 0;
+    color: var(--ion-color-medium);
+    font-size: 0.9rem;
+  }
+}
+
+.loading-spinner {
+  width: 44px;
+  height: 44px;
+  border: 4px solid rgba(107, 134, 255, 0.15);
+  border-top-color: var(--ion-color-primary);
+  border-radius: 50%;
+}
+
 /* Patient homepage style inspired by reference mockup */
 .dashboard-patient {
   --background: linear-gradient(180deg, #edf0ff 0%, #f8f9ff 100%);
@@ -855,6 +881,7 @@ ion-card:active {
 
 .patient-home-intro,
 .home-upcoming-card,
+.home-health-units-card,
 .home-top-doctors-card {
   margin: 0;
   border-radius: 26px;
@@ -870,7 +897,7 @@ ion-card:active {
 
 .tiny-greeting {
   margin: 0 0 6px;
-  color: #6870d9;
+  color: var(--ion-color-primary-tint);
   font-size: 12px;
   font-weight: 600;
 }
@@ -881,7 +908,7 @@ ion-card:active {
   line-height: 1.15;
   font-weight: bolder;
   letter-spacing: -0.02em;
-  color: #191d38;
+  color: var(--ion-text-color);
 }
 
 .home-search-wrap {
@@ -891,8 +918,8 @@ ion-card:active {
   height: 42px;
   border-radius: 999px;
   padding: 0 10px 0 12px;
-  background: #f3f4fb;
-  border: 1px solid #ebedfa;
+  background: var(--ion-background-color);
+  border: 1px solid var(--ion-border-color);
 }
 
 .home-search-wrap ion-icon {
@@ -906,14 +933,14 @@ ion-card:active {
   border: 0;
   outline: 0;
   background: transparent;
-  color: #404559;
+  color: #2a54ffd2;
   font-size: 14px;
 }
 
 .home-search-wrap ion-button {
   --padding-start: 6px;
   --padding-end: 6px;
-  --color: #5f69ef;
+  --color: var(--ion-color-primary);
 }
 
 .home-section-head {
@@ -967,7 +994,7 @@ ion-card:active {
   background: var(--cat-bg);
   transition: all 0.3s ease;
   --ripple-color: var(--cat-fg);
-  --background: linear-gradient(140deg, #6b86ff 0%, #4b77e5 100%);
+  --background: linear-gradient(140deg, var(--ion-color-primary-tint) 0%, var(--ion-color-primary) 100%);
   color: #ffffff;
   &:hover {
     transform: translateY(-3px);
@@ -980,7 +1007,7 @@ ion-card:active {
   }
 }
 .chatbot {
-  --background: linear-gradient(140deg, #6b86ff 0%, #4b77e5 100%);
+  --background: linear-gradient(140deg, var(--ion-color-primary-tint) 0%, var(--ion-color-primary) 100%);
 }
 .home-category-btn svg,
 .home-category-btn ion-icon {
@@ -990,22 +1017,22 @@ ion-card:active {
 }
 
 .home-category-1 {
-  --background: linear-gradient(140deg, #6b86ff 0%, #4b77e5 100%);
+  --background: linear-gradient(140deg, var(--ion-color-primary-tint) 0%, var(--ion-color-primary) 100%);
   color: #ffffff;
 }
 
 .home-category-2 {
-  --background: linear-gradient(140deg, #6b86ff 0%, #4b77e5 100%);
+  --background: linear-gradient(140deg, var(--ion-color-primary-tint) 0%, var(--ion-color-primary) 100%);
   color: #ffffff;
 }
 
 .home-category-3 {
-  --background: linear-gradient(140deg, #6b86ff 0%, #4b77e5 100%);
+  --background: linear-gradient(140deg, var(--ion-color-primary-tint) 0%, var(--ion-color-primary) 100%);
   color: #ffffff;
 }
 
 .home-category-4 {
-  --background: linear-gradient(140deg, #6b86ff 0%, #4b77e5 100%);
+  --background: linear-gradient(140deg, var(--ion-color-primary-tint) 0%, var(--ion-color-primary) 100%);
   color: #ffffff;
 }
 
@@ -1013,7 +1040,7 @@ ion-card:active {
   margin-top: 10px;
   border-radius: 18px;
   padding: 12px;
-  background: linear-gradient(140deg, #6b86ff 0%, #4b77e5 100%);
+  background: linear-gradient(140deg, var(--ion-color-primary-tint) 0%, var(--ion-color-primary) 100%);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -1034,7 +1061,6 @@ ion-card:active {
 .appointment-time {
   display: flex;
   align-items: center;
-  gap: 6px;
   margin: 0 0 4px;
   font-size: 11px;
   opacity: 0.9;
@@ -1114,7 +1140,7 @@ ion-card:active {
 }
 
 .doctor-book-mini-btn {
-  --background: linear-gradient(140deg, #6b86ff 0%, #4b77e5 100%);
+  --background: linear-gradient(140deg, var(--ion-color-primary-tint) 0%, var(--ion-color-primary) 100%);
   --border-radius: 999px;
   height: 30px;
   font-size: 10px;
@@ -1145,20 +1171,32 @@ ion-card:active {
   z-index: -1;
 }
 
-@media (prefers-color-scheme: dark) {
+body.dark {
   .dashboard-patient {
     --background: var(--background);
   }
 
   .patient-home-intro,
   .home-upcoming-card,
-  .home-top-doctors-card {
+  .home-health-units-card,
+  .home-top-doctors-card,
+  .dash-doctor-cards-section {
     --background: var(--background);
-    border: 1px solid #2a2f57;
+    border: 1px solid var(--hc-border);
+  }
+
+  .dash-doctor-card {
+    --background: var(--ion-item-background);
+    background: var(--ion-item-background);
+    border-color: var(--hc-border);
+  }
+
+  .dash-doctor-card-img-wrap {
+    background: var(--hc-surface-muted);
   }
 
   .tiny-greeting {
-    color: #aeb5ff;
+    color: var(--ion-color-primary-tint);
   }
 
   .home-title {
@@ -1166,12 +1204,12 @@ ion-card:active {
   }
 
   .home-search-wrap {
-    background: #202448;
-    border: 1px solid #2a2f57;
+    background: var(--ion-background-color);
+    border: 1px solid var(--hc-border);
   }
 
   .home-search-wrap ion-icon {
-    color: #8e93b5;
+    color: var(--hc-text-muted);
   }
 
   .home-search-wrap input {
@@ -1179,11 +1217,11 @@ ion-card:active {
   }
 
   .home-search-wrap ion-button {
-    --color: #aeb5ff;
+    --color: var(--ion-color-primary-tint);
   }
 
   .home-section-head h3 {
-    color: #f0f2ff;
+    color: var(--ion-text-color);
   }
 
   .home-section-head ion-button {
@@ -1194,12 +1232,10 @@ ion-card:active {
     color: #d3d7f0;
   }
 
-  .upcoming-highlight {
-  }
+
 
   .home-doctor-item {
-    background: #1e2241;
-    border: 1px solid #2a2f57;
+    border: 1px solid var(--hc-border);
   }
 
   .doctor-role {
@@ -1207,11 +1243,11 @@ ion-card:active {
   }
 
   .doctor-item-meta h4 {
-    color: #eef0ff;
+    color: var(--ion-text-color);
   }
 
   .doctor-rating-line {
-    color: #b1b6d5;
+    color: var(--hc-text-muted);
   }
 
   .empty-state-text {
@@ -1303,7 +1339,7 @@ ion-card:active {
   width: 46px;
   height: 46px;
   border-radius: 14px;
-  background: linear-gradient(140deg, #6b86ff 0%, #4b77e5 100%);
+  background: linear-gradient(140deg, var(--ion-color-primary-tint) 0%, var(--ion-color-primary) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1354,13 +1390,13 @@ ion-card:active {
 
   ion-icon {
     font-size: 18px;
-    color: #6b86ff;
+    color: var(--ion-color-primary-tint);
   }
 
   .stat-value {
     font-size: 16px;
     font-weight: 700;
-    color: #191d38;
+    color: var(--ion-text-color);
     small {
       font-size: 10px;
       font-weight: 500;
@@ -1420,27 +1456,27 @@ ion-card:active {
 }
 
 // ===== DARK MODE for new sections =====
-@media (prefers-color-scheme: dark) {
+body.dark {
   .home-quick-actions-card,
   .home-health-stats-card {
     --background: var(--ion-item-background, #1e2030);
-    border-color: #2a2f57;
+    border-color: var(--hc-border);
   }
   .quick-action-item span {
     color: #d3d7f0;
   }
   .doc-avail-dot {
-    border-color: #1e2241;
+    border-color: var(--ion-color-step-150);
   }
   .health-stat-item {
-    background: #202448;
+    background: var(--ion-color-step-150);
   }
   .health-stat-item .stat-value {
-    color: #eef0ff;
+    color: var(--ion-text-color);
   }
   .health-tip-banner {
     background: linear-gradient(135deg, #1a1e3a 0%, #1e1a30 100%);
-    border-color: #2a2f57;
+    border-color: var(--hc-border);
   }
   .tip-body {
     color: #c8cce8;
@@ -1451,25 +1487,601 @@ body.dark {
   .home-quick-actions-card,
   .home-health-stats-card {
     --background: var(--ion-item-background, #1e2030);
-    border-color: #2a2f57;
+    border-color: var(--hc-border);
   }
   .quick-action-item span {
     color: #d3d7f0;
   }
   .doc-avail-dot {
-    border-color: #1e2241;
+    border-color: var(--ion-color-step-150);
   }
   .health-stat-item {
-    background: #202448;
+    background: var(--ion-color-step-150);
   }
   .health-stat-item .stat-value {
-    color: #eef0ff;
+    color: var(--ion-text-color);
   }
   .health-tip-banner {
     background: linear-gradient(135deg, #1a1e3a 0%, #1e1a30 100%);
-    border-color: #2a2f57;
+    border-color: var(--hc-border);
   }
   .tip-body {
     color: #c8cce8;
   }
 }
+
+/* ════════════════════════════════════════════════════════════════
+   Consult Doctors strip
+   ════════════════════════════════════════════════════════════════ */
+
+/* Outer wrapper card (section header + scroll row) — matches other dashboard cards */
+.consult-strip-card {
+  margin: 0;
+  border-radius: 10px;
+  border: 1px solid #e5e8f9;
+  background: #fefeff;
+  padding: 16px 16px 14px;
+
+  .consult-strip-icon {
+    margin-right: 7px;
+    color: var(--ion-color-primary);
+    font-size: 17px;
+    vertical-align: middle;
+  }
+
+  .consult-strip-scroll {
+    display: flex;
+    flex-direction: row;
+    gap: 14px;
+    overflow-x: auto;
+    padding: 10px 2px 6px;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+}
+
+/* Individual doctor IonCard */
+.consult-doctor-card {
+  margin: 0;
+  min-width: 200px;
+  max-width: 200px;
+  flex-shrink: 0;
+  border-radius: 20px;
+  border: 1px solid #eceef9;
+  --background: #fefeff;
+  overflow: hidden;
+  box-shadow: 0 2px 14px rgba(104, 112, 217, 0.10);
+
+  /* ── Top image section ── */
+  .consult-doctor-img-wrap {
+    position: relative;
+    width: 100%;
+    height: 140px;
+    overflow: hidden;
+  }
+
+  .consult-doctor-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top center;
+    display: block;
+  }
+
+  /* Soft gradient fade at the bottom of the image */
+  .consult-doctor-img-shade {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 55%;
+    background: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0) 0%,
+      rgba(20, 24, 60, 0.50) 100%
+    );
+    pointer-events: none;
+  }
+
+  /* Online indicator — top-right corner of image */
+  .consult-strip-online-dot {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: #2ed573;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2.5px rgba(46, 213, 115, 0.30);
+  }
+
+  /* ── Info + buttons below the image ── */
+  .consult-doctor-body {
+    padding: 10px 12px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .consult-strip-name {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: #101428;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .consult-strip-specialty {
+    margin: 0 0 8px;
+    font-size: 11px;
+    color: #8892b0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+  }
+
+  .consult-strip-actions {
+    display: flex;
+    flex-direction: row;
+    gap: 7px;
+    width: 100%;
+  }
+
+  .consult-strip-call-btn,
+  .consult-strip-chat-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    flex: 1;
+    height: 34px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    outline: none;
+    transition: opacity 0.15s, transform 0.1s;
+    letter-spacing: 0.01em;
+
+    &:active {
+      opacity: 0.75;
+      transform: scale(0.96);
+    }
+
+    svg {
+      flex-shrink: 0;
+    }
+  }
+
+  .consult-strip-call-btn {
+    background: transparent;
+    border: 1.5px solid #6870d9;
+    color: #6870d9;
+  }
+
+  .consult-strip-chat-btn {
+    background: linear-gradient(135deg, var(--ion-color-primary-tint) 0%, var(--ion-color-primary) 100%);
+    border: none;
+    color: #fff;
+  }
+}
+
+/* Dark mode — mirrors the pattern of .home-upcoming-card / .home-top-doctors-card */
+body.dark {
+  .consult-strip-card {
+    background: var(--background);
+    border-color: var(--hc-border);
+  }
+
+  .consult-doctor-card {
+    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.30);
+
+    .consult-doctor-img-shade {
+      background: linear-gradient(
+        to bottom,
+        rgba(50, 49, 49, 0) 0%,
+        rgba(17, 17, 21, 0.65) 100%
+      );
+    }
+
+    .consult-strip-name  { color: var(--ion-text-color); }
+    .consult-strip-specialty { color: #8e93b5; }
+
+    .consult-strip-call-btn {
+      border: 1px solid #28282a;
+      color: var(--ion-color-primary-tint);
+    }
+  }
+}
+
+body.dark {
+  .consult-strip-card {
+    background: var(--background);
+    border-color: #1a1c2e;
+  }
+
+  .consult-doctor-card {
+    --background: var(--background);
+
+    .consult-strip-name  { color: var(--ion-text-color); }
+    .consult-strip-specialty { color: #8e93b5; }
+
+    .consult-strip-call-btn {
+      border: 1px solid #28282a;
+      color: var(--ion-color-primary-tint);
+    }
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Find Health Units card + embedded map
+   ════════════════════════════════════════════════════════════════ */
+
+.home-health-units-card {
+  cursor: pointer;
+
+  .home-health-units-content {
+    padding: 16px;
+  }
+
+  .huc-icon {
+    margin-right: 6px;
+    color: var(--ion-color-primary);
+    font-size: 18px;
+    vertical-align: middle;
+  }
+
+  /* Map wrapper: fixed height, rounded, clips the leaflet canvas */
+  .huc-map-wrap {
+    position: relative;
+    width: 100%;
+    height: 160px;
+    border-radius: 16px;
+    overflow: hidden;
+    margin-top: 10px;
+  }
+
+  /* Leaflet container must have an explicit pixel height —
+     Ionic's shadow DOM breaks % inheritance */
+  .huc-map {
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+
+    .leaflet-container {
+      width: 100% !important;
+      height: 160px !important;
+    }
+  }
+
+  /* Semi-transparent overlay with the tap prompt */
+  .huc-map-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: rgba(104, 112, 217, 0.35);
+    backdrop-filter: blur(2px);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 16px;
+    pointer-events: none;
+
+    ion-icon {
+      font-size: 28px;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    }
+
+    span {
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    }
+  }
+}
+
+body.dark {
+  .home-health-units-card {
+    .huc-map-overlay {
+      background: rgba(60, 68, 160, 0.45);
+    }
+  }
+}
+
+body.dark {
+  .home-health-units-card {
+    .huc-map-overlay {
+      background: rgba(60, 68, 160, 0.45);
+    }
+  }
+}
+
+/* ── Available Doctors Card Section — theme-aware, horizontal scroll ─ */
+
+.dash-doctor-cards-section {
+  margin: 0;
+  border-radius: 26px;
+  border: 1px solid #e5e8f9;
+  --background: #fefeff;
+  overflow: hidden;
+
+  ion-card-content {
+    padding: 16px 0 16px 16px;
+  }
+}
+
+.dash-doctor-section-head {
+  padding-right: 16px;
+  margin-bottom: 14px;
+
+  .dash-doctor-see-all {
+    --color: var(--ion-color-medium) !important;
+  }
+}
+
+.dash-doctor-empty {
+  color: var(--hc-text-muted);
+  font-size: 13px;
+  padding-right: 16px;
+  margin: 4px 0 8px;
+}
+
+/* Horizontal scroll container */
+.dash-doctor-scroll-row {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding-right: 16px;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Individual doctor card */
+.dash-doctor-card {
+  flex: 0 0 210px;
+  width: 210px;
+  margin: 0;
+  border-radius: 20px;
+  border: 1px solid var(--hc-border);
+  --background: var(--hc-surface);
+  background: var(--hc-surface);
+  box-shadow: var(--hc-shadow-sm);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Square profile photo */
+.dash-doctor-card-img-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: var(--hc-surface-muted);
+
+  .dash-doctor-card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+}
+
+/* Card text body */
+.dash-doctor-card-body {
+  padding: 10px 12px 4px;
+  flex: 1;
+}
+
+.dash-doctor-specialty {
+  margin: 0 0 2px;
+  font-size: 9px;
+  color: var(--ion-color-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+}
+
+.dash-doctor-name {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ion-text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dash-doctor-rating {
+  margin: 0;
+  font-size: 10px;
+  color: var(--hc-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+
+  .dash-star-icon {
+    color: var(--ion-color-warning, #ffaa00);
+    font-size: 11px;
+  }
+}
+
+/* Action buttons */
+.dash-doctor-card-actions {
+  display: flex;
+  gap: 8px;
+  padding: 8px 12px 14px;
+}
+
+.dash-doc-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 4px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+
+  &:active {
+    opacity: 0.75;
+    transform: scale(0.96);
+  }
+
+  span {
+    line-height: 1;
+  }
+}
+
+/* Call — ion-primary */
+.dash-doc-btn--call {
+  background: var(--ion-color-primary);
+  color: var(--ion-color-primary-contrast);
+}
+
+/* Message — surface-muted outline */
+.dash-doc-btn--msg {
+  background: var(--hc-surface-muted);
+  color: var(--ion-color-primary);
+  border: 1px solid var(--hc-border-strong);
+}
+
+/* ── End Available Doctors Card Section ───────────────────────────── */
+
+/* ── Map Preview Section ─────────────────────────────────────────── */
+
+.dash-map-preview-card {
+  margin: 0;
+  border-radius: 26px;
+  border: 1px solid #e5e8f9;
+  --background: #fefeff;
+  overflow: hidden;
+
+  ion-card-content.dash-map-preview-content {
+    padding: 16px;
+  }
+}
+
+.dash-map-section-head {
+  margin-bottom: 12px;
+
+  h3 {
+    margin: 0;
+    color: #141830;
+    font-size: 15px;
+    font-weight: 700;
+  }
+}
+
+/* Map container + overlay wrapper */
+.dash-map-wrap {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+/* Leaflet map fills the wrapper */
+.dash-map-leaflet {
+  width: 100%;
+  height: 180px;        /* explicit px — % doesn't propagate through Ionic shadow DOM */
+  border-radius: 18px;
+  pointer-events: none; /* preview only — no interaction */
+
+  /* Force the internal leaflet container to fill the wrapper */
+  .leaflet-container {
+    width: 100% !important;
+    height: 180px !important;
+    border-radius: 18px;
+    background: #e8edf5;  /* fallback while tiles load */
+  }
+
+  /* Leaflet tile pane must also fill */
+  .leaflet-pane,
+  .leaflet-tile-pane,
+  .leaflet-map-pane {
+    width: 100% !important;
+  }
+}
+
+/* Pure gradient scrim — no flex children */
+.dash-map-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.0) 40%,
+    rgba(0, 0, 0, 0.32) 100%
+  );
+  border-radius: 18px;
+  pointer-events: none;
+}
+
+/* "View Map" button — absolute bottom-right corner */
+.dash-map-view-btn {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  z-index: 500;           /* above leaflet tiles */
+
+  --background: rgba(0, 0, 0, 0.18);
+  --background-hover: rgba(0, 0, 0, 0.30);
+  --background-activated: rgba(0, 0, 0, 0.38);
+  --border-color: rgba(255, 255, 255, 0.80);
+  --color: #ffffff;
+  --border-radius: 999px;
+  --border-width: 1.5px;
+  --border-style: solid;
+  --box-shadow: none;
+  --padding-start: 12px;
+  --padding-end: 12px;
+  height: 32px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  margin: 0;
+
+  ion-icon {
+    font-size: 14px !important;
+    margin-right: 2px;
+  }
+}
+
+/* Dark mode overrides */
+body.dark {
+  .dash-map-preview-card {
+    --background: var(--background);
+    border-color: var(--hc-border);
+  }
+
+  .dash-map-section-head h3 {
+    color: var(--ion-text-color);
+  }
+}
+
+/* ── End Map Preview Section ─────────────────────────────────────── */

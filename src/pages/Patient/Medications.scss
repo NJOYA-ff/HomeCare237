@@ -1,0 +1,250 @@
+// Medications.scss — Medication Tracker
+
+.medications-page {
+  ion-toolbar {
+    border-bottom: 1px solid var(--ion-background-color-step-150, #e3e8f2);
+  }
+}
+
+.meds-segment {
+  margin: 12px 12px 4px;
+  --background: var(--ion-item-background, #fff);
+  border-radius: 12px;
+}
+
+.meds-shell,
+.rx-shell {
+  padding: 8px 12px 24px;
+}
+
+.meds-empty {
+  text-align: center;
+  padding: 42px 24px;
+
+  .meds-empty-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 14px;
+    border-radius: 50%;
+    background: rgba(59, 125, 216, 0.1);
+    color: var(--ion-color-primary);
+  }
+
+  h3 {
+    margin: 0 0 6px;
+    font-size: 1.05rem;
+  }
+
+  p {
+    margin: 0 auto 16px;
+    font-size: 0.85rem;
+    color: var(--ion-color-medium);
+    max-width: 300px;
+    line-height: 1.5;
+  }
+}
+
+.med-card,
+.rx-card {
+  border: none;
+  box-shadow: none;
+  border-radius: 14px;
+  background: var(--ion-card-background, #ffffff);
+  margin-bottom: 12px;
+}
+
+.med-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+
+  .med-head-main {
+    flex: 1;
+    min-width: 0;
+
+    h3 {
+      margin: 0 0 2px;
+      font-size: 1rem;
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.82rem;
+      color: var(--ion-color-medium);
+    }
+
+    .med-prescriber {
+      margin-top: 3px;
+      font-size: 0.74rem;
+      color: var(--ion-color-primary);
+    }
+  }
+
+  .med-head-actions {
+    display: flex;
+    flex-shrink: 0;
+
+    ion-button {
+      --padding-start: 4px;
+      --padding-end: 4px;
+      margin: 0;
+    }
+
+    .rem-on ion-icon {
+      color: var(--ion-color-success);
+    }
+  }
+}
+
+.med-times {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.dose-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1.5px solid var(--ion-color-step-200, #dde1f5);
+
+  .dose-time {
+    color: var(--ion-text-color);
+  }
+
+  &.dose-taken {
+    border-color: rgba(45, 211, 111, 0.5);
+    background: rgba(45, 211, 111, 0.08);
+  }
+
+  &.dose-skipped {
+    border-color: rgba(146, 148, 156, 0.5);
+    background: rgba(146, 148, 156, 0.1);
+    opacity: 0.85;
+  }
+
+  .dose-actions {
+    display: flex;
+    margin-left: 2px;
+
+    ion-button {
+      --padding-start: 2px;
+      --padding-end: 2px;
+      margin: 0;
+      height: 26px;
+    }
+  }
+
+  ion-chip {
+    font-size: 0.7rem;
+    height: 22px;
+  }
+}
+
+.med-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  .med-progress {
+    flex: 1;
+    height: 6px;
+    border-radius: 4px;
+    background: var(--ion-background-color-step-200, #e3e8f2);
+    overflow: hidden;
+
+    .med-progress-fill {
+      height: 100%;
+      border-radius: 4px;
+      background: linear-gradient(90deg, var(--ion-color-primary), var(--ion-color-success));
+      transition: width 0.4s ease;
+    }
+  }
+
+  .med-progress-label {
+    font-size: 0.74rem;
+    color: var(--ion-color-medium);
+    white-space: nowrap;
+  }
+
+  ion-button {
+    --padding-start: 6px;
+    --padding-end: 6px;
+    margin: 0;
+    font-size: 0.78rem;
+  }
+}
+
+.rx-card {
+  .rx-head {
+    h3 {
+      margin: 0 0 2px;
+      font-size: 1rem;
+    }
+
+    .rx-doctor {
+      margin: 0;
+      font-size: 0.8rem;
+      color: var(--ion-color-medium);
+    }
+  }
+
+  .rx-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin: 8px 0 10px;
+
+    .rx-notes {
+      width: 100%;
+      margin: 4px 0 0;
+      font-size: 0.8rem;
+      color: var(--ion-text-color);
+      opacity: 0.75;
+    }
+
+    ion-chip {
+      font-size: 0.72rem;
+      height: 24px;
+    }
+  }
+}
+
+.times-editor {
+  margin: 4px 0 12px;
+
+  .times-title {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--ion-color-medium);
+    margin: 0 0 8px;
+  }
+}
+
+.reminder-toggle-item {
+  --background: transparent;
+  --padding-start: 0;
+  margin: 4px 0 16px;
+  font-size: 0.9rem;
+}
+
+.med-save-btn {
+  --border-radius: 12px;
+  height: 48px;
+  font-weight: 600;
+  margin-top: 4px;
+}

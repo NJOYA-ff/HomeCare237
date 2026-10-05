@@ -27,7 +27,6 @@ import {
   IonThumbnail,
   useIonViewWillEnter,
   useIonViewWillLeave,
-  IonAlert,
   IonProgressBar,
   IonImg,
   useIonActionSheet,
@@ -35,6 +34,7 @@ import {
   IonFooter,
   IonBadge,
 } from "@ionic/react";
+import { MessageBox } from "../../components/ui/MessageBox";
 import { useNotifications } from "../../context/NotificationContext";
 import { db, auth, storage } from "../../firebaseconfig";
 import {
@@ -972,17 +972,17 @@ const SMS_doctor: React.FC = () => {
               {msg.attachments.map((attachment: Attachment, index: number) => (
                 <div key={index} className="attachment">
                   {attachment.type === "image" && (
-                    <div className="image-attachment" onClick={() => { setSelectedImage(attachment.url); setShowImageModal(true); }}>
+                    <div className="image-attachment" onClick={() => { setSelectedImage(attachment.url); setShowImageModal(true);} }>
                       <IonThumbnail><IonImg src={attachment.url} alt={attachment.name} /></IonThumbnail>
                       <IonLabel>{attachment.name}</IonLabel>
-                      <IonButton fill="clear" size="small" onClick={(e) => { e.stopPropagation(); downloadFile(attachment); }}><IonIcon icon={downloadOutline} /></IonButton>
+                      <IonButton fill="clear" size="small" onClick={(e) => { e.stopPropagation(); downloadFile(attachment);} }><IonIcon icon={downloadOutline} /></IonButton>
                     </div>
                   )}
                   {attachment.type === "document" && (
-                    <div className="document-attachment" onClick={() => { setSelectedDocument(attachment); setShowDocumentModal(true); }}>
+                    <div className="document-attachment" onClick={() => { setSelectedDocument(attachment); setShowDocumentModal(true);} }>
                       <IonIcon icon={documentText} className="document-icon" />
                       <IonLabel>{attachment.name}</IonLabel>
-                      <IonButton fill="clear" size="small" onClick={(e) => { e.stopPropagation(); downloadFile(attachment); }}><IonIcon icon={downloadOutline} /></IonButton>
+                      <IonButton fill="clear" size="small" onClick={(e) => { e.stopPropagation(); downloadFile(attachment);} }><IonIcon icon={downloadOutline} /></IonButton>
                     </div>
                   )}
                   {attachment.type === "audio" && (
@@ -1037,7 +1037,7 @@ const SMS_doctor: React.FC = () => {
           {selectedDoctor ? (
             <>
               <IonButtons slot="start">
-                <IonButton onClick={() => { setSelectedDoctor(null); setSelectedChat(null); setAttachments([]); setNewMessage(""); pauseAllAudio(); }}>
+                <IonButton onClick={() => { setSelectedDoctor(null); setSelectedChat(null); setAttachments([]); setNewMessage(""); pauseAllAudio();} }>
                   <IonIcon icon={arrowBack} />
                 </IonButton>
               </IonButtons>
@@ -1058,7 +1058,7 @@ const SMS_doctor: React.FC = () => {
               </div>
               <IonButtons slot="end">
                 <IonButton className="call-button" onClick={() => setIsCallModalOpen(true)}><IonIcon icon={callOutline} /></IonButton>
-                <IonButton className="call-button" onClick={() => { setRoomToken("room-" + Date.now()); setIsVideoModalOpen(true); }}><IonIcon icon={videocamOutline} /></IonButton>
+                <IonButton className="call-button" onClick={() => { setRoomToken("room-" + Date.now()); setIsVideoModalOpen(true);} }><IonIcon icon={videocamOutline} /></IonButton>
               </IonButtons>
             </>
           ) : (
@@ -1185,7 +1185,20 @@ const SMS_doctor: React.FC = () => {
           </IonContent>
         </IonModal>
 
-        <IonAlert isOpen={showAlert} onDidDismiss={() => setShowAlert(false)} header={"Microphone Access"} message={alertMessage} buttons={["OK"]} />
+<MessageBox
+          isOpen={showAlert}
+          title="Microphone Access"
+          message={alertMessage}
+          tone="danger"
+          actions={[
+            {
+              label: "OK",
+              color: "primary",
+              onClick: () => setShowAlert(false),
+            },
+          ]}
+          onDismiss={() => setShowAlert(false)}
+        />
       </IonContent>
 
       {selectedDoctor && (
@@ -1294,8 +1307,8 @@ const SMS_doctor: React.FC = () => {
         onClose={() => setIsCallModalOpen(false)}
         targetId={selectedDoctor?.id || ""}
         targetCollection="doctors"
-        onSwitchToVideo={() => { setIsCallModalOpen(false); setRoomToken("room-" + Date.now()); setIsVideoModalOpen(true); }}
-      />
+        onSwitchToVideo={() => { setIsCallModalOpen(false); setRoomToken("room-" + Date.now()); setIsVideoModalOpen(true); }
+    }  />
       <VideoChatModal
         isOpen={isVideoModalOpen}
         onClose={() => setIsVideoModalOpen(false)}

@@ -1,3 +1,4 @@
+import LoadingHelix from "../../components/LoadingHelix";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   IonPage,
@@ -18,10 +19,9 @@ import {
   IonListHeader,
   IonInput,
   IonButton,
-  IonSpinner,
   useIonToast,
-  useIonAlert,
 } from "@ionic/react";
+import { useMessageBox } from "../../components/ui/useMessageBox";
 import {
   languageOutline,
   notificationsOutline,
@@ -43,8 +43,9 @@ import {
   disablePin,
 } from "../../utils/BiometricAuthService";
 import PinSetupModal from "../../components/PinSetupModal";
+import PasswordResetModal from "../../components/PasswordResetModal";
 import { auth, db } from "../../firebaseconfig";
-import { sendPasswordResetEmail } from "firebase/auth";
+import { aboutMessage } from "../../data/appCredits";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import "../Settings/Settings.scss";
 
@@ -59,7 +60,7 @@ const DoctorSettings: React.FC = () => {
   } = useSettings();
 
   const [presentToast] = useIonToast();
-  const [presentAlert] = useIonAlert();
+  const presentMessage = useMessageBox();
 
   // Biometry
   const [bioAvailable, setBioAvailable] = useState(false);
@@ -68,6 +69,9 @@ const DoctorSettings: React.FC = () => {
   // PIN modal
   const [pinModalOpen, setPinModalOpen] = useState(false);
   const [pinModalMode, setPinModalMode] = useState<"setup" | "verify">("setup");
+
+  // Password reset modal
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
 
   // Doctor-specific prefs
   const [isAvailable, setIsAvailable] = useState(false);
@@ -148,23 +152,24 @@ const DoctorSettings: React.FC = () => {
       setPinModalMode("setup");
       setPinModalOpen(true);
     } else {
-      presentAlert({
+      presentMessage({
         header: t("disablePin"),
         message: "Are you sure you want to remove your PIN?",
-        buttons: [
-          { text: t("cancel"), role: "cancel" },
-          {
-            text: "Remove", role: "destructive",
-            handler: async () => {
+        /* Deleting the PIN is destructive, so the confirm action carries the
+           danger colour and Cancel stays quiet — backing out is the safe
+           default and red would imply something is about to be lost. */
+        action: {
+          text: "Remove", color: "danger",
+          handler: async () => {
               await disablePin();
               setPinEnabledSetting(false);
               presentToast({ message: "PIN disabled", duration: 2000, color: "medium", position: "top" });
-            },
           },
-        ],
-      });
+        },
+        cancel: { text: t("cancel") },
+        });
     }
-  }, [t, setPinEnabledSetting, presentAlert, presentToast]);
+  }, [t, setPinEnabledSetting, presentMessage, presentToast]);
 
   const handlePinSuccess = useCallback(() => {
     setPinModalOpen(false);
@@ -178,33 +183,20 @@ const DoctorSettings: React.FC = () => {
       presentToast({ message: "No account email found.", duration: 3000, color: "warning", position: "top" });
       return;
     }
-    presentAlert({
-      header: t("changePassword"),
-      message: `A password reset link will be sent to:\n${email}`,
-      buttons: [
-        { text: t("cancel"), role: "cancel" },
-        {
-          text: "Send",
-          handler: async () => {
-            try {
-              await sendPasswordResetEmail(auth, email);
-              presentToast({ message: "Password reset email sent.", duration: 3500, color: "success", position: "top" });
-            } catch (err: any) {
-              presentToast({ message: err?.message || "Failed to send reset email.", duration: 3500, color: "danger", position: "top" });
-            }
-          },
-        },
-      ],
-    });
-  }, [presentAlert, presentToast, t]);
+    setPasswordModalOpen(true);
+  }, [presentToast]);
 
   const handleAbout = useCallback(() => {
-    presentAlert({
+    presentMessage({
       header: "HomeCare237",
-      message: "Version 1.0.0\n\nConnecting patients with healthcare professionals across Cameroon.\n\n© 2026 HomeCare237. All rights reserved.",
-      buttons: ["OK"],
-    });
-  }, [presentAlert]);
+      message: aboutMessage(
+        "Connecting patients with healthcare professionals across Cameroon.",
+      ),
+      /* Informational, not a failure — info tone keeps red for real errors. */
+      tone: "info",
+      action: { text: "OK" },
+      });
+  }, [presentMessage]);
 
   return (
     <IonPage>
@@ -245,7 +237,7 @@ const DoctorSettings: React.FC = () => {
                 min="0"
               />
               <IonButton size="small" fill="clear" onClick={handleSaveFee} disabled={savingFee}>
-                {savingFee ? <IonSpinner name="crescent" style={{ width: 16, height: 16 }} /> : <IonIcon icon={checkmarkOutline} color="success" />}
+                {savingFee ? <LoadingHelix size={16} /> : <IonIcon icon={checkmarkOutline} color="success" />}
               </IonButton>
             </div>
           </IonItem>
@@ -303,8 +295,8 @@ const DoctorSettings: React.FC = () => {
               onIonChange={(e) => {
                 setNewAppointmentNotif(e.detail.checked);
                 localStorage.setItem("hc_doc_new_appt_notif", String(e.detail.checked));
-              }}
-            />
+              }
+          }  />
           </IonItem>
           <IonItem>
             <IonIcon icon={notificationsOutline} slot="start" className="settings-icon" />
@@ -318,8 +310,8 @@ const DoctorSettings: React.FC = () => {
               onIonChange={(e) => {
                 setMessageNotif(e.detail.checked);
                 localStorage.setItem("hc_doc_message_notif", String(e.detail.checked));
-              }}
-            />
+              }
+          }  />
           </IonItem>
         </IonList>
 
@@ -343,7 +335,7 @@ const DoctorSettings: React.FC = () => {
             <IonToggle slot="end" checked={pinEnabled} onIonChange={(e) => handlePinToggle(e.detail.checked)} />
           </IonItem>
           {pinEnabled && (
-            <IonItem button detail onClick={() => { setPinModalMode("setup"); setPinModalOpen(true); }}>
+            <IonItem button detail onClick={() => { setPinModalMode("setup"); setPinModalOpen(true);} }>
               <IonIcon icon={lockClosedOutline} slot="start" className="settings-icon" />
               <IonLabel>{t("changePin")}</IonLabel>
             </IonItem>
@@ -367,6 +359,13 @@ const DoctorSettings: React.FC = () => {
       </IonContent>
 
       <PinSetupModal isOpen={pinModalOpen} mode={pinModalMode} onSuccess={handlePinSuccess} onDismiss={() => setPinModalOpen(false)} />
+
+      {/* Reset Password modal */}
+      <PasswordResetModal
+        isOpen={passwordModalOpen}
+        email={auth.currentUser?.email ?? null}
+        onDidDismiss={() => setPasswordModalOpen(false)}
+      />
     </IonPage>
   );
 };

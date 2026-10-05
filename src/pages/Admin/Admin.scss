@@ -5,8 +5,7 @@
 // ---- Dashboard Header ----
 .dashboard-header-a ion-toolbar {
   --background: var(--ion-background-color);
-  --border-width: 0 0 1px 0;
-  --border-color: var(--ion-color-step-100);
+  --border-width: 0;
   --min-height: 56px;
 }
 
@@ -115,12 +114,13 @@
 
 // ---- Chart Cards ----
 .chart-card {
-  border-radius: 16px;
+  border-radius: 18px;
   margin: 5px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  border: 1px solid rgba(124, 92, 255, 0.08);
+  box-shadow: 0 8px 24px rgba(124, 92, 255, 0.08);
 
   ion-card-header { padding: 16px 18px 8px; }
-  ion-card-title  { font-size: 1rem; font-weight: 700; }
+  ion-card-title  { font-size: 1rem; font-weight: 700; color: #232839; }
   ion-card-content { padding-top: 4px; }
 }
 
@@ -220,8 +220,7 @@
 // ============================================================
 .toolbar-profile ion-toolbar {
   --background: var(--ion-background-color);
-  --border-width: 0 0 1px 0;
-  --border-color: var(--ion-color-step-100);
+  --border-width: 0;
 }
 
 .profile-content {
@@ -335,7 +334,7 @@
 }
 
 // ---- Dark mode ----
-@media (prefers-color-scheme: dark) {
+body.dark {
   .chart-card, .activity-card { --background: var(--ion-item-background, #1a1d27); }
 }
 body.dark {

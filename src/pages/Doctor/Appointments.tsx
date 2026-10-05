@@ -6,12 +6,14 @@ import {
   IonTitle,
   IonToolbar,
   IonCard,
-  IonCardHeader,
   IonCardTitle,
   IonCardSubtitle,
   IonCardContent,
-  IonItem,
   IonAvatar,
+  IonGrid,
+  IonRow,
+  IonCol,
+  IonItem,
   IonLabel,
   IonButton,
   IonIcon,
@@ -21,15 +23,12 @@ import {
   IonList,
   IonText,
   useIonViewWillEnter,
-  IonAlert,
   IonChip,
-  IonGrid,
-  IonRow,
-  IonCol,
   IonBadge,
   IonButtons,
   IonBackButton,
 } from "@ionic/react";
+import { MessageBox } from "../../components/ui/MessageBox";
 import {
   calendar,
   time,
@@ -59,7 +58,18 @@ import twilioMs from "../../components/Services/twilioServiceMs";
 import { useNotifications } from "../../context/NotificationContext";
 import "./Appointments.scss";
 import { getAuth } from "firebase/auth";
-import { motion } from "framer-motion";
+import LoadingHelix from "../../components/LoadingHelix";
+import { EmptyState } from "../../components/ui";
+import {
+  formatRecipientMeta,
+  getBookingRecipient,
+  resolveRecipientName,
+  type BookingRecipient,
+} from "../../utils/appointmentRecipient";
+import {
+  DEFAULT_AVATAR,
+  handleImageError,
+} from "../../utils/profileImageStorage";
 
 
 // Define the Emergency Contact type
@@ -118,6 +128,12 @@ interface Appointment {
     allergies?: string[];
     medicalHistory?: string[];
   };
+  /**
+   * Normalised "booked for" details, present only when the patient booked on
+   * behalf of a relative. Null for the doctor's own appointments with the
+   * account holder.
+   */
+  recipient?: BookingRecipient | null;
 }
 
 const Appointments: React.FC = () => {
@@ -228,12 +244,6 @@ const Appointments: React.FC = () => {
     return `${name} (${relationship}): ${phone}`;
   };
 
-  // Format array for display
-  const formatArray = (array: any[] | undefined): string => {
-    if (!array || array.length === 0) return "None";
-    return array.join(", ");
-  };
-
   // Calculate age from date of birth
   const calculateAge = (dateOfBirth: string): string => {
     if (!dateOfBirth) return "N/A";
@@ -298,7 +308,7 @@ const Appointments: React.FC = () => {
   ): Promise<Appointment> => {
     console.log("Processing appointment data:", { id: docId, data });
 
-    let patientData = null;
+    let patientData: Patient | null = null;
 
     // Fetch patient data if patientId exists - but don't fail if it doesn't
     if (data.patientId) {
@@ -324,7 +334,7 @@ const Appointments: React.FC = () => {
     const patientImage =
       data.patientImage ||
       patientData?.profilePicture ||
-      "https://ionicframework.com/docs/img/demos/avatar.svg";
+      DEFAULT_AVATAR;
 
     const phone = data.phone || patientData?.phone || "No phone provided";
 
@@ -338,6 +348,10 @@ const Appointments: React.FC = () => {
       | "accepted"
       | "rejected"
       | "completed";
+
+    // Family-member bookings store the relative under `patientDetails`; this
+    // is the only marker that separates them from the account holder's own.
+    const recipient = getBookingRecipient(data.patientDetails);
 
     return {
       id: docId,
@@ -358,6 +372,10 @@ const Appointments: React.FC = () => {
       duration: safeValue(data.duration) || "30 mins",
       consultationFee: safeValue(data.consultationFee) || "0 XAF",
       createdAt: data.createdAt,
+      // Family-member bookings store the relative under `patientDetails`; this
+      // is the only marker that separates them from the account holder's own.
+      recipient,
+
       updatedAt: data.updatedAt,
       patient: patientData
         ? {
@@ -419,7 +437,7 @@ const Appointments: React.FC = () => {
             patientName: data.patientName || "Unknown Patient",
             patientImage:
               data.patientImage ||
-              "https://ionicframework.com/docs/img/demos/avatar.svg",
+              DEFAULT_AVATAR,
             date: safeValue(data.date) || "N/A",
             time: safeValue(data.time) || "N/A",
             address: data.address || "No address provided",
@@ -436,6 +454,8 @@ const Appointments: React.FC = () => {
             duration: data.duration || "30 mins",
             consultationFee: data.consultationFee || "0 XAF",
             createdAt: data.createdAt,
+            recipient: getBookingRecipient(data.patientDetails),
+
             updatedAt: data.updatedAt,
           };
           appointmentsData.push(basicAppointment);
@@ -530,7 +550,7 @@ const Appointments: React.FC = () => {
               patientName: data.patientName || "Unknown Patient",
               patientImage:
                 data.patientImage ||
-                "https://ionicframework.com/docs/img/demos/avatar.svg",
+                DEFAULT_AVATAR,
               date: safeValue(data.date) || "N/A",
               time: safeValue(data.time) || "N/A",
               address: data.address || "No address provided",
@@ -547,6 +567,8 @@ const Appointments: React.FC = () => {
               duration: data.duration || "30 mins",
               consultationFee: data.consultationFee || "0 XAF",
               createdAt: data.createdAt,
+              recipient: getBookingRecipient(data.patientDetails),
+
               updatedAt: data.updatedAt,
             };
             appointmentsData.push(basicAppointment);
@@ -595,12 +617,13 @@ const Appointments: React.FC = () => {
 
     // Filter by search text
     if (searchText) {
+      const term = searchText.toLowerCase();
       result = result.filter(
         (app) =>
-          app.patientName.toLowerCase().includes(searchText.toLowerCase()) ||
-          app.service.toLowerCase().includes(searchText.toLowerCase()) ||
-          app.address.toLowerCase().includes(searchText.toLowerCase()) ||
-          app.phone.toLowerCase().includes(searchText.toLowerCase()),
+          app.patientName.toLowerCase().includes(term) ||
+          app.service.toLowerCase().includes(term) ||
+          app.address.toLowerCase().includes(term) ||
+          app.phone.toLowerCase().includes(term),
       );
     }
 
@@ -806,6 +829,10 @@ const Appointments: React.FC = () => {
     }
   };
 
+  /** Normalise an optional string list for rendering, tolerating a lone string. */
+  const formatArrayToList = (values: string[] | undefined): string[] =>
+    Array.isArray(values) ? values.filter((v) => v !== "" && v != null) : [];
+
   return (
     <IonPage>
       <IonHeader>
@@ -827,6 +854,7 @@ const Appointments: React.FC = () => {
 
         <IonToolbar>
           <IonSegment
+            color="primary"
             value={segment}
             onIonChange={(e) => setSegment(e.detail.value as string)}
           >
@@ -849,307 +877,386 @@ const Appointments: React.FC = () => {
       <IonContent fullscreen>
         {isLoading && (
           <div className="loading-container">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              className="loading-spinner"
-            />
+            <LoadingHelix size={40} />
             <IonText className="ion-text-center ion-padding">
               <p>Loading appointments...</p>
             </IonText>
           </div>
         )}
 
-        <IonAlert
+        <MessageBox
           isOpen={showAlert}
-          onDidDismiss={() => {
+          title="Confirm Action"
+          message={alertMessage}
+          tone="info"
+          actions={[
+            {
+              label: "Cancel",
+              color: "medium",
+              onClick: () => {
+                setShowAlert(false);
+                setSelectedAppointment(null);
+                setActionType("");
+              },
+            },
+            {
+              label: "Confirm",
+              color: "primary",
+              onClick: () => {
+                {
             setShowAlert(false);
             setSelectedAppointment(null);
             setActionType("");
-          }}
-          header={"Confirm Action"}
-          message={alertMessage}
-          buttons={[
-            {
-              text: "Cancel",
-              role: "cancel",
-              cssClass: "secondary",
-            },
-            {
-              text: "Confirm",
-              handler: handleAlertConfirm,
+          }
+                handleAlertConfirm();
+              },
             },
           ]}
-        />
+          onDismiss={() => {
+            setShowAlert(false);
+            setSelectedAppointment(null);
+            setActionType("");
+          }
+      }  />
 
         {!currentDoctorId && !isLoading ? (
-          <div className="no-appointments">
-            <IonIcon icon={informationCircle} size="large" />
-            <IonText>
-              <h3>Please log in to view appointments</h3>
-            </IonText>
-          </div>
+          <EmptyState
+            className="ion-margin"
+            icon={informationCircle}
+            title="Please log in to view appointments"
+            description="Your appointment list is tied to your doctor account. Sign in and they'll appear here."
+          />
         ) : filteredAppointments.length === 0 && !isLoading ? (
-          <div className="no-appointments">
-            <IonIcon icon={calendar} size="large" />
-            <IonText>
-              <h3>No appointments found</h3>
-              <p>You don't have any appointments in this category</p>
-            </IonText>
-          </div>
+          <EmptyState
+            className="ion-margin"
+            icon={calendar}
+            title="No appointments found"
+            description={
+              searchText.trim()
+                ? `No appointments match "${searchText.trim()}". Try a different name or filter.`
+                : "You don't have any appointments in this category yet."
+            }
+            actionLabel={searchText.trim() ? "Clear search" : undefined}
+            onAction={searchText.trim() ? () => setSearchText("") : undefined}
+          />
         ) : (
           <IonList lines="none">
-            {filteredAppointments.map((appointment, index) => (
-              <IonCard
-                key={appointment.id}
-                className={`appointment-card ${appointment.status}-card`}
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                <IonCardHeader className="appointment-header">
-                  <IonGrid className="compact-grid">
-                    <IonRow className="ion-align-items-center ion-justify-content-between">
-                      <IonCol size="auto">
-                        <IonAvatar className="small-avatar">
-                          <img
-                            src={appointment.patientImage}
-                            alt={appointment.patientName}
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.src =
-                                "https://ionicframework.com/docs/img/demos/avatar.svg";
-                            }}
-                          />
-                        </IonAvatar>
-                      </IonCol>
-                      <IonCol>
+            {filteredAppointments.map((appointment, index) => {
+              const { recipient } = appointment;
+              const recipientMeta = formatRecipientMeta(recipient ?? null);
+
+              return (
+                <IonCard
+                  key={appointment.id}
+                  className={`appointment-card ${recipient ? 'family-appointment-card ' : ''}${appointment.status}-card`}
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
+                  {/* ── Identity ─────────────────────────────────────── */}
+                  <div className="appointment-header">
+                    <IonAvatar className={`small-avatar ${recipient ? 'family-avatar-indicator' : ''}`}>
+                      <img
+                        src={appointment.patientImage}
+                        alt={appointment.patientName}
+                        onError={handleImageError}
+                      />
+                    </IonAvatar>
+
+                    <div className="appointment-header-text">
+                      <div className="appointment-header-top">
                         <IonCardTitle className="compact-title">
-                          {appointment.patientName}
+                          {resolveRecipientName(
+                            recipient ?? null,
+                            appointment.patientName,
+                          )}
+                          {recipient && (
+                            <IonBadge 
+                              className="family-booking-badge" 
+                              style={{ marginLeft: '8px', fontSize: '10px', padding: '2px 6px' }}
+                              color="family"
+                            >
+                              Family
+                            </IonBadge>
+                          )}
                         </IonCardTitle>
-                        <IonCardSubtitle className="compact-subtitle">
-                          {appointment.service}
-                          {appointment.patient?.dateOfBirth && (
-                            <span>
-                              {" "}
-                              • {calculateAge(appointment.patient.dateOfBirth)}
-                            </span>
-                          )}
-                          {appointment.patient?.gender && (
-                            <span> • {appointment.patient.gender}</span>
-                          )}
-                        </IonCardSubtitle>
-                      </IonCol>
-                      <IonCol size="auto">
-                        <IonChip color={getStatusColor(appointment.status)}>
+                        <IonChip
+                          className="appt-status-chip"
+                          color={getStatusColor(appointment.status)}
+                        >
                           {appointment.status.charAt(0).toUpperCase() +
                             appointment.status.slice(1)}
                         </IonChip>
-                      </IonCol>
-                    </IonRow>
-                  </IonGrid>
-                </IonCardHeader>
+                      </div>
 
-                <IonCardContent className="compact-content">
-                  <IonGrid className="compact-grid">
-                    <IonRow>
-                      <IonCol size="6">
-                        <IonItem className="compact-item" lines="none">
-                          <IonIcon icon={calendar} slot="start" />
-                          <IonLabel className="compact-label">
-                            <p>Date</p>
-                            <h3>{safeValue(appointment.date)}</h3>
-                          </IonLabel>
-                        </IonItem>
-                      </IonCol>
-                      <IonCol size="6">
-                        <IonItem className="compact-item" lines="none">
-                          <IonIcon icon={time} slot="start" />
-                          <IonLabel className="compact-label">
-                            <p>Time</p>
-                            <h3>{safeValue(appointment.time)}</h3>
-                          </IonLabel>
-                        </IonItem>
-                      </IonCol>
-                    </IonRow>
+                      <IonCardSubtitle className="compact-subtitle">
+                        <span className="appt-service">
+                          {safeValue(appointment.service)}
+                        </span>
+                        {recipient ? (
+                          <>
+                            {recipient.relationship && (
+                              <span className="appt-identity">
+                                • {recipient.relationship}
+                              </span>
+                            )}
+                            {recipient.age && (
+                              <span className="appt-identity">
+                                • {recipient.age} yrs
+                              </span>
+                            )}
+                            {recipient.gender && (
+                              <span className="appt-identity">
+                                • {recipient.gender}
+                              </span>
+                            )}
+                            {recipient.bloodType && (
+                              <span className="appt-identity">
+                                • {recipient.bloodType}
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            {appointment.patient?.dateOfBirth && (
+                              <span className="appt-identity">
+                                • {calculateAge(appointment.patient.dateOfBirth)}
+                              </span>
+                            )}
+                            {appointment.patient?.gender && (
+                              <span className="appt-identity">
+                                • {appointment.patient.gender}
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </IonCardSubtitle>
+                    </div>
+                  </div>
 
-                    <IonRow>
-                      <IonCol>
-                        <IonItem className="compact-item" lines="none">
-                          <IonIcon icon={location} slot="start" />
-                          <IonLabel className="compact-label">
-                            <p>Location</p>
-                            <h3>{safeValue(appointment.address)}</h3>
-                          </IonLabel>
-                        </IonItem>
-                      </IonCol>
-                    </IonRow>
+                  {recipient && (
+                    <div className="family-priority-info">
+                      <div className="family-label">Patient Details</div>
+                      <div className="family-member-details">
+                        {recipient.name && (
+                          <div className="family-detail-item">
+                            <span className="detail-label">Name:</span>
+                            <span className="detail-value">{recipient.name}</span>
+                          </div>
+                        )}
+                        {recipient.relationship && (
+                          <div className="family-detail-item">
+                            <span className="detail-label">Relationship:</span>
+                            <span className="detail-value">{recipient.relationship}</span>
+                          </div>
+                        )}
+                        {recipient.age && (
+                          <div className="family-detail-item">
+                            <span className="detail-label">Age:</span>
+                            <span className="detail-value">{recipient.age} yrs</span>
+                          </div>
+                        )}
+                        {recipient.gender && (
+                          <div className="family-detail-item">
+                            <span className="detail-label">Gender:</span>
+                            <span className="detail-value">{recipient.gender}</span>
+                          </div>
+                        )}
+                        {recipient.bloodType && (
+                          <div className="family-detail-item">
+                            <span className="detail-label">Blood Type:</span>
+                            <span className="detail-value">{recipient.bloodType}</span>
+                          </div>
+                        )}
+                      </div>
+                      {appointment.patientName && appointment.patientName !== recipient.name && (
+                        <div className="account-holder-note">
+                          <IonIcon icon={person} className="note-icon" />
+                          <span>Booked by: {appointment.patientName}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
-                    <IonRow>
-                      <IonCol size="6">
-                        <IonItem className="compact-item" lines="none">
-                          <IonIcon icon={call} slot="start" />
-                          <IonLabel className="compact-label">
-                            <p>Phone</p>
-                            <h3>{safeValue(appointment.phone)}</h3>
-                          </IonLabel>
-                        </IonItem>
-                      </IonCol>
-                      <IonCol size="6">
-                        <IonItem className="compact-item" lines="none">
-                          <IonIcon icon={informationCircle} slot="start" />
-                          <IonLabel className="compact-label">
-                            <p>Fee</p>
-                            <h3>{safeValue(appointment.consultationFee)}</h3>
-                          </IonLabel>
-                        </IonItem>
-                      </IonCol>
-                    </IonRow>
+                  <IonCardContent className="compact-content">
+                    <IonGrid className="compact-grid">
+                      <IonRow>
+                        <IonCol size="6">
+                          <IonItem className="compact-item" lines="none">
+                            <IonIcon icon={calendar} slot="start" />
+                            <IonLabel className="compact-label">
+                              <p>Date</p>
+                              <h3>{safeValue(appointment.date)}</h3>
+                            </IonLabel>
+                          </IonItem>
+                        </IonCol>
+                        <IonCol size="6">
+                          <IonItem className="compact-item" lines="none">
+                            <IonIcon icon={time} slot="start" />
+                            <IonLabel className="compact-label">
+                              <p>Time</p>
+                              <h3>{safeValue(appointment.time)}</h3>
+                            </IonLabel>
+                          </IonItem>
+                        </IonCol>
+                      </IonRow>
 
-                    <IonRow>
-                      <IonCol>
-                        <IonItem className="compact-item" lines="none">
-                          <IonIcon icon={medical} slot="start" />
-                          <IonLabel className="compact-label">
-                            <p>Reason for Visit</p>
-                            <h3>{safeValue(appointment.reason)}</h3>
-                          </IonLabel>
-                        </IonItem>
-                      </IonCol>
-                    </IonRow>
+                      <IonRow>
+                        <IonCol>
+                          <IonItem className="compact-item" lines="none">
+                            <IonIcon icon={location} slot="start" />
+                            <IonLabel className="compact-label">
+                              <p>Location</p>
+                              <h3>{safeValue(appointment.address)}</h3>
+                            </IonLabel>
+                          </IonItem>
+                        </IonCol>
+                      </IonRow>
 
-                    <IonRow>
-                      <IonCol>
-                        <IonItem className="compact-item" lines="none">
-                          <IonIcon icon={informationCircle} slot="start" />
-                          <IonLabel className="compact-label">
-                            <p>Type of Visit</p>
-                            <h3>{safeValue(appointment.type)}</h3>
-                          </IonLabel>
-                        </IonItem>
-                      </IonCol>
-                    </IonRow>
+                      <IonRow>
+                        <IonCol size="6">
+                          <IonItem className="compact-item" lines="none">
+                            <IonIcon icon={call} slot="start" />
+                            <IonLabel className="compact-label">
+                              <p>Phone</p>
+                              <h3>{safeValue(appointment.phone)}</h3>
+                            </IonLabel>
+                          </IonItem>
+                        </IonCol>
+                        <IonCol size="6">
+                          <IonItem className="compact-item" lines="none">
+                            <IonIcon icon={informationCircle} slot="start" />
+                            <IonLabel className="compact-label">
+                              <p>Fee</p>
+                              <h3>{safeValue(appointment.consultationFee)}</h3>
+                            </IonLabel>
+                          </IonItem>
+                        </IonCol>
+                      </IonRow>
+
+                      <IonRow>
+                        <IonCol>
+                          <IonItem className="compact-item" lines="none">
+                            <IonIcon icon={medical} slot="start" />
+                            <IonLabel className="compact-label">
+                              <p>Reason for Visit</p>
+                              <h3>{safeValue(appointment.reason)}</h3>
+                            </IonLabel>
+                          </IonItem>
+                        </IonCol>
+                      </IonRow>
+
+                      <IonRow>
+                        <IonCol>
+                          <IonItem className="compact-item" lines="none">
+                            <IonIcon icon={informationCircle} slot="start" />
+                            <IonLabel className="compact-label">
+                              <p>Type of Visit</p>
+                              <h3>{safeValue(appointment.type)}</h3>
+                            </IonLabel>
+                          </IonItem>
+                        </IonCol>
+                      </IonRow>
 
                     {/* Additional Patient Information - Only show if available */}
-                    {appointment.patient && (
-                      <>
-                        <IonRow>
+                      {appointment.patient && (
+                        <>
+                          <IonRow>
+                            <IonCol>
+                              <IonItem className="compact-item" lines="none">
+                                <IonIcon icon={person} slot="start" />
+                                <IonLabel className="compact-label">
+                                  <p>Patient Details</p>
+                                  <div className="patient-details">
+                                    {appointment.patient.email && (
+                                      <span>
+                                        Email: {appointment.patient.email}
+                                      </span>
+                                    )}
+                                    {appointment.patient.bloodType && (
+                                      <span>
+                                        Blood Type:{" "}
+                                        {appointment.patient.bloodType}
+                                      </span>
+                                    )}
+                                    {appointment.patient.emergencyContact && (
+                                      <span>
+                                        Emergency:{" "}
+                                        {formatEmergencyContact(
+                                          appointment.patient.emergencyContact,
+                                        )}
+                                      </span>
+                                    )}
+                                    {appointment.patient.allergies &&
+                                      appointment.patient.allergies.length >
+                                        0 && (
+                                        <span>
+                                          Allergies:{" "}
+                                          {formatArrayToList(
+                                            appointment.patient.allergies,
+                                          ).join(", ")}
+                                        </span>
+                                      )}
+                                    {appointment.patient.medicalHistory &&
+                                      appointment.patient.medicalHistory
+                                        .length > 0 && (
+                                        <span>
+                                          Medical History:{" "}
+                                          {formatArrayToList(
+                                            appointment.patient.medicalHistory,
+                                          ).join(", ")}
+                                        </span>
+                                      )}
+                                  </div>
+                                </IonLabel>
+                              </IonItem>
+                            </IonCol>
+                          </IonRow>
+                        </>
+                      )}
+
+                      <IonRow>
+                        {appointment.status === "pending" && (
+                          <>
+                            <IonCol size="6">
+                              <IonButton
+                                color="success"
+                                expand="block"
+                                onClick={() => handleAccept(appointment)}
+                              >
+                                <IonIcon icon={checkmarkCircle} slot="start" />
+                                Accept
+                              </IonButton>
+                            </IonCol>
+                            <IonCol size="6">
+                              <IonButton
+                                color="danger"
+                                expand="block"
+                                onClick={() => handleReject(appointment)}
+                              >
+                                <IonIcon icon={closeCircle} slot="start" />
+                                Reject
+                              </IonButton>
+                            </IonCol>
+                          </>
+                        )}
+
+                        {appointment.status === "accepted" && (
                           <IonCol>
-                            <IonItem className="compact-item" lines="none">
-                              <IonIcon icon={person} slot="start" />
-                              <IonLabel className="compact-label">
-                                <p>Patient Details</p>
-                                <div className="patient-details">
-                                  {appointment.patient.email && (
-                                    <span>
-                                      Email: {appointment.patient.email}
-                                    </span>
-                                  )}
-                                  {appointment.patient.bloodType && (
-                                    <span>
-                                      Blood Type:{" "}
-                                      {appointment.patient.bloodType}
-                                    </span>
-                                  )}
-                                  {appointment.patient.emergencyContact && (
-                                    <span>
-                                      Emergency:{" "}
-                                      {formatEmergencyContact(
-                                        appointment.patient.emergencyContact,
-                                      )}
-                                    </span>
-                                  )}
-                                </div>
-                              </IonLabel>
-                            </IonItem>
+                            <IonButton
+                              color="primary"
+                              expand="block"
+                              onClick={() => handleComplete(appointment)}
+                            >
+                              <IonIcon icon={checkmarkCircle} slot="start" />
+                              Mark as completed
+                            </IonButton>
                           </IonCol>
-                        </IonRow>
-
-                        {appointment.patient.allergies &&
-                          appointment.patient.allergies.length > 0 && (
-                            <IonRow>
-                              <IonCol>
-                                <IonItem className="compact-item" lines="none">
-                                  <IonIcon icon={medical} slot="start" />
-                                  <IonLabel className="compact-label">
-                                    <p>Allergies</p>
-                                    <h3>
-                                      {formatArray(
-                                        appointment.patient.allergies,
-                                      )}
-                                    </h3>
-                                  </IonLabel>
-                                </IonItem>
-                              </IonCol>
-                            </IonRow>
-                          )}
-
-                        {appointment.patient.medicalHistory &&
-                          appointment.patient.medicalHistory.length > 0 && (
-                            <IonRow>
-                              <IonCol>
-                                <IonItem className="compact-item" lines="none">
-                                  <IonIcon
-                                    icon={informationCircle}
-                                    slot="start"
-                                  />
-                                  <IonLabel className="compact-label">
-                                    <p>Medical History</p>
-                                    <h3>
-                                      {formatArray(
-                                        appointment.patient.medicalHistory,
-                                      )}
-                                    </h3>
-                                  </IonLabel>
-                                </IonItem>
-                              </IonCol>
-                            </IonRow>
-                          )}
-                      </>
-                    )}
-
-                    {/* Status Action Buttons - Always show based on status */}
-                    {appointment.status === "pending" && (
-                      <IonRow>
-                        <IonCol>
-                          <IonButton
-                            color="success"
-                            size="small"
-                            onClick={() => handleAccept(appointment)}
-                          >
-                            <IonIcon icon={checkmarkCircle} slot="start" />
-                            Accept
-                          </IonButton>
-                        </IonCol>
-                        <IonCol>
-                          <IonButton
-                            color="danger"
-                            size="small"
-                            onClick={() => handleReject(appointment)}
-                          >
-                            <IonIcon icon={closeCircle} slot="start" />
-                            Reject
-                          </IonButton>
-                        </IonCol>
+                        )}
                       </IonRow>
-                    )}
-
-                    {appointment.status === "accepted" && (
-                      <IonRow>
-                        <IonCol>
-                          <IonButton
-                            color="primary"
-                            size="small"
-                            onClick={() => handleComplete(appointment)}
-                          >
-                            <IonIcon icon={checkmarkCircle} slot="start" />
-                            Complete
-                          </IonButton>
-                        </IonCol>
-                      </IonRow>
-                    )}
-                  </IonGrid>
-                </IonCardContent>
-              </IonCard>
-            ))}
+                    </IonGrid>
+                  </IonCardContent>
+                </IonCard>
+              );
+            })}
           </IonList>
         )}
       </IonContent>

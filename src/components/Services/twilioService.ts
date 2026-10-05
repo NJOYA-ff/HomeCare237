@@ -1,4 +1,6 @@
 // src/services/twilioServiceAlternative.ts
+import { Call, Device } from "@twilio/voice-sdk";
+
 export class TwilioServiceAlternative {
   private device: any = null;
   private connection: any = null;
@@ -8,18 +10,15 @@ export class TwilioServiceAlternative {
     this.token = token;
 
     try {
-      // Use any type to avoid TypeScript conflicts
-      const Device = (window as any).Device;
+      const DeviceClass = Device || (typeof window !== "undefined" && (window as any).Device);
 
-      if (!Device) {
-        throw new Error("Twilio Device not available");
+      if (!DeviceClass) {
+        throw new Error("Twilio Voice Device not available");
       }
 
-      this.device = new Device(token, {
-        codecPreferences: ["opus", "pcmu"],
-        fakeLocalDTMF: true,
-        enableRingingState: true,
-      });
+      this.device = new DeviceClass(token, {
+        codecPreferences: [Call.Codec.Opus, Call.Codec.PCMU],
+      } as any);
 
       this.setupDeviceListeners();
 
@@ -112,16 +111,20 @@ export class TwilioServiceAlternative {
   }
 
   async getCallToken(identity: string): Promise<string> {
-    const response = await fetch("/api/twilio/token", {
+    const apiBase =
+      (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE_URL
+        ? String(import.meta.env.VITE_API_BASE_URL).replace(/\/+$/, "")
+        : "");
+    const response = await fetch(`${apiBase}/api/twilio/token`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ identity }),
+      body: JSON.stringify({ identity, type: "voice" }),
     });
 
     if (!response.ok) {
-      throw new Error("Failed to get Twilio token");
+      throw new Error(`Failed to get Twilio voice token: HTTP ${response.status}`);
     }
 
     const data = await response.json();

@@ -1,0 +1,32 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Profile photos:
+    // Any authenticated user can upload their own profile photo
+    match /profile_photos/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Consultation chat attachments (images, voice notes, documents):
+    match /consultations/{consultationId}/{allPaths=**} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Medical receipts & documents:
+    match /documents/{userId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Default fallback:
+    match /{allPaths=**} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+}

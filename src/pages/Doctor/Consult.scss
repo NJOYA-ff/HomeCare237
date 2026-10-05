@@ -199,6 +199,43 @@
   }
 }
 
+// ── Unread indicator (WhatsApp style) ────────────────────────
+// Applied to both .wa-patient-item and .wa-doctor-item when there are unread messages
+.wa-patient-item.has-unread,
+.wa-doctor-item.has-unread {
+  .wa-name {
+    font-weight: 700 !important;
+    color: var(--ion-text-color) !important;
+  }
+
+  .wa-time {
+    color: var(--ion-color-success) !important;
+    font-weight: 600 !important;
+  }
+
+  .wa-preview {
+    font-weight: 600 !important;
+    color: var(--ion-text-color) !important;
+  }
+
+  .wa-unread {
+    background: var(--ion-color-success) !important;
+    color: #fff !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    min-width: 20px !important;
+    height: 20px !important;
+    border-radius: 10px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 5px !important;
+    margin-left: 6px !important;
+    flex-shrink: 0 !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2) !important;
+  }
+}
+
 // ── Medical info bar ──────────────────────────────────────────
 .medical-info-bar {
   background: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-secondary) 100%);
@@ -230,7 +267,7 @@
 }
 
 .consult-page.chat-open .consult-content::part(background) {
-  background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%236b86ff' fill-opacity='0.06'%3E%3Cpath d='M50 50c0-5.523 4.477-10 10-10s10 4.477 10 10-4.477 10-10 10c0 5.523-4.477 10-10 10s-10-4.477-10-10 4.477-10 10-10zM10 10c0-5.523 4.477-10 10-10s10 4.477 10 10-4.477 10-10 10c0 5.523-4.477 10-10 10S0 25.523 0 20s4.477-10 10-10zm10 8c4.418 0 8-3.582 8-8s-3.582-8-8-8-8 3.582-8 8 3.582 8 8 8zm40 40c4.418 0 8-3.582 8-8s-3.582-8-8-8-8 3.582-8 8 3.582 8 8 8z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%232563eb' fill-opacity='0.06'%3E%3Cpath d='M50 50c0-5.523 4.477-10 10-10s10 4.477 10 10-4.477 10-10 10c0 5.523-4.477 10-10 10s-10-4.477-10-10 4.477-10 10-10zM10 10c0-5.523 4.477-10 10-10s10 4.477 10 10-4.477 10-10 10c0 5.523-4.477 10-10 10S0 25.523 0 20s4.477-10 10-10zm10 8c4.418 0 8-3.582 8-8s-3.582-8-8-8-8 3.582-8 8 3.582 8 8 8zm40 40c4.418 0 8-3.582 8-8s-3.582-8-8-8-8 3.582-8 8 3.582 8 8 8z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
 }
 
 .message-wrapper {
@@ -427,6 +464,14 @@
       height: 40px;
       margin: 0;
       touch-action: none;
+
+      /* Centering for the inline helix used while sending */
+      .helix-loading-inline,
+      span[role="status"] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
     }
   }
 
@@ -578,10 +623,15 @@
   align-items: center;
   height: 50vh;
   gap: 12px;
+
+  l-helix {
+    display: inline-flex;
+    margin-bottom: 4px;
+  }
 }
 
 // ── Dark mode ─────────────────────────────────────────────────
-@media (prefers-color-scheme: dark) {
+body.dark {
   .consult-content { --background: var(--ion-background-color); }
   .wa-patient-list { background: var(--ion-background-color); }
   .wa-patient-item { border-bottom-color: var(--ion-color-step-100); }

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Terms &amp; Conditions – HomeCare237</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary: #4b77e5;
+      --primary-light: #eef1ff;
+      --text: #1a1d2e;
+      --muted: #6b7280;
+      --border: #e5e8f9;
+      --bg: #f8f9ff;
+      --card: #ffffff;
+      --radius: 16px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #4b77e5 0%, #6b86ff 100%);
+      padding: 48px 24px 40px;
+      text-align: center;
+      color: #fff;
+    }
+
+    header .logo {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      opacity: 0.85;
+      margin-bottom: 12px;
+    }
+
+    header h1 {
+      font-size: clamp(24px, 5vw, 36px);
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    header p { opacity: 0.85; font-size: 14px; }
+
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 28px 24px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card h2 .icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      background: var(--primary-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+
+    .card p { color: var(--muted); margin-bottom: 10px; }
+    .card p:last-child { margin-bottom: 0; }
+    .card ul { padding-left: 20px; color: var(--muted); }
+    .card ul li { margin-bottom: 6px; }
+
+    .updated {
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 32px;
+    }
+
+    .warning-box {
+      background: #fff8e6;
+      border: 1px solid #f5c842;
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      margin-bottom: 20px;
+      color: #7a5500;
+      font-size: 14px;
+    }
+
+    .warning-box strong { display: block; margin-bottom: 6px; font-size: 15px; }
+
+    .contact-box {
+      background: var(--primary-light);
+      border: 1px solid #d4dcfa;
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      text-align: center;
+    }
+
+    .contact-box a { color: var(--primary); font-weight: 600; text-decoration: none; }
+
+    footer {
+      text-align: center;
+      padding: 32px 20px;
+      font-size: 12px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+    }
+    /* ===== Dark theme (follows the in-app ?theme= param, or system preference) ===== */
+    html.dark {
+      --primary: #6f97ea;
+      --primary-light: #232a44;
+      --text: #e8eaf0;
+      --muted: #9aa1b5;
+      --border: #2b2e42;
+      --bg: #0f1117;
+      --card: #1a1d27;
+      color-scheme: dark;
+    }
+
+    html.dark .contact-box,
+    html.dark .hours-card { border-color: #2f3a63; }
+    html.dark .hours-row { border-bottom-color: #262c49; }
+
+    html.dark .warning-box {
+      background: #29210f;
+      border-color: #7a6420;
+      color: #ffd66e;
+    }
+  </style>
+  <script>
+    (function () {
+      var t = new URLSearchParams(location.search).get("theme");
+      var dark = t ? t === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+      if (dark) document.documentElement.classList.add("dark");
+    })();
+  </script>
+</head>
+<body>
+
+<header>
+  <p class="logo">HomeCare237</p>
+  <h1>Terms &amp; Conditions</h1>
+  <p>Last updated: September 2026</p>
+</header>
+
+<div class="container">
+  <p class="updated">Effective date: 1 September 2026 &nbsp;·&nbsp; Version 1.0</p>
+
+  <div class="warning-box">
+    <strong>Medical Disclaimer</strong>
+    HomeCare237 is a healthcare connectivity platform, not a substitute for professional medical advice, diagnosis, or treatment. Always consult a qualified healthcare provider for medical decisions.
+  </div>
+
+  <div class="card">
+    <h2>Acceptance of Terms</h2>
+    <p>By downloading, installing, or using the HomeCare237 application ("App"), you agree to be bound by these Terms &amp; Conditions ("Terms"). If you do not agree with any part of these Terms, you must not use the App.</p>
+    <p>These Terms apply to all users including patients, healthcare professionals, and administrators.</p>
+  </div>
+
+  <div class="card">
+    <h2>Use of the App</h2>
+    <p>You may use HomeCare237 solely for lawful personal healthcare management purposes. You agree not to:</p>
+    <ul>
+      <li>Use the App to provide false or misleading health information.</li>
+      <li>Attempt to access other users' accounts or health data without authorisation.</li>
+      <li>Reverse-engineer, modify, or redistribute any part of the App.</li>
+      <li>Use the App for any commercial purpose without prior written consent.</li>
+      <li>Upload harmful content, malware, or conduct any form of cyber attack.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>User Accounts</h2>
+    <p>You are responsible for maintaining the confidentiality of your account credentials. You must immediately notify us of any unauthorised access to your account.</p>
+    <p>You must be at least 16 years old to create an account. Users under 18 require parental or guardian consent.</p>
+    <p>We reserve the right to suspend or terminate accounts that violate these Terms.</p>
+  </div>
+
+  <div class="card">
+    <h2>Healthcare Services</h2>
+    <p>HomeCare237 connects patients with registered healthcare professionals. However:</p>
+    <ul>
+      <li>We do not employ or directly control healthcare providers listed on the platform.</li>
+      <li>Virtual consultations do not replace in-person examinations when physically necessary.</li>
+      <li>In a medical emergency, always contact emergency services (call 15 or go to the nearest hospital).</li>
+      <li>Prescriptions and diagnoses provided through the App must comply with applicable Cameroonian health regulations.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Data &amp; Privacy</h2>
+    <p>Your use of the App is also governed by our <a href="privacy-policy.html" style="color:#4b77e5;font-weight:600;">Privacy Policy</a>, which is incorporated by reference into these Terms. By using the App, you consent to the data practices described therein.</p>
+  </div>
+
+  <div class="card">
+    <h2>Payments &amp; Fees</h2>
+    <p>Some features of HomeCare237 may require payment (e.g. consultation fees). All fees are displayed clearly before any transaction. Payments are processed securely through authorised payment providers.</p>
+    <p>Refund requests must be made within 24 hours of a transaction for eligible services. Consultation fees are generally non-refundable once a session has commenced.</p>
+  </div>
+
+  <div class="card">
+    <h2>Intellectual Property</h2>
+    <p>All content, design, code, and materials within HomeCare237 are the intellectual property of HomeCare237 and its licensors. You are granted a limited, non-exclusive, non-transferable licence to use the App for personal, non-commercial purposes.</p>
+  </div>
+
+  <div class="card">
+    <h2>Limitation of Liability</h2>
+    <p>To the fullest extent permitted by law, HomeCare237 shall not be liable for:</p>
+    <ul>
+      <li>Any indirect, incidental, or consequential damages arising from App use.</li>
+      <li>Medical decisions made based on information in the App.</li>
+      <li>Service interruptions due to maintenance, updates, or technical issues.</li>
+      <li>Actions or omissions of third-party healthcare providers.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Governing Law</h2>
+    <p>These Terms are governed by the laws of the Republic of Cameroon. Any disputes arising from or related to these Terms shall be subject to the exclusive jurisdiction of the competent courts of Yaoundé, Cameroon.</p>
+  </div>
+
+  <div class="card">
+    <h2>Changes to Terms</h2>
+    <p>We reserve the right to update these Terms at any time. Significant changes will be communicated via the App or email. Continued use of the App after changes constitutes acceptance of the revised Terms.</p>
+  </div>
+
+  <div class="contact-box">
+    <p>Questions about these Terms?</p>
+    <p style="margin-top:8px;">Contact us at <a href="mailto:legal@homecare237.com">legal@homecare237.com</a></p>
+  </div>
+</div>
+
+<footer>
+  &copy; 2026 HomeCare237. All rights reserved.
+</footer>
+
+</body>
+</html>

@@ -1,29 +1,16 @@
+import LoadingHelix from "../components/LoadingHelix";
+import AuthShell from "../components/AuthShell";
+import { useSettings } from "../context/SettingsContext";
 import React, { useState } from "react";
-import {
-  IonPage,
-  IonContent,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonButton,
-  IonInput,
-  IonItem,
-  IonGrid,
-  IonRow,
-  IonCol,
-  IonSpinner,
-  IonText,
-  IonButtons,
-  IonIcon,
-} from "@ionic/react";
+import { IonButton, IonInput, IonItem, IonGrid, IonRow, IonCol, IonText } from "@ionic/react";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
-import { FiMail, FiCheckCircle, FiArrowLeft } from "react-icons/fi";
+import { FiMail, FiCheckCircle } from "react-icons/fi";
+import { authBackLabel, authBackTarget, roleLabel } from "../utils/authFlow";
 import "./Page.scss";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../firebaseconfig";
 import { useHistory } from "react-router";
-import { chevronBackOutline } from "ionicons/icons";
 
 type FormData = {
   email: string;
@@ -41,6 +28,9 @@ const DoctorPasswordRecovery: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [successEmail, setSuccessEmail] = useState("");
   const history = useHistory();
+  // Declared before the handlers below: they close over `t` to render Firebase
+  // failures in the chosen language.
+  const { t } = useSettings();
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
     setErrorMessage("");
@@ -59,22 +49,22 @@ const DoctorPasswordRecovery: React.FC = () => {
       // Handle specific Firebase error codes
       switch (error.code) {
         case "auth/user-not-found":
-          setErrorMessage("No doctor account found with this email address");
+          setErrorMessage(t("err_no_doctor_account_email"));
           break;
         case "auth/invalid-email":
-          setErrorMessage("Invalid email address format");
+          setErrorMessage(t("err_email_format"));
           break;
         case "auth/too-many-requests":
-          setErrorMessage("Too many attempts. Please try again later.");
+          setErrorMessage(t("err_too_many_attempts"));
           break;
         case "auth/network-request-failed":
-          setErrorMessage("Network error. Please check your connection.");
+          setErrorMessage(t("err_network_short"));
           break;
         case "auth/operation-not-allowed":
-          setErrorMessage("Password reset is not enabled for this project");
+          setErrorMessage(t("err_recovery_not_enabled"));
           break;
         default:
-          setErrorMessage("Failed to send recovery email. Please try again.");
+          setErrorMessage(t("err_recovery_send_failed"));
       }
     } finally {
       setIsLoading(false);
@@ -85,7 +75,10 @@ const DoctorPasswordRecovery: React.FC = () => {
     setRecoverySent(false);
     setErrorMessage("");
     setSuccessEmail("");
-    history.push("/Doctor_signin");
+    // replace, not push: this returns to the screen the user already came
+    // from. Pushing would leave [signin, recovery, signin] on the stack, so the
+    // browser/hardware back button would walk back into the recovery screen.
+    history.replace(authBackTarget("doctor", "recovery"));
   };
 
   const handleResendEmail = async () => {
@@ -100,222 +93,177 @@ const DoctorPasswordRecovery: React.FC = () => {
       // Optional: Show a success message for resend
     } catch (error: any) {
       console.error("Resend error:", error);
-      setErrorMessage("Failed to resend email. Please try again.");
+      setErrorMessage(t("err_recovery_resend_failed"));
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <IonPage>
-      <IonHeader class="ion-no-border">
-        <IonToolbar className="signuptoolbar">
-          <IonTitle className="header-title">
-            {recoverySent ? "Check Your Email" : "Password Recovery"}
-          </IonTitle>
-          <IonButtons slot="start">
-            <IonButton routerLink="/Doctor_signin" className="signupback">
-              <IonIcon icon={chevronBackOutline} />
-              Back
-            </IonButton>
-          </IonButtons>
-        </IonToolbar>
-      </IonHeader>
-      <IonContent fullscreen className="recovery-content">
-        {/* Background elements */}
-        <div className="background-elements">
-          {[...Array(10)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="bg-wave"
-              initial={{ opacity: 0, y: 100 }}
-              animate={{
-                opacity: [0.1, 0.3, 0.1],
-                y: [100, -100, 100],
-                x: Math.random() * 100 - 50,
-              }}
-              transition={{
-                duration: 20 + Math.random() * 10,
-                repeat: Infinity,
-                ease: "linear",
-              }}
-              style={{
-                background: `rgba(${Math.random() * 100}, ${
-                  Math.random() * 100 + 155
-                }, 255, 0.2)`,
-                left: `${Math.random() * 100}%`,
-                width: `${Math.random() * 200 + 100}px`,
-                height: `${Math.random() * 100 + 50}px`,
-                borderRadius: `${Math.random() * 50}%`,
-              }}
-            />
-          ))}
-        </div>
+    <AuthShell
+      backHref={authBackTarget("doctor", "recovery")}
+      backLabel={authBackLabel("doctor", "recovery", t)}
+      eyebrow={roleLabel("doctor", t)}
+      title={
+        recoverySent ? t("rec_check_inbox") : t("rec_title")
+      }
+      transitionKey={recoverySent ? "sent" : "request"}
+      subtitle={recoverySent ? undefined : t("rec_sub")}
+    >
+      {!recoverySent ? (
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <IonGrid>
+            <IonRow className="ion-justify-content-center">
+              <IonCol size="12" sizeMd="8" sizeLg="6">
+                {/* Header Illustration */}
+                <motion.div
+                  className="recovery-illustration"
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.2, type: "spring" }}
+                >
+                  <div className="illustration-circle">
+                    <FiMail size={32} />
+                  </div>
+                  <IonText className="illustration-text">
+                    {t("rec_email_prompt")}
+                  </IonText>
+                </motion.div>
 
+                {/* Email Input */}
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <IonItem className="form-item">
+                    <FiMail className="input-icon" />
+                    <IonInput
+                      type="email"
+                      placeholder={t("field_prof_email_address")}
+                      {...register("email", {
+                        required: t("err_email_required"),
+                        pattern: {
+                          value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                          message: t("err_email_invalid"),
+                        },
+                      })}
+                    />
+                  </IonItem>
+                  {errors.email && (
+                    <span className="error-message">
+                      {errors.email.message}
+                    </span>
+                  )}
+                </motion.div>
+
+                {/* Error Message */}
+                {errorMessage && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    className="error-container"
+                  >
+                    <IonText color="danger">{errorMessage}</IonText>
+                  </motion.div>
+                )}
+
+                {/* Submit Button */}
+                <motion.div
+                  className="submit-container"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <IonButton
+                    type="submit"
+                    expand="block"
+                    className="submit-button"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <LoadingHelix className="spinner" size={18} color="white" />
+                        {t("rec_sending")}
+                      </>
+                    ) : (
+                      t("rec_send_link")
+                    )}
+                  </IonButton>
+                </motion.div>
+              </IonCol>
+            </IonRow>
+          </IonGrid>
+        </form>
+      ) : (
         <motion.div
-          className="form-container"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          className="success-container"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
         >
-          {!recoverySent ? (
-            <form onSubmit={handleSubmit(onSubmit)}>
-              <IonGrid>
-                <IonRow className="ion-justify-content-center">
-                  <IonCol size="12" sizeMd="8" sizeLg="6">
-                    {/* Header Illustration */}
-                    <motion.div
-                      className="recovery-illustration"
-                      initial={{ scale: 0.8, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ delay: 0.2, type: "spring" }}
-                    >
-                      <div className="illustration-circle">
-                        <FiMail size={32} />
-                      </div>
-                      <IonText className="illustration-text">
-                        Enter your email to receive a password reset link
-                      </IonText>
-                    </motion.div>
+          <IonGrid>
+            <IonRow className="ion-justify-content-center">
+              <IonCol size="12" sizeMd="8" sizeLg="6">
+                {/* Success Illustration */}
+                <motion.div
+                  className="success-illustration"
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.2, type: "spring" }}
+                >
+                  <div className="success-circle">
+                    <FiCheckCircle size={40} />
+                  </div>
+                  <IonText className="success-title">
+                    {t("rec_sent_title")}
+                  </IonText>
+                  <IonText className="success-message">
+                    {t("rec_sent_body", { email: successEmail })}
+                  </IonText>
 
-                    {/* Email Input */}
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.3 }}
-                    >
-                      <IonItem className="form-item">
-                        <FiMail className="input-icon" />
-                        <IonInput
-                          type="email"
-                          placeholder="Your professional email address"
-                          {...register("email", {
-                            required: "Email is required",
-                            pattern: {
-                              value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                              message: "Invalid email address",
-                            },
-                          })}
-                        />
-                      </IonItem>
-                      {errors.email && (
-                        <span className="error-message">
-                          {errors.email.message}
-                        </span>
-                      )}
-                    </motion.div>
-
-                    {/* Error Message */}
-                    {errorMessage && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        className="error-container"
-                      >
-                        <IonText color="danger">{errorMessage}</IonText>
-                      </motion.div>
-                    )}
-
-                    {/* Submit Button */}
-                    <motion.div
-                      className="submit-container"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.4 }}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <IonButton
-                        type="submit"
-                        expand="block"
-                        className="submit-button"
+                  {/* Resend option */}
+                  <div className="resend-container">
+                    <IonText color="medium">
+                      {t("rec_no_email")}{" "}
+                      <button
+                        type="button"
+                        className="resend-link"
+                        onClick={handleResendEmail}
                         disabled={isLoading}
                       >
-                        {isLoading ? (
-                          <>
-                            <IonSpinner name="crescent" className="spinner" />
-                            Sending...
-                          </>
-                        ) : (
-                          "Send Recovery Link"
-                        )}
-                      </IonButton>
-                    </motion.div>
-                  </IonCol>
-                </IonRow>
-              </IonGrid>
-            </form>
-          ) : (
-            <motion.div
-              className="success-container"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5 }}
-            >
-              <IonGrid>
-                <IonRow className="ion-justify-content-center">
-                  <IonCol size="12" sizeMd="8" sizeLg="6">
-                    {/* Success Illustration */}
-                    <motion.div
-                      className="success-illustration"
-                      initial={{ scale: 0.8, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ delay: 0.2, type: "spring" }}
-                    >
-                      <div className="success-circle">
-                        <FiCheckCircle size={40} />
-                      </div>
-                      <IonText className="success-title">
-                        Recovery Email Sent!
-                      </IonText>
-                      <IonText className="success-message">
-                        We've sent a password reset link to{" "}
-                        <strong>{successEmail}</strong>. Please check your inbox
-                        and follow the instructions to reset your password.
-                      </IonText>
+                        {isLoading ? t("rec_sending") : t("rec_resend")}
+                      </button>
+                    </IonText>
+                  </div>
+                </motion.div>
 
-                      {/* Resend option */}
-                      <div className="resend-container">
-                        <IonText color="medium">
-                          Didn't receive the email?{" "}
-                          <button
-                            type="button"
-                            className="resend-link"
-                            onClick={handleResendEmail}
-                            disabled={isLoading}
-                          >
-                            {isLoading ? "Sending..." : "Click to resend"}
-                          </button>
-                        </IonText>
-                      </div>
-                    </motion.div>
-
-                    {/* Back to Login Button */}
-                    <motion.div
-                      className="back-to-login"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.4 }}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <IonButton
-                        expand="block"
-                        fill="outline"
-                        className="login-button"
-                        onClick={handleBackToLogin}
-                      >
-                        Back to Doctor Login
-                      </IonButton>
-                    </motion.div>
-                  </IonCol>
-                </IonRow>
-              </IonGrid>
-            </motion.div>
-          )}
+                {/* Back to Login Button */}
+                <motion.div
+                  className="back-to-login"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <IonButton
+                    expand="block"
+                    fill="outline"
+                    className="login-button"
+                    onClick={handleBackToLogin}
+                  >
+                    {t("rec_back_to_login")}
+                  </IonButton>
+                </motion.div>
+              </IonCol>
+            </IonRow>
+          </IonGrid>
         </motion.div>
-      </IonContent>
-    </IonPage>
+      )}
+    </AuthShell>
   );
 };
 

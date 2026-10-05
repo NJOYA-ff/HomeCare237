@@ -35,6 +35,8 @@ import {
   checkBiometryAvailability,
   verifyPin,
 } from "../utils/BiometricAuthService";
+import { getQuickSignInErrorMessageT } from "../utils/authErrors";
+import { useSettings } from "../context/SettingsContext";
 import "./QuickSignIn.css";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -71,6 +73,9 @@ const QuickSignIn: React.FC<QuickSignInProps> = ({
   onDismiss,
   onViewChange,
 }) => {
+  // The whole PIN / biometric sheet is user-facing, so it has to follow the
+  // language chosen at the start of the funnel like every other screen.
+  const { t } = useSettings();
   const [ready, setReady] = useState(false);
   const [view, setView] = useState<QuickView>("button");
   const [displayName, setDisplayName] = useState("");
@@ -96,32 +101,42 @@ const QuickSignIn: React.FC<QuickSignInProps> = ({
     let cancelled = false;
 
     const init = async () => {
-      const [hasCreds, bioEn, pinEn, availability] = await Promise.all([
-        hasCredentials(),
-        isBiometricEnabled(),
-        isPinEnabled(),
-        checkBiometryAvailability(),
-      ]);
+      // Guarded: these read secure storage / the WebAuthn API. If any rejects,
+      // the unhandled rejection meant `ready` was never set and the component
+      // silently rendered nothing — i.e. quick sign-in just vanished with no
+      // explanation. Now we log and fall back to hidden, leaving the normal
+      // email/password form as the only path.
+      try {
+        const [hasCreds, bioEn, pinEn, availability] = await Promise.all([
+          hasCredentials(),
+          isBiometricEnabled(),
+          isPinEnabled(),
+          checkBiometryAvailability(),
+        ]);
 
-      if (cancelled) return;
+        if (cancelled) return;
 
-      // Quick sign-in is only available if we have stored credentials AND at
-      // least one security method is set up.
-      if (!hasCreds || (!bioEn && !pinEn)) {
+        // Quick sign-in is only available if we have stored credentials AND at
+        // least one security method is set up.
+        if (!hasCreds || (!bioEn && !pinEn)) {
+          setReady(false);
+          return;
+        }
+
+        // Pre-fetch display name for the UI
+        const creds = await loadCredentials();
+        if (cancelled) return;
+
+        setBiometricEnabled(bioEn);
+        setPinEnabled(pinEn);
+        setBiometricAvailable(availability.available);
+        setBiometryLabel(availability.biometryLabel);
+        setDisplayName(creds?.displayName || creds?.email || "");
+        setReady(true);
+      } catch (error) {
+        console.error("Quick sign-in: initialisation failed:", error);
         setReady(false);
-        return;
       }
-
-      // Pre-fetch display name for the UI
-      const creds = await loadCredentials();
-      if (cancelled) return;
-
-      setBiometricEnabled(bioEn);
-      setPinEnabled(pinEn);
-      setBiometricAvailable(availability.available);
-      setBiometryLabel(availability.biometryLabel);
-      setDisplayName(creds?.displayName || creds?.email || "");
-      setReady(true);
     };
 
     init();
@@ -151,9 +166,21 @@ const QuickSignIn: React.FC<QuickSignInProps> = ({
    */
   const resolveLogin = useCallback(async () => {
     setView("loading");
-    const creds = await loadCredentials();
+    // Guarded: `loadCredentials` talks to secure storage, which can throw
+    // (unavailable on some browsers, or if the OS keystore is locked). Without
+    // this the rejection escaped as an unhandled promise and the modal was left
+    // spinning on "loading" forever.
+    let creds: Awaited<ReturnType<typeof loadCredentials>> = null;
+    try {
+      creds = await loadCredentials();
+    } catch (error) {
+      console.error("Quick sign-in: could not read saved credentials:", error);
+      setError(getQuickSignInErrorMessageT(error, t));
+      setView("button");
+      return;
+    }
     if (!creds) {
-      setError("Saved credentials not found. Please sign in with email.");
+      setError(t("err_saved_creds_missing"));
       setView("button");
       return;
     }
@@ -164,9 +191,19 @@ const QuickSignIn: React.FC<QuickSignInProps> = ({
 
   const triggerBiometric = useCallback(async () => {
     setError("");
-    const result = await authenticateWithBiometrics(
-      "Verify your identity to sign in to HomeCare237"
-    );
+    // Guarded for the same reason as `resolveLogin`: a rejected prompt (locked
+    // sensor, hardware not present) previously left the UI stuck on "loading".
+    let result: Awaited<ReturnType<typeof authenticateWithBiometrics>>;
+    try {
+      result = await authenticateWithBiometrics(
+        t("qs_pin_label")
+      );
+    } catch (error) {
+      console.error("Quick sign-in: biometric prompt failed:", error);
+      setError(getQuickSignInErrorMessageT(error, t));
+      setView("button");
+      return;
+    }
 
     if (result.success) {
       await resolveLogin();
@@ -182,7 +219,7 @@ const QuickSignIn: React.FC<QuickSignInProps> = ({
     if (pinEnabled) {
       setView("pin");
     } else {
-      setError(result.error || "Biometric failed. Please sign in manually.");
+      setError(t("err_biometric_failed"));
     }
   }, [resolveLogin, pinEnabled]);
 
@@ -213,7 +250,7 @@ const QuickSignIn: React.FC<QuickSignInProps> = ({
         await resolveLogin();
       } else {
         shake();
-        setError("Incorrect PIN.");
+        setError(t("err_incorrect_pin"));
         setPin("");
       }
     },
@@ -273,14 +310,14 @@ const QuickSignIn: React.FC<QuickSignInProps> = ({
               {view === "loading" && (
                 <div className="qs-loading">
                   <IonSpinner name="crescent" />
-                  <span>Signing in…</span>
+                  <span>{t("qs_signing_in")}</span>
                 </div>
               )}
 
               {/* ── PIN keypad ───────────────────────────────────────── */}
               {view === "pin" && (
                 <div className="qs-pin-view">
-                  <p className="qs-pin-label">Enter your PIN to sign in</p>
+                  <p className="qs-pin-label">{t("qs_pin_label")}</p>
 
                   {/* User name hint */}
                   {displayName ? (
@@ -332,7 +369,7 @@ const QuickSignIn: React.FC<QuickSignInProps> = ({
                             onClick={() => key && handleKey(key)}
                             disabled={verifying || key === ""}
                             aria-label={
-                              key === "⌫" ? "Delete" : key || undefined
+                              key === "⌫" ? t("qs_key_delete") : key || undefined
                             }
                           >
                             {key}
@@ -353,7 +390,7 @@ const QuickSignIn: React.FC<QuickSignInProps> = ({
                         triggerBiometric();
                       }}
                     >
-                      Use {biometryLabel} instead
+                      {t("qs_use_biometric_instead", { method: biometryLabel })}
                     </button>
                   )}
 
@@ -366,7 +403,7 @@ const QuickSignIn: React.FC<QuickSignInProps> = ({
                     }}
                   >
                     <IonIcon icon={chevronDownOutline} />
-                    Cancel
+                    {t("cancel")}
                   </button>
                 </div>
               )}
@@ -379,6 +416,19 @@ const QuickSignIn: React.FC<QuickSignInProps> = ({
 
   // ── Render ────────────────────────────────────────────────────────────────
 
+  /**
+   * The single source of truth for what this button is called.
+   *
+   * Whether biometrics or PIN is the active method changes the name, and both
+   * the visible label and the accessible name have to agree on which (see the
+   * aria-label below). Computing it once removes the possibility of them
+   * drifting apart again.
+   */
+  const buttonTitle =
+    biometricEnabled && biometricAvailable
+      ? t("qs_with_biometric", { method: biometryLabel })
+      : t("qs_with_pin");
+
   return (
     <>
       {/* Modal portal */}
@@ -388,7 +438,7 @@ const QuickSignIn: React.FC<QuickSignInProps> = ({
       <div className="quick-signin-wrapper">
         {/* Divider */}
         <div className="qs-divider">
-          <span>or sign in quickly</span>
+          <span>{t("qs_divider")}</span>
         </div>
 
         <AnimatePresence mode="wait">
@@ -401,11 +451,18 @@ const QuickSignIn: React.FC<QuickSignInProps> = ({
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.2 }}
             >
+              {/* aria-label is derived from the same expression as the visible
+                  title below, not hardcoded to the PIN string. Hardcoding it
+                  meant that with biometrics enabled the button *read* "Sign in
+                  with Fingerprint" while announcing "Sign in with PIN" — a WCAG
+                  2.5.3 (Label in Name) failure that left voice-control and
+                  screen-reader users activating a button whose name they had
+                  never been told. */}
               <motion.button
                 className="qs-button"
                 onClick={handleQuickSignIn}
                 whileTap={{ scale: 0.96 }}
-                aria-label="Quick sign in"
+                aria-label={buttonTitle}
               >
                 <IonIcon
                   icon={
@@ -417,9 +474,7 @@ const QuickSignIn: React.FC<QuickSignInProps> = ({
                 />
                 <div className="qs-button-text">
                   <span className="qs-button-title">
-                    {biometricEnabled && biometricAvailable
-                      ? `Sign in with ${biometryLabel}`
-                      : "Sign in with PIN"}
+                    {buttonTitle}
                   </span>
                   {displayName ? (
                     <span className="qs-button-sub">{displayName}</span>
@@ -433,7 +488,7 @@ const QuickSignIn: React.FC<QuickSignInProps> = ({
                   className="qs-switch-btn"
                   onClick={() => setView("pin")}
                 >
-                  Use PIN instead
+                  {t("qs_use_pin_instead")}
                 </button>
               )}
             </motion.div>

@@ -1,3 +1,4 @@
+import LoadingHelix from "../../components/LoadingHelix";
 import React, { useState, useEffect, useCallback } from "react";
 import {
   IonContent,
@@ -6,8 +7,6 @@ import {
   IonTitle,
   IonToolbar,
   IonCard,
-  IonCardHeader,
-  IonCardTitle,
   IonCardContent,
   IonGrid,
   IonRow,
@@ -16,54 +15,75 @@ import {
   IonSelectOption,
   IonItem,
   IonLabel,
-  IonIcon,
   IonRefresher,
   IonRefresherContent,
   IonButtons,
   IonButton,
-  IonSpinner,
-  IonBadge,
   IonBackButton,
+  IonIcon,
 } from "@ionic/react";
 import {
-  barChartOutline,
-  pulseOutline,
-  peopleOutline,
-  calendarOutline,
-  refreshOutline,
-  medkitOutline,
-  starOutline,
-  cashOutline,
-  personOutline,
-  checkmarkCircleOutline,
-  timeOutline,
-  closeCircleOutline,
+  calendar,
+  cash,
+  checkmarkDoneCircle,
+  closeCircle,
+  hourglass,
+  medkit,
+  people,
+  pieChart,
+  pulse,
+  refresh,
+  star,
+  statsChart,
 } from "ionicons/icons";
 import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
+  SoftChartCard,
+  SoftKpiCard,
+  SoftLegendRows,
+} from "./SoftChartCards";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  ArcElement,
+  BarElement,
+  Title,
   Tooltip,
   Legend,
-  ResponsiveContainer,
-  PieLabelRenderProps,
-} from "recharts";
+  Filler,
+} from 'chart.js';
+import {
+  Line as ChartJsLine,
+  Bar as ChartJsBar,
+  Doughnut as ChartJsDoughnut,
+} from 'react-chartjs-2';
+import {
+  SOFT_COLORS,
+  softBarOptions,
+  softChartPlugin,
+  softCenterTextPlugin,
+  softDoughnutOptions,
+  softHorizontalBarOptions,
+  softLineFill,
+  softLineOptions,
+  softPalette,
+  softTooltip,
+  seriesDelta,
+} from "./softChartTheme";
 import {
   collection,
   getDocs,
-  query,
-  where,
   Timestamp,
 } from "firebase/firestore";
 import { db } from "../../firebaseconfig";
 import "./Analytics.scss";
+
+ChartJS.register(
+  CategoryScale, LinearScale, PointElement, LineElement, ArcElement,
+  BarElement, Title, Tooltip, Legend, Filler
+);
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -107,11 +127,7 @@ interface StatusPoint {
   value: number;
 }
 
-const COLORS = [
-  "#2a5ba7", "#c53b50", "#4ba77c", "#f5a623",
-  "#9b59b6", "#34495e", "#16a085", "#e67e22",
-  "#2980b9", "#8e44ad",
-];
+const COLORS = softPalette;
 
 const MONTH_LABELS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
@@ -315,20 +331,51 @@ const Analytics: React.FC = () => {
     event?.detail?.complete?.();
   };
 
-  // Pie label
-  const renderPieLabel = (props: PieLabelRenderProps) => {
-    const { cx, cy, midAngle, innerRadius, outerRadius, percent, name } = props;
-    if (!cx || !cy || !midAngle || !innerRadius || !outerRadius || percent === undefined) return null;
-    const RADIAN = Math.PI / 180;
-    const radius = Number(innerRadius) + (Number(outerRadius) - Number(innerRadius)) * 0.5;
-    const x = Number(cx) + radius * Math.cos(-Number(midAngle) * RADIAN);
-    const y = Number(cy) + radius * Math.sin(-Number(midAngle) * RADIAN);
-    return (
-      <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize={11}>
-        {`${(Number(percent) * 100).toFixed(0)}%`}
-      </text>
-    );
+  // ── Chart Data Preparation ──────────────────────────────────────────────────
+  // Every chart below reads directly from the state populated by fetchData():
+  // monthlyData, statusData, apptTypeData, ageData and specializationData.
+
+  // ── Modern Chart Options ────────────────────────────────────────────────────
+  
+  // Doughnut chart options (for status, types, age, specializations)
+  const doughnutOptions = softDoughnutOptions;
+
+  // Bar chart options (for age groups, specializations)
+  const barOptions = softBarOptions;
+
+  // Line chart options (for monthly trends)
+  const lineOptions = softLineOptions;
+
+  // ── Sparkline series, deltas and legend rows for the soft cards ─────────
+  const appointmentSeries = monthlyData.map((d) => d.appointments);
+  const completedSeries = monthlyData.map((d) => d.completed);
+  const revenueSeries = monthlyData.map((d) => d.revenue);
+  const latestOfMonth = (series: number[]) =>
+    series.length > 0 ? series[series.length - 1] : 0;
+  const periodLabel = `Last ${timeRange} months`;
+  const shareOfTotal = (value: number) =>
+    summary.totalAppointments > 0
+      ? `${Math.round((value / summary.totalAppointments) * 100)}%`
+      : "—";
+  const patientsPerDoctor =
+    summary.totalDoctors > 0
+      ? (summary.totalPatients / summary.totalDoctors).toFixed(1)
+      : "—";
+
+  const legendFrom = (points: { name: string; value: number }[]) => {
+    const total = points.reduce((sum, d) => sum + d.value, 0);
+    return points.map((d, i) => ({
+      label: d.name,
+      hint: total > 0 ? `${Math.round((d.value / total) * 100)}%` : undefined,
+      value: d.value.toLocaleString(),
+      color: COLORS[i % COLORS.length],
+      pct: total > 0 ? (d.value / total) * 100 : 0,
+    }));
   };
+  const statusTotal = statusData.reduce((sum, d) => sum + d.value, 0);
+  const statusLegend = legendFrom(statusData);
+  const apptTypeTotal = apptTypeData.reduce((sum, d) => sum + d.value, 0);
+  const apptTypeLegend = legendFrom(apptTypeData);
 
   return (
     <IonPage>
@@ -339,8 +386,11 @@ const Analytics: React.FC = () => {
           </IonButtons>
           <IonTitle>Analytics</IonTitle>
           <IonButtons slot="end">
-            <IonButton onClick={() => handleRefresh(null)}>
-              <IonIcon icon={refreshOutline} />
+            <IonButton
+              onClick={() => handleRefresh(null)}
+              aria-label="Refresh analytics data"
+            >
+              <IonIcon slot="icon-only" icon={refresh} />
             </IonButton>
           </IonButtons>
         </IonToolbar>
@@ -355,7 +405,7 @@ const Analytics: React.FC = () => {
         <IonCard>
           <IonCardContent style={{ paddingTop: 8, paddingBottom: 8 }}>
             <IonItem lines="none">
-              <IonIcon icon={calendarOutline} slot="start" color="primary" />
+              <IonIcon slot="start" icon={calendar} />
               <IonLabel>Time Range</IonLabel>
               <IonSelect
                 value={timeRange}
@@ -374,91 +424,114 @@ const Analytics: React.FC = () => {
 
         {loading ? (
           <div className="loading-container">
-            <IonSpinner name="crescent" />
+            <LoadingHelix />
             <p>Loading analytics data...</p>
           </div>
         ) : (
           <>
             {/* ── Summary Cards ── */}
-            <IonGrid>
+            <IonGrid className="soft-kpi-grid">
               <IonRow>
                 <IonCol size="6" sizeMd="3">
-                  <IonCard className="summary-card">
-                    <IonCardContent>
-                      <IonIcon icon={peopleOutline} color="primary" style={{ fontSize: 24 }} />
-                      <h2>{summary.totalPatients.toLocaleString()}</h2>
-                      <p>Total Patients</p>
-                    </IonCardContent>
-                  </IonCard>
+                  <SoftKpiCard
+                    icon={people}
+                    label="Total Patients"
+                    value={summary.totalPatients.toLocaleString()}
+                    footers={[
+                      { label: "Doctors", value: summary.totalDoctors.toLocaleString() },
+                      { label: "Reviews", value: summary.totalRatings.toLocaleString() },
+                    ]}
+                  />
                 </IonCol>
+
                 <IonCol size="6" sizeMd="3">
-                  <IonCard className="summary-card">
-                    <IonCardContent>
-                      <IonIcon icon={medkitOutline} color="secondary" style={{ fontSize: 24 }} />
-                      <h2>{summary.totalDoctors.toLocaleString()}</h2>
-                      <p>Total Doctors</p>
-                    </IonCardContent>
-                  </IonCard>
+                  <SoftKpiCard
+                    icon={medkit}
+                    label="Caregivers"
+                    value={summary.totalDoctors.toLocaleString()}
+                    footers={[
+                      { label: "Patients / caregiver", value: patientsPerDoctor },
+                      { label: "Specialities", value: specializationData.length.toLocaleString() },
+                    ]}
+                  />
                 </IonCol>
+
                 <IonCol size="6" sizeMd="3">
-                  <IonCard className="summary-card">
-                    <IonCardContent>
-                      <IonIcon icon={calendarOutline} color="tertiary" style={{ fontSize: 24 }} />
-                      <h2>{summary.totalAppointments.toLocaleString()}</h2>
-                      <p>Appointments</p>
-                      <IonBadge color="success" style={{ fontSize: 10 }}>
-                        {summary.completedAppointments} done
-                      </IonBadge>
-                    </IonCardContent>
-                  </IonCard>
+                  <SoftKpiCard
+                    icon={calendar}
+                    label="Appointments"
+                    value={summary.totalAppointments.toLocaleString()}
+                    series={appointmentSeries}
+                    delta={seriesDelta(appointmentSeries)}
+                    footers={[
+                      { label: "This Month", value: latestOfMonth(appointmentSeries).toLocaleString() },
+                      { label: "Period", value: periodLabel },
+                    ]}
+                  />
                 </IonCol>
+
                 <IonCol size="6" sizeMd="3">
-                  <IonCard className="summary-card">
-                    <IonCardContent>
-                      <IonIcon icon={cashOutline} color="success" style={{ fontSize: 24 }} />
-                      <h2>{formatXAF(summary.totalRevenue)}</h2>
-                      <p>Revenue (XAF)</p>
-                    </IonCardContent>
-                  </IonCard>
+                  <SoftKpiCard
+                    icon={cash}
+                    label="Revenue (XAF)"
+                    value={formatXAF(summary.totalRevenue)}
+                    series={revenueSeries}
+                    delta={seriesDelta(revenueSeries)}
+                    footers={[
+                      { label: "This Month", value: formatXAF(latestOfMonth(revenueSeries)) },
+                      { label: "Completed", value: summary.completedAppointments.toLocaleString() },
+                    ]}
+                  />
                 </IonCol>
+
                 <IonCol size="6" sizeMd="3">
-                  <IonCard className="summary-card">
-                    <IonCardContent>
-                      <IonIcon icon={starOutline} color="warning" style={{ fontSize: 24 }} />
-                      <h2>{summary.avgRating > 0 ? summary.avgRating : "—"}</h2>
-                      <p>Avg Doctor Rating</p>
-                      <IonBadge color="medium" style={{ fontSize: 10 }}>
-                        {summary.totalRatings} reviews
-                      </IonBadge>
-                    </IonCardContent>
-                  </IonCard>
+                  <SoftKpiCard
+                    icon={star}
+                    label="Avg Doctor Rating"
+                    value={summary.avgRating > 0 ? summary.avgRating : "—"}
+                    footers={[
+                      { label: "Reviews", value: summary.totalRatings.toLocaleString() },
+                      { label: "Scale", value: "5.0" },
+                    ]}
+                  />
                 </IonCol>
+
                 <IonCol size="6" sizeMd="3">
-                  <IonCard className="summary-card">
-                    <IonCardContent>
-                      <IonIcon icon={timeOutline} color="warning" style={{ fontSize: 24 }} />
-                      <h2>{summary.pendingAppointments.toLocaleString()}</h2>
-                      <p>Pending</p>
-                    </IonCardContent>
-                  </IonCard>
+                  <SoftKpiCard
+                    icon={hourglass}
+                    label="Pending"
+                    value={summary.pendingAppointments.toLocaleString()}
+                    footers={[
+                      { label: "Share", value: shareOfTotal(summary.pendingAppointments) },
+                      { label: "Period", value: periodLabel },
+                    ]}
+                  />
                 </IonCol>
+
                 <IonCol size="6" sizeMd="3">
-                  <IonCard className="summary-card">
-                    <IonCardContent>
-                      <IonIcon icon={checkmarkCircleOutline} color="success" style={{ fontSize: 24 }} />
-                      <h2>{summary.completedAppointments.toLocaleString()}</h2>
-                      <p>Completed</p>
-                    </IonCardContent>
-                  </IonCard>
+                  <SoftKpiCard
+                    icon={checkmarkDoneCircle}
+                    label="Completed"
+                    value={summary.completedAppointments.toLocaleString()}
+                    series={completedSeries}
+                    delta={seriesDelta(completedSeries)}
+                    footers={[
+                      { label: "Share", value: shareOfTotal(summary.completedAppointments) },
+                      { label: "This Month", value: latestOfMonth(completedSeries).toLocaleString() },
+                    ]}
+                  />
                 </IonCol>
+
                 <IonCol size="6" sizeMd="3">
-                  <IonCard className="summary-card">
-                    <IonCardContent>
-                      <IonIcon icon={closeCircleOutline} color="danger" style={{ fontSize: 24 }} />
-                      <h2>{summary.cancelledAppointments.toLocaleString()}</h2>
-                      <p>Cancelled</p>
-                    </IonCardContent>
-                  </IonCard>
+                  <SoftKpiCard
+                    icon={closeCircle}
+                    label="Cancelled"
+                    value={summary.cancelledAppointments.toLocaleString()}
+                    footers={[
+                      { label: "Share", value: shareOfTotal(summary.cancelledAppointments) },
+                      { label: "Period", value: periodLabel },
+                    ]}
+                  />
                 </IonCol>
               </IonRow>
             </IonGrid>
@@ -467,162 +540,275 @@ const Analytics: React.FC = () => {
             <IonGrid>
               <IonRow>
                 <IonCol size="12" sizeLg="8">
-                  <IonCard>
-                    <IonCardHeader>
-                      <IonCardTitle>
-                        <IonIcon icon={barChartOutline} /> Monthly Appointment Trends
-                      </IonCardTitle>
-                    </IonCardHeader>
-                    <IonCardContent>
+                  <SoftChartCard
+                    icon={statsChart}
+                    title="Monthly Appointment Trends"
+                    subtitle={'Bookings, completed and revenue (XAF) per month'}
+                    action={periodLabel}
+                  >
                       {monthlyData.length === 0 ? (
-                        <p style={{ color: "var(--ion-color-medium)", textAlign: "center" }}>No data for this period</p>
+                        <p className="soft-card-empty">No data for this period</p>
                       ) : (
                         <div className="chart-container">
-                          <ResponsiveContainer width="100%" height={280}>
-                            <LineChart data={monthlyData}>
-                              <CartesianGrid strokeDasharray="3 3" />
-                              <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                              <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
-                              <YAxis yAxisId="right" orientation="right" tickFormatter={formatXAF} tick={{ fontSize: 11 }} />
-                              <Tooltip formatter={(val: any, name: string) =>
-                                name === "Revenue (XAF)" ? [`${Number(val).toLocaleString()} XAF`, name] : [val, name]
-                              } />
-                              <Legend />
-                              <Line yAxisId="left" type="monotone" dataKey="appointments" stroke={COLORS[0]} name="Total" dot={false} />
-                              <Line yAxisId="left" type="monotone" dataKey="completed" stroke={COLORS[2]} name="Completed" dot={false} />
-                              <Line yAxisId="right" type="monotone" dataKey="revenue" stroke={COLORS[3]} name="Revenue (XAF)" dot={false} strokeDasharray="4 2" />
-                            </LineChart>
-                          </ResponsiveContainer>
+                          <ChartJsLine
+                            data={{
+                              labels: monthlyData.map(d => d.month),
+                              datasets: [
+                                {
+                                  label: "Total Appointments",
+                                  data: monthlyData.map(d => d.appointments),
+                                  borderColor: SOFT_COLORS.violet,
+                                  backgroundColor: softLineFill(SOFT_COLORS.violet),
+                                  pointBackgroundColor: SOFT_COLORS.violet,
+                                  pointBorderColor: SOFT_COLORS.violet,
+                                  fill: true,
+                                  tension: 0.4,
+                                },
+                                {
+                                  label: "Completed",
+                                  data: monthlyData.map(d => d.completed),
+                                  borderColor: SOFT_COLORS.mint,
+                                  backgroundColor: softLineFill(SOFT_COLORS.mint),
+                                  pointBackgroundColor: SOFT_COLORS.mint,
+                                  pointBorderColor: SOFT_COLORS.mint,
+                                  fill: true,
+                                  tension: 0.4,
+                                },
+                                {
+                                  label: "Revenue (XAF)",
+                                  data: monthlyData.map(d => d.revenue),
+                                  borderColor: SOFT_COLORS.sky,
+                                  backgroundColor: softLineFill(SOFT_COLORS.sky),
+                                  pointBackgroundColor: SOFT_COLORS.sky,
+                                  pointBorderColor: SOFT_COLORS.sky,
+                                  fill: true,
+                                  tension: 0.4,
+                                  borderDash: [6, 5],
+                                  yAxisID: "y1",
+                                },
+                              ],
+                            }}
+                            options={{
+                              ...lineOptions,
+                              plugins: {
+                                ...lineOptions.plugins,
+                                tooltip: {
+                                  ...softTooltip,
+                                  callbacks: {
+                                    label: (context) => {
+                                      const val = context.parsed.y;
+                                      if (context.dataset.label === "Revenue (XAF)") {
+                                        return `${Number(val).toLocaleString()} XAF`;
+                                      }
+                                      return `${val}`;
+                                    },
+                                  },
+                                },
+                              },
+                              scales: {
+                                ...lineOptions.scales,
+                                y: {
+                                  ...lineOptions.scales?.y,
+                                  beginAtZero: true,
+                                },
+                                y1: {
+                                  position: "right",
+                                  beginAtZero: true,
+                                  border: { display: false },
+                                  grid: { color: "rgba(96, 165, 250, 0.12)" },
+                                  ticks: {
+                                    color: SOFT_COLORS.sky,
+                                    font: { size: 11, family: "Inter, system-ui, sans-serif" },
+                                    callback: (value) => Number(value).toLocaleString() + " XAF",
+                                  },
+                                },
+                              },
+                            }}
+                            plugins={[softChartPlugin]}
+                          />
                         </div>
                       )}
-                    </IonCardContent>
-                  </IonCard>
+                  </SoftChartCard>
                 </IonCol>
 
                 {/* ── Appointment Status ── */}
                 <IonCol size="12" sizeLg="4">
-                  <IonCard>
-                    <IonCardHeader>
-                      <IonCardTitle>
-                        <IonIcon icon={pulseOutline} /> Appointment Status
-                      </IonCardTitle>
-                    </IonCardHeader>
-                    <IonCardContent>
+                  <SoftChartCard
+                    icon={pulse}
+                    title="Appointment Status"
+                    subtitle={`Outcome split · ${statusTotal.toLocaleString()} appointments`}
+                  >
                       {statusData.length === 0 ? (
-                        <p style={{ color: "var(--ion-color-medium)", textAlign: "center" }}>No appointments yet</p>
+                        <p className="soft-card-empty">No appointments yet</p>
                       ) : (
                         <div className="chart-container">
-                          <ResponsiveContainer width="100%" height={280}>
-                            <PieChart>
-                              <Pie
-                                data={statusData}
-                                cx="50%"
-                                cy="50%"
-                                outerRadius={100}
-                                dataKey="value"
-                                label={renderPieLabel}
-                                labelLine={false}
-                              >
-                                {statusData.map((_, i) => (
-                                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                                ))}
-                              </Pie>
-                              <Tooltip />
-                              <Legend />
-                            </PieChart>
-                          </ResponsiveContainer>
+                          <ChartJsDoughnut
+                            data={{
+                              labels: statusData.map(d => d.name),
+                              datasets: [{
+                                data: statusData.map(d => d.value),
+                                backgroundColor: [
+                                  SOFT_COLORS.mint,
+                                  SOFT_COLORS.amber,
+                                  SOFT_COLORS.rose,
+                                ],
+                                borderColor: SOFT_COLORS.panel,
+                                borderWidth: 2,
+                                hoverBorderColor: SOFT_COLORS.violet,
+                                hoverOffset: 10,
+                                spacing: 3,
+                              }],
+                            }}
+                            options={{
+                              ...doughnutOptions,
+                              plugins: {
+                                ...doughnutOptions.plugins,
+                                softCenterText: {
+                                  value: statusData
+                                    .reduce((sum, d) => sum + d.value, 0)
+                                    .toLocaleString(),
+                                  label: "Total",
+                                },
+                                tooltip: {
+                                  ...softTooltip,
+                                  callbacks: {
+                                    label: (context) => {
+                                      const total = context.dataset.data.reduce((a, b) => a + Number(b), 0);
+                                      const pct = ((context.parsed / total) * 100).toFixed(0);
+                                      return `${context.label}: ${context.parsed} (${pct}%)`;
+                                    },
+                                  },
+                                },
+                              },
+                            }}
+                            plugins={[softChartPlugin, softCenterTextPlugin]}
+                          />
                         </div>
                       )}
-                    </IonCardContent>
-                  </IonCard>
+
+                    {statusLegend.length > 0 && (
+                      <div className="soft-chart-card__legend">
+                        <SoftLegendRows rows={statusLegend} />
+                      </div>
+                    )}
+                  </SoftChartCard>
                 </IonCol>
               </IonRow>
 
               {/* ── Appointment Type Distribution ── */}
               <IonRow>
                 <IonCol size="12" sizeLg="5">
-                  <IonCard>
-                    <IonCardHeader>
-                      <IonCardTitle>
-                        <IonIcon icon={medkitOutline} /> Appointment Types
-                      </IonCardTitle>
-                    </IonCardHeader>
-                    <IonCardContent>
+                  <SoftChartCard
+                    icon={pieChart}
+                    title="Appointment Types"
+                    subtitle={`Distribution of care types · ${apptTypeTotal.toLocaleString()}`}
+                  >
                       {apptTypeData.length === 0 ? (
-                        <p style={{ color: "var(--ion-color-medium)", textAlign: "center" }}>No data</p>
+                        <p className="soft-card-empty">No data</p>
                       ) : (
                         <div className="chart-container">
-                          <ResponsiveContainer width="100%" height={250}>
-                            <PieChart>
-                              <Pie data={apptTypeData} cx="50%" cy="50%" outerRadius={90} dataKey="value" label={renderPieLabel} labelLine={false}>
-                                {apptTypeData.map((_, i) => (
-                                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                                ))}
-                              </Pie>
-                              <Tooltip />
-                              <Legend />
-                            </PieChart>
-                          </ResponsiveContainer>
+                          <ChartJsDoughnut
+                            data={{
+                              labels: apptTypeData.map(d => d.name),
+                              datasets: [{
+                                data: apptTypeData.map(d => d.value),
+                                backgroundColor: COLORS,
+                                borderColor: SOFT_COLORS.panel,
+                                borderWidth: 2,
+                                hoverBorderColor: SOFT_COLORS.violet,
+                                hoverOffset: 10,
+                                spacing: 3,
+                              }],
+                            }}
+                            options={{
+                              ...doughnutOptions,
+                              plugins: {
+                                ...doughnutOptions.plugins,
+                                softCenterText: {
+                                  value: apptTypeData
+                                    .reduce((sum, d) => sum + d.value, 0)
+                                    .toLocaleString(),
+                                  label: "Total",
+                                },
+                              },
+                            }}
+                            plugins={[softChartPlugin, softCenterTextPlugin]}
+                          />
                         </div>
                       )}
-                    </IonCardContent>
-                  </IonCard>
+
+                    {apptTypeLegend.length > 0 && (
+                      <div className="soft-chart-card__legend">
+                        <SoftLegendRows rows={apptTypeLegend} />
+                      </div>
+                    )}
+                  </SoftChartCard>
                 </IonCol>
 
                 {/* ── Patient Age Demographics ── */}
                 <IonCol size="12" sizeLg="7">
-                  <IonCard>
-                    <IonCardHeader>
-                      <IonCardTitle>
-                        <IonIcon icon={personOutline} /> Patient Age Groups
-                      </IonCardTitle>
-                    </IonCardHeader>
-                    <IonCardContent>
-                      <div className="chart-container">
-                        <ResponsiveContainer width="100%" height={250}>
-                          <BarChart data={ageData} layout="vertical">
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis type="number" tick={{ fontSize: 11 }} />
-                            <YAxis dataKey="ageGroup" type="category" width={45} tick={{ fontSize: 11 }} />
-                            <Tooltip />
-                            <Bar dataKey="count" name="Patients" fill={COLORS[3]} radius={[0, 4, 4, 0]} />
-                          </BarChart>
-                        </ResponsiveContainer>
+                  <SoftChartCard
+                    icon={people}
+                    title="Patient Age Groups"
+                    subtitle={'Patients bucketed by age bracket'}
+                  >
+                      {ageData.length === 0 ? (
+                        <p className="soft-card-empty">No data</p>
+                      ) : (
+                        <div className="chart-container">
+                          <ChartJsBar
+                            data={{
+                              labels: ageData.map(d => d.ageGroup),
+                              datasets: [{
+                                data: ageData.map(d => d.count),
+                                backgroundColor: "rgba(124, 92, 255, 0.75)",
+                                borderColor: SOFT_COLORS.violet,
+                                borderWidth: 2,
+                                borderRadius: 999,
+                                hoverBackgroundColor: "rgba(109, 58, 245, 0.9)",
+                                hoverBorderColor: SOFT_COLORS.indigo,
+                              }],
+                            }}
+                            options={softHorizontalBarOptions}
+                            plugins={[softChartPlugin]}
+                        />
                       </div>
-                    </IonCardContent>
-                  </IonCard>
+                      )}
+                  </SoftChartCard>
                 </IonCol>
               </IonRow>
 
               {/* ── Top Specializations ── */}
               <IonRow>
                 <IonCol size="12">
-                  <IonCard>
-                    <IonCardHeader>
-                      <IonCardTitle>
-                        <IonIcon icon={medkitOutline} /> Top Specializations by Appointments
-                      </IonCardTitle>
-                    </IonCardHeader>
-                    <IonCardContent>
+                  <SoftChartCard
+                    icon={medkit}
+                    title="Top Specializations by Appointments"
+                    subtitle={'Most requested specialities in the selected period'}
+                  >
                       {specializationData.length === 0 ? (
-                        <p style={{ color: "var(--ion-color-medium)", textAlign: "center" }}>No data</p>
+                        <p className="soft-card-empty">No data</p>
                       ) : (
                         <div className="chart-container">
-                          <ResponsiveContainer width="100%" height={280}>
-                            <BarChart data={specializationData}>
-                              <CartesianGrid strokeDasharray="3 3" />
-                              <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-20} textAnchor="end" height={50} />
-                              <YAxis tick={{ fontSize: 11 }} />
-                              <Tooltip />
-                              <Legend />
-                              <Bar dataKey="appointments" name="Appointments" fill={COLORS[0]} radius={[4, 4, 0, 0]} />
-                              <Bar dataKey="doctors" name="Doctors" fill={COLORS[2]} radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </div>
+                        <ChartJsBar
+                          data={{
+                            labels: specializationData.map(d => d.name),
+                            datasets: [{
+                              data: specializationData.map(d => d.appointments),
+                              backgroundColor: specializationData.map((_, index) => `${COLORS[index % COLORS.length]}b3`),
+                              borderColor: specializationData.map((_, index) => COLORS[index % COLORS.length]),
+                              borderWidth: 2,
+                              borderRadius: 8,
+                              hoverBackgroundColor: "rgba(124, 92, 255, 0.55)",
+                              hoverBorderColor: SOFT_COLORS.violet,
+                            }],
+                          }}
+                          options={barOptions}
+                          plugins={[softChartPlugin]}
+                        />
+                      </div>
                       )}
-                    </IonCardContent>
-                  </IonCard>
+                  </SoftChartCard>
                 </IonCol>
               </IonRow>
             </IonGrid>

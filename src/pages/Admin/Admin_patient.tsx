@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import LoadingHelix from "../../components/LoadingHelix";
 import {
   IonContent,
   IonHeader,
@@ -7,13 +8,10 @@ import {
   IonToolbar,
   IonList,
   IonItem,
-  IonAvatar,
   IonLabel,
   IonButton,
   IonIcon,
   IonSearchbar,
-  IonAlert,
-  IonLoading,
   IonBadge,
   IonButtons,
   IonMenuButton,
@@ -24,15 +22,11 @@ import {
   IonInput,
   IonDatetime,
   IonTextarea,
-  IonGrid,
-  IonRow,
-  IonCol,
   useIonToast,
   IonBackButton,
   IonModal,
-  IonImg,
-  IonChip,
 } from "@ionic/react";
+import { MessageBox } from "../../components/ui/MessageBox";
 import {
   add,
   trash,
@@ -53,7 +47,6 @@ import {
   transgender,
   mail,
 } from "ionicons/icons";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   collection,
   addDoc,
@@ -103,9 +96,6 @@ const Admin_patient: React.FC = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<
-    "all" | "active" | "inactive"
-  >("all");
   const [showAlert, setShowAlert] = useState(false);
   const [patientToDelete, setPatientToDelete] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -215,12 +205,8 @@ const Admin_patient: React.FC = () => {
       );
     }
 
-    if (statusFilter !== "all") {
-      result = result.filter((patient) => patient.status === statusFilter);
-    }
-
     setFilteredPatients(result);
-  }, [searchTerm, statusFilter, patients]);
+  }, [searchTerm, patients]);
 
   // Calculate age from date of birth
   const resolveAge = (dob: string): number => {
@@ -249,6 +235,25 @@ const Admin_patient: React.FC = () => {
         return { icon: transgender, color: "medium" };
     }
   };
+
+  /** Maps a patient's sex to the avatar background, mirroring the doctor list. */
+  const getAvatarColor = (sex: string) => {
+    const { color } = getSexIcon(sex);
+    return color === "danger"
+      ? "var(--ion-color-danger)"
+      : color === "primary"
+      ? "var(--ion-color-primary)"
+      : "var(--ion-color-medium)";
+  };
+
+  const getSexLabel = (sex: string) =>
+    sex.charAt(0).toUpperCase() + sex.slice(1);
+
+  const getStatusColor = (status: string) =>
+    status === "active" ? "success" : "medium";
+
+  const getStatusText = (status: string) =>
+    status === "active" ? "Active" : status === "inactive" ? "Inactive" : status;
 
   const handleDeleteClick = (id: string) => {
     setPatientToDelete(id);
@@ -488,150 +493,178 @@ const Admin_patient: React.FC = () => {
           </IonButtons>
         </IonToolbar>
 
+        {/* Search only — status filtering is intentionally removed */}
         <IonToolbar className="filter-toolbar">
-          <IonGrid className="filter-grid">
-            <IonRow>
-              <IonCol size="12" sizeMd="8">
-                <IonSearchbar
-                  placeholder="Search patients..."
-                  value={searchTerm}
-                  onIonChange={(e) => setSearchTerm(e.detail.value || "")}
-                  animated
-                  debounce={300}
-                  className="search-bar"
-                />
-              </IonCol>
-              <IonCol size="12" sizeMd="4">
-                <IonSelect
-                  value={statusFilter}
-                  placeholder="Filter by status"
-                  onIonChange={(e) => setStatusFilter(e.detail.value)}
-                  interface="popover"
-                  className="status-filter"
-                >
-                  <IonSelectOption value="all">All Patients</IonSelectOption>
-                  <IonSelectOption value="active">Active</IonSelectOption>
-                  <IonSelectOption value="inactive">Inactive</IonSelectOption>
-                </IonSelect>
-              </IonCol>
-            </IonRow>
-          </IonGrid>
+          <IonSearchbar
+            placeholder="Search patients..."
+            value={searchTerm}
+            onIonChange={(e) => setSearchTerm(e.detail.value || "")}
+            animated
+            debounce={300}
+            className="search-bar search-bar--full"
+          />
         </IonToolbar>
       </IonHeader>
 
       <IonContent fullscreen className="content">
-        <IonLoading isOpen={loading} message="Loading patients..." />
+        {loading && (
+          <div className="loading-container">
+            <LoadingHelix />
+            <p>Loading patients...</p>
+          </div>
+        )}
 
-        <IonAlert
+        <MessageBox
           isOpen={showAlert}
-          onDidDismiss={() => setShowAlert(false)}
-          header={"Confirm Deletion"}
-          message={"Are you sure you want to delete this patient?"}
-          buttons={[
+          title="Confirm Deletion"
+          message="Are you sure you want to delete this patient?"
+          tone="danger"
+          actions={[
             {
-              text: "Cancel",
-              role: "cancel",
-              cssClass: "alert-button-cancel",
+              label: "Cancel",
+              color: "medium",
+              onClick: () => setShowAlert(false),
             },
             {
-              text: "Delete",
-              cssClass: "alert-button-confirm",
-              handler: confirmDelete,
+              /* Deletion is unrecoverable, so the confirm action carries the danger
+                 colour and Cancel stays quiet. */
+              label: "Delete",
+              color: "danger",
+              onClick: () => {
+                setShowAlert(false)
+                confirmDelete();
+              },
             },
           ]}
+          onDismiss={() => setShowAlert(false)}
         />
 
-        {/* Patient List */}
-        {filteredPatients.length === 0 && !loading ? (
-          <motion.div
-            className="empty-state"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
-          >
-            <IonIcon icon={medical} className="empty-icon" />
-            <h3>No patients found</h3>
-            <p>Try adjusting your search or add a new patient</p>
-            <IonButton onClick={openSignupModal} className="empty-action">
-              <IonIcon slot="start" icon={personAdd} />
-              Add Patient
-            </IonButton>
-          </motion.div>
-        ) : (
-          <IonList className="patient-list">
-            <AnimatePresence>
-              {filteredPatients.map((patient, index) => {
+        {/* Patient List Section */}
+        <div className="patients-section">
+          <IonLabel className="section-title">
+            Patients ({filteredPatients.length})
+          </IonLabel>
+          {filteredPatients.length === 0 && !loading ? (
+            <div className="empty-state">
+              <IonIcon icon={medical} className="empty-icon" />
+              <h3>No patients found</h3>
+              <p>Try adjusting your search or add a new patient</p>
+              <IonButton onClick={openSignupModal} className="empty-action">
+                <IonIcon slot="start" icon={add} />
+                Add Patient
+              </IonButton>
+            </div>
+          ) : (
+            <IonList className="patient-list">
+              {filteredPatients.map((patient) => {
                 const sexInfo = getSexIcon(patient.sex);
                 return (
-                  <motion.div
-                    key={patient.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, x: -100 }}
-                    transition={{
-                      delay: index * 0.05,
-                      type: "spring",
-                      stiffness: 100,
-                      damping: 10,
-                    }}
-                    layout
-                  >
+                  <div key={patient.id}>
                     <IonItem
                       className={`patient-item ${patient.status}`}
                       lines="none"
                     >
-                      {/* Avatar with status dot */}
                       <div slot="start" className="p-avatar">
-                        <div className="p-initials" style={{ background: sexInfo.color === "danger" ? "var(--ion-color-danger)" : sexInfo.color === "primary" ? "var(--ion-color-primary)" : "var(--ion-color-medium)" }}>
-                          {patient.name.split(" ").map((p: string) => p[0]).join("").slice(0, 2).toUpperCase()}
+                        <div
+                          className="p-initials"
+                          style={{ background: getAvatarColor(patient.sex) }}
+                        >
+                          {patient.name
+                            .split(" ")
+                            .map((p: string) => p[0])
+                            .join("")
+                            .slice(0, 2)
+                            .toUpperCase()}
                         </div>
-                        <span className={`p-status-dot ${patient.status}`} />
+                        <span
+                          className={`p-status-dot ${patient.status === "active" ? "active" : "inactive"}`}
+                        />
                       </div>
 
-                      {/* Main info */}
                       <div className="p-info">
-                        {/* Row 1: name + age/sex chips */}
+                        {/* Row 1: name + account + status */}
                         <div className="p-row p-row-top">
                           <span className="p-name">{patient.name}</span>
-                          <div className="p-chips">
-                            <IonChip color="medium" style={{ height: 22, fontSize: "0.72rem", margin: 0 }}>
-                              <IonIcon icon={person} style={{ fontSize: 12 }} />
-                              <IonLabel>{resolveAge(patient.dob)} yrs</IonLabel>
-                            </IonChip>
-                            <IonChip color={sexInfo.color as any} style={{ height: 22, fontSize: "0.72rem", margin: 0 }}>
-                              <IonIcon icon={sexInfo.icon} style={{ fontSize: 12 }} />
-                              <IonLabel>{patient.sex.charAt(0).toUpperCase() + patient.sex.slice(1)}</IonLabel>
-                            </IonChip>
+                          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                            {patient.uid && (
+                              <IonBadge
+                                color="success"
+                                style={{ fontSize: "0.62rem", padding: "2px 6px" }}
+                              >
+                                ✓ Account
+                              </IonBadge>
+                            )}
+                            <IonBadge
+                              color={getStatusColor(patient.status)}
+                              style={{ fontSize: "0.62rem", padding: "2px 6px" }}
+                            >
+                              {getStatusText(patient.status)}
+                            </IonBadge>
                           </div>
                         </div>
-                        {/* Row 2: email + phone inline */}
-                        <div className="p-row p-row-contact">
-                          <span className="p-contact-item"><IonIcon icon={mail} />{patient.email}</span>
-                          <span className="p-contact-item"><IonIcon icon={call} />{patient.phone}</span>
+                        {/* Row 2: sex + age + last visit */}
+                        <div className="p-row p-row-spec">
+                          <span className="p-spec">
+                            <IonIcon icon={sexInfo.icon} />
+                            {getSexLabel(patient.sex)}
+                          </span>
+                          <span className="p-meta-item">
+                            <IonIcon icon={person} />
+                            {resolveAge(patient.dob)} yrs
+                          </span>
+                          {patient.lastVisit && (
+                            <span className="p-meta-item">
+                              <IonIcon icon={calendar} />
+                              Last {formatDate(patient.lastVisit)}
+                            </span>
+                          )}
                         </div>
-                        {/* Row 3: address + last visit */}
-                        <div className="p-row p-row-meta">
-                          {patient.address && <span className="p-meta-item"><IonIcon icon={location} />{patient.address}</span>}
-                          {patient.lastVisit && <span className="p-meta-item"><IonIcon icon={calendar} />Last: {formatDate(patient.lastVisit)}</span>}
+                        {/* Row 3: email + phone + address */}
+                        <div className="p-row p-row-contact">
+                          <span className="p-contact-item">
+                            <IonIcon icon={mail} />
+                            {patient.email || "—"}
+                          </span>
+                          {patient.phone && (
+                            <span className="p-contact-item">
+                              <IonIcon icon={call} />
+                              {patient.phone}
+                            </span>
+                          )}
+                          {patient.address && (
+                            <span className="p-contact-item p-contact-item--addr">
+                              <IonIcon icon={location} />
+                              {patient.address}
+                            </span>
+                          )}
                         </div>
                       </div>
 
-                      {/* Actions */}
                       <div className="p-actions" slot="end">
-                        <IonButton fill="clear" color="primary" onClick={() => openEditModal(patient)} className="edit-button">
+                        <IonButton
+                          fill="clear"
+                          color="primary"
+                          onClick={() => openEditModal(patient)}
+                          className="edit-button"
+                        >
                           <IonIcon slot="icon-only" icon={create} />
                         </IonButton>
-                        <IonButton fill="clear" color="danger" onClick={() => handleDeleteClick(patient.id)} className="delete-button">
+                        <IonButton
+                          fill="clear"
+                          color="danger"
+                          onClick={() => handleDeleteClick(patient.id)}
+                          className="delete-button"
+                        >
                           <IonIcon slot="icon-only" icon={trash} />
                         </IonButton>
                       </div>
                     </IonItem>
-                  </motion.div>
+                  </div>
                 );
               })}
-            </AnimatePresence>
-          </IonList>
-        )}
+            </IonList>
+          )}
+        </div>
 
         {/* Custom Modal */}
         <IonModal isOpen={showModal} onDidDismiss={() => setShowModal(false)}>

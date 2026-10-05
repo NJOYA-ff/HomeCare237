@@ -1,73 +1,198 @@
-// Appointments.scss
+// ──────────────────────────────────────────────────────────
+// Appointments.scss  –  Doctor appointment cards
+// Clean, flat design. No sidebar colours.
+// ──────────────────────────────────────────────────────────
 
-// Animation for card entrance
 @keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-// Compact card styling
+// ── List wrapper ────────────────────────────────────────────
+ion-list[lines="none"] {
+  padding: 8px 0 24px;
+  background: transparent;
+}
+
+// ── Card shell ──────────────────────────────────────────────
 .appointment-card {
-  margin: 10px;
-  border-radius: 8px;
-  
-  animation: fadeInUp 0.3s ease forwards;
-  opacity: 0;
+  margin: 0 12px 12px;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  animation: fadeInUp 0.3s ease both;
+
+  // family variant: no border override needed
 }
 
+// ── Card header row (avatar + name/status) ──────────────────
 .appointment-header {
-  padding: 10px 10px 5px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid #f0f2f5;
+  background: #fafbfc;
+}
 
-  .small-avatar {
-    width: 36px;
-    height: 36px;
-  }
+// Avatar
+.small-avatar {
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid #e0e3eb;
+  overflow: hidden;
+  background: #f0f2f5;
 
-  .compact-title {
-    font-size: 16px;
-    font-weight: 600;
-    margin-bottom: 2px;
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
   }
+}
 
-  .compact-subtitle {
-    font-size: 14px;
-    color: var(--ion-color-medium);
-  }
+// Text block beside avatar
+.appointment-header-text {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+// Name row: name on the left, status chip on the right
+.appointment-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.compact-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1d23;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+// Status chip
+.appt-status-chip {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 12px;
+}
+
+// Subtitle row: service badge + identity tags, all inline
+.compact-subtitle {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.appt-service {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ion-color-primary);
+  background: rgba(var(--ion-color-primary-rgb), 0.10);
+  padding: 3px 10px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.appt-identity {
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+  background: #f1f3f7;
+  padding: 3px 10px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+// Family booking badge (inline with name)
+.family-booking-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 8px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.family-booking {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 0;
+}
+
+.family-booking-meta {
+  font-size: 12px;
+  color: #64748b;
+  text-transform: capitalize;
+}
+
+// ── Card body (detail rows) ──────────────────────────────────
+// IonCardContent adds its own padding via --padding-* vars; reset them all.
+ion-card-content.compact-content {
+  --padding-start: 0;
+  --padding-end: 0;
+  --padding-top: 0;
+  --padding-bottom: 0;
 }
 
 .compact-content {
-  padding: 5px 10px 10px;
+  padding: 12px 16px 16px;
 
+  // Override Ionic IonItem defaults so rows sit flush
   .compact-item {
-    --min-height: 32px;
     --padding-start: 0;
+    --inner-padding-end: 0;
+    --background: transparent;
+    --min-height: 44px;
+    margin: 0;
 
     ion-icon {
-      font-size: 16px;
-      margin-right: 8px;
-      color: var(--ion-color-medium);
+      font-size: 18px;
+      color: #94a3b8;
+      margin-right: 12px;
+      flex-shrink: 0;
     }
   }
 
   .compact-label {
     margin: 0;
 
-    h3 {
-      font-size: 14px;
-      font-weight: 500;
-      margin: 2px 0 0;
+    p {
+      font-size: 11px;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 0 0 2px;
     }
 
-    p {
-      font-size: 12px;
-      color: var(--ion-color-medium);
+    h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1a1d23;
       margin: 0;
+      line-height: 1.4;
     }
   }
 }
@@ -76,134 +201,213 @@
   padding: 0;
 
   ion-row {
-    margin-bottom: 5px;
-
-    &:last-child {
-      margin-bottom: 0;
-    }
+    margin: 0 0 4px;
   }
+}
+
+// ── Patient extra details ────────────────────────────────────
+.patient-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 2px;
+
+  span {
+    font-size: 13px;
+    color: #64748b;
+    line-height: 1.5;
+  }
+}
+
+// ── Action buttons row ──────────────────────────────────────
+.compact-grid ion-row:last-child {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f0f2f5;
 
   ion-button {
-    margin: 0;
-    --padding-top: 8px;
-    --padding-bottom: 8px;
+    --border-radius: 12px;
+    --padding-top: 10px;
+    --padding-bottom: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 4px;
+  }
+}
+
+// ── Family priority info block ───────────────────────────────
+.family-priority-info {
+  margin: 0 16px 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(var(--ion-color-tertiary-rgb), 0.06);
+  border: 1px solid rgba(var(--ion-color-tertiary-rgb), 0.15);
+
+  .family-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ion-color-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 8px;
+  }
+
+  .family-member-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .family-detail-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: #ffffff;
+    border: 1px solid #e8eaf0;
+    border-radius: 8px;
+    padding: 4px 10px;
     font-size: 13px;
 
-    ion-icon {
-      font-size: 14px;
+    .detail-label {
+      font-weight: 600;
+      color: var(--ion-color-tertiary);
+      font-size: 12px;
+    }
+
+    .detail-value {
+      font-weight: 600;
+      color: #1a1d23;
     }
   }
 }
 
-// No appointments state
+.account-holder-note {
+  margin: 0 16px 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #f8f9fb;
+  border: 1px dashed #d1d5db;
+  font-size: 13px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .note-icon {
+    color: var(--ion-color-primary);
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+}
+
+// ── Empty / no-appointments state ───────────────────────────
 .no-appointments {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 60vh;
+  height: 55vh;
   text-align: center;
-  padding: 20px;
+  padding: 24px;
 
   ion-icon {
-    font-size: 48px;
+    font-size: 52px;
     margin-bottom: 16px;
-    opacity: 0.5;
+    color: #cbd5e1;
   }
 
   h3 {
-    font-size: 18px;
-    color: var(--ion-color-medium);
+    font-size: 17px;
+    font-weight: 600;
+    color: #64748b;
+    margin: 0;
   }
 }
 
-// Segment button customization
+// ── Searchbar ────────────────────────────────────────────────
+ion-searchbar {
+  --border-radius: 12px;
+  padding: 8px 12px;
+}
+
+// ── Segment ──────────────────────────────────────────────────
 ion-segment {
   ion-segment-button {
     --indicator-color: var(--ion-color-primary);
-    --color: var(--ion-color-medium);
+    --color: #64748b;
     --color-checked: var(--ion-color-primary);
-    --padding-top: 6px;
-    --padding-bottom: 6px;
 
     ion-label {
       font-size: 13px;
+      font-weight: 600;
     }
 
-    &::part(indicator) {
-      height: 2px;
-    }
+    &::part(indicator) { height: 2px; }
   }
 }
 
-// Searchbar customization
-ion-searchbar {
-  padding: 8px;
-
-  .searchbar-input-container {
-    input {
-      font-size: 14px;
-    }
-  }
-}
-
-// Badge styling
-ion-badge {
-  font-size: 11px;
-  padding: 4px 6px;
-}
-
-// Responsive adjustments
-@media (max-width: 768px) {
-  .appointment-card {
-    margin: 8px 5px;
-  }
-}
-
-// Dark mode compatibility
-@media (prefers-color-scheme: dark) {
-  .appointment-card {
-    
-  }
-}
-.patient-details {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-
-  span {
-    font-size: 0.8rem;
-    color: var(--ion-color-medium);
-  }
-}
-
-.compact-subtitle {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-// ── Loading ──────────────────────────────────────────────────
+// ── Loading container ────────────────────────────────────────
 .loading-container {
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   height: 50vh;
-  padding: 20px;
-
-  .loading-spinner {
-    width: 48px;
-    height: 48px;
-    border: 4px solid rgba(var(--ion-color-primary-rgb), 0.2);
-    border-top-color: var(--ion-color-primary);
-    border-radius: 50%;
-    margin-bottom: 16px;
-  }
+  gap: 16px;
 
   p {
+    color: #64748b;
+    font-size: 14px;
     margin: 0;
-    color: var(--ion-color-medium);
-    text-align: center;
+  }
+}
+
+// ── Family colour token ──────────────────────────────────────
+:root {
+  --ion-color-family:          #7c3aed;
+  --ion-color-family-rgb:      124, 58, 237;
+  --ion-color-family-contrast: #ffffff;
+  --ion-color-family-shade:    #6d28d9;
+  --ion-color-family-tint:     #8b5cf6;
+}
+
+// ── Dark mode ────────────────────────────────────────────────
+@media (prefers-color-scheme: dark) {
+  .appointment-card {
+    background: #1e2130;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .appointment-header {
+    background: #252a3a;
+    border-bottom-color: #2a2f45;
+  }
+
+  .compact-title { color: #f1f5f9; }
+
+  .appt-identity {
+    background: #2a2f45;
+    color: #94a3b8;
+  }
+
+  .compact-content .compact-label {
+    h3 { color: #f1f5f9; }
+  }
+
+  .family-priority-info {
+    background: rgba(124, 58, 237, 0.08);
+    border-color: rgba(124, 58, 237, 0.2);
+
+    .family-detail-item {
+      background: #1e2130;
+      border-color: #2a2f45;
+      .detail-value { color: #f1f5f9; }
+    }
+  }
+
+  .account-holder-note {
+    background: #252a3a;
+    border-color: #3a3f55;
+    color: #94a3b8;
   }
 }

@@ -1,0 +1,591 @@
+// hc-components.scss — HomeCare237 shared design-system layer.
+// Loaded globally (see src/App.tsx) after variables.css so every page can use
+// the same typography scale, layout shells, skeletons and form primitives.
+//
+// Prefix: every class is namespaced with `hc-` to avoid clashing with the
+// page-level SCSS that already exists across Admin / Doctor / Patient pages.
+
+/* ===== 1. TYPOGRAPHY + SPACING SCALE ===== */
+:root {
+  /* Type scale */
+  --hc-text-2xs: 0.68rem; // labels, badges
+  --hc-text-xs: 0.75rem; // metadata
+  --hc-text-sm: 0.85rem; // helper text
+  --hc-text-md: 0.95rem; // body
+  --hc-text-lg: 1.05rem; // card title
+  --hc-text-xl: 1.25rem; // section title
+  --hc-text-2xl: 1.6rem; // page title
+  --hc-text-3xl: 1.9rem; // hero metric
+
+  --hc-weight-regular: 500;
+  --hc-weight-medium: 600;
+  --hc-weight-semibold: 700;
+  --hc-weight-bold: 800;
+
+  /* Spacing scale (4px base) */
+  --hc-space-1: 4px;
+  --hc-space-2: 8px;
+  --hc-space-3: 12px;
+  --hc-space-4: 16px;
+  --hc-space-5: 20px;
+  --hc-space-6: 28px;
+
+  --hc-page-max: 760px;
+  --hc-page-max-wide: 1120px;
+}
+
+.hc-title {
+  margin: 0;
+  color: var(--ion-text-color);
+  font-size: var(--hc-text-2xl);
+  font-weight: var(--hc-weight-bold);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.hc-subtitle {
+  margin: var(--hc-space-1) 0 0;
+  color: var(--hc-text-muted);
+  font-size: var(--hc-text-sm);
+  font-weight: var(--hc-weight-regular);
+  line-height: 1.4;
+}
+
+.hc-card-title {
+  margin: 0;
+  color: var(--ion-text-color);
+  font-size: var(--hc-text-lg);
+  font-weight: var(--hc-weight-bold);
+  line-height: 1.3;
+}
+
+.hc-body {
+  margin: 0;
+  color: var(--ion-text-color);
+  font-size: var(--hc-text-md);
+  font-weight: var(--hc-weight-regular);
+  line-height: 1.5;
+}
+
+.hc-meta {
+  margin: 0;
+  color: var(--hc-text-muted);
+  font-size: var(--hc-text-xs);
+  line-height: 1.35;
+}
+
+.hc-label {
+  display: block;
+  margin: 0 0 var(--hc-space-1);
+  color: var(--hc-text-muted);
+  font-size: var(--hc-text-2xs);
+  font-weight: var(--hc-weight-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hc-visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ===== 2. PAGE / LAYOUT SHELL ===== */
+.hc-page {
+  width: 100%;
+  max-width: var(--hc-page-max);
+  margin: 0 auto;
+  padding: var(--hc-space-3) 14px var(--hc-space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--hc-space-3);
+}
+
+.hc-page--wide {
+  max-width: var(--hc-page-max-wide);
+}
+
+.hc-page--flush {
+  max-width: none;
+  padding: 0;
+  gap: 0;
+}
+
+.hc-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hc-space-3);
+}
+
+.hc-row {
+  display: flex;
+  align-items: center;
+  gap: var(--hc-space-2);
+}
+
+.hc-row--between {
+  justify-content: space-between;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .hc-page {
+    padding: var(--hc-space-2) 12px var(--hc-space-5);
+  }
+}
+
+/* ===== 3. SKELETON LOADING STATES ===== */
+.hc-skeleton {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  width: 100%;
+  height: 14px;
+  border-radius: var(--hc-radius-sm);
+  background: color-mix(in srgb, var(--hc-surface-muted) 86%, var(--ion-text-color) 8%);
+}
+
+.hc-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--hc-surface) 55%, transparent),
+    transparent
+  );
+  animation: hc-skeleton-shimmer 1.35s ease-in-out infinite;
+}
+
+@keyframes hc-skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.hc-skeleton--text {
+  height: 12px;
+}
+
+.hc-skeleton--title {
+  height: 18px;
+  width: 45%;
+}
+
+.hc-skeleton--metric {
+  height: 26px;
+  width: 60%;
+}
+
+.hc-skeleton--pill {
+  height: 24px;
+  width: 72px;
+  border-radius: 999px;
+}
+
+.hc-skeleton--avatar {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  border-radius: 12px;
+}
+
+.hc-skeleton--button {
+  height: var(--hc-btn-height, 38px);
+  border-radius: var(--hc-border-radius);
+}
+
+.hc-skeleton--card {
+  height: 108px;
+  border-radius: var(--hc-radius-lg);
+}
+
+.hc-skeleton-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--hc-space-2);
+  width: 100%;
+}
+
+.hc-skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: var(--hc-space-3);
+  width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hc-skeleton::after {
+    animation: none;
+  }
+}
+
+/* ===== 4. FORM PRIMITIVES ===== */
+.hc-form-panel {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--hc-space-3);
+}
+
+.hc-chip-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--hc-space-2);
+}
+
+.hc-form-field {
+  --padding-start: var(--hc-space-4);
+  --inner-padding-end: var(--hc-space-4);
+  margin-bottom: var(--hc-space-3);
+}
+
+.hc-form-field ion-label {
+  font-size: var(--hc-text-xs) !important;
+  font-weight: var(--hc-weight-semibold) !important;
+  letter-spacing: 0.02em;
+  color: var(--hc-text-muted);
+}
+
+.hc-form-field .hc-form-field__required {
+  color: var(--ion-color-danger);
+  margin-left: 2px;
+}
+
+.hc-form-field ion-note[slot="helper"] {
+  color: var(--hc-text-muted);
+  font-size: var(--hc-text-xs);
+}
+
+.hc-form-field ion-note[slot="error"] {
+  color: var(--ion-color-danger);
+  font-size: var(--hc-text-xs);
+}
+
+.hc-form-field ion-input,
+.hc-form-field ion-textarea,
+.hc-form-field ion-select {
+  font-size: var(--hc-text-md);
+  color: var(--ion-text-color);
+}
+
+/* ===== 5. ACCESSIBILITY ===== */
+@media (prefers-reduced-motion: reduce) {
+  .hc-page *,
+  .hc-stack * {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ===== 6. GLOBAL PRIMITIVE RHYTHM =====
+   The classes above are opt-in, so pages that still render raw Ionic markup
+   drifted apart visually. This section pins *defaults* onto the shared Ionic
+   primitives (cards, two-line list items, list headers, chips, segments) so
+   Admin / Doctor / Patient screens inherit one type scale and one spacing
+   rhythm without touching 54 files.
+
+   Ordering contract: this file is imported in src/App.tsx, so page-level SCSS
+   is evaluated afterwards and still wins on equal specificity. Treat everything
+   here as an overridable default, never as a final word. */
+
+/* -- 6.1 Cards: padding, hierarchy and reading rhythm -- */
+ion-card-header {
+  padding: var(--hc-space-4) var(--hc-space-4) var(--hc-space-2);
+}
+
+ion-card-title {
+  color: var(--ion-text-color);
+  font-size: var(--hc-text-lg);
+  font-weight: var(--hc-weight-bold);
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+ion-card-subtitle {
+  margin-top: var(--hc-space-1);
+  color: var(--hc-text-muted);
+  font-size: var(--hc-text-2xs);
+  font-weight: var(--hc-weight-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+ion-card-content {
+  padding: var(--hc-space-3) var(--hc-space-4) var(--hc-space-4);
+  color: var(--ion-text-color);
+  font-size: var(--hc-text-md);
+  line-height: 1.5;
+}
+
+/* Headings nested inside card content (very common in this codebase) follow
+   the same hierarchy as ion-card-title instead of browser defaults. */
+ion-card-content h1,
+ion-card-content h2,
+ion-card-content h3 {
+  margin: 0 0 var(--hc-space-1);
+  color: var(--ion-text-color);
+  font-size: var(--hc-text-lg);
+  font-weight: var(--hc-weight-bold);
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+ion-card-content h3 + p,
+ion-card-content h2 + p {
+  margin-top: 0;
+}
+
+/* -- 6.2 Lists: consistent two-line rows and metadata -- */
+ion-item h2,
+ion-item h3 {
+  color: var(--ion-text-color);
+  font-size: var(--hc-text-md);
+  font-weight: var(--hc-weight-semibold);
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+ion-item p {
+  color: var(--hc-text-muted);
+  font-size: var(--hc-text-xs);
+  line-height: 1.4;
+}
+
+ion-item ion-note {
+  color: var(--hc-text-muted);
+  font-size: var(--hc-text-xs);
+}
+
+ion-list-header {
+  min-height: 34px;
+  color: var(--hc-text-muted);
+  font-size: var(--hc-text-2xs);
+  font-weight: var(--hc-weight-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* -- 6.3 Restrained microinteractions --
+   Hover feedback only on true pointers, press feedback everywhere. All of it
+   is opacity/shadow/1px-scale only, so nothing reflows. */
+.hc-panel,
+.hc-metric-card {
+  transition: box-shadow 0.16s ease, transform 0.16s ease, border-color 0.16s ease;
+}
+
+@media (hover: hover) {
+  .hc-panel:hover,
+  .hc-metric-card:hover {
+    border-color: var(--hc-border-strong);
+    box-shadow: var(--hc-shadow-md) !important;
+  }
+
+  ion-card[button]:hover,
+  ion-item[button]:hover {
+    --background-hover: var(--hc-surface-muted);
+  }
+}
+
+.hc-panel:active,
+.hc-metric-card:active {
+  transform: scale(0.995);
+}
+
+ion-card[button]:active,
+ion-chip:active,
+ion-segment-button:active {
+  opacity: 0.88;
+}
+
+/* -- 6.4 Focus visibility --
+   Ionic adds `.ion-focused` for keyboard/AT focus; the raw :focus-visible
+   rules in variables.css cover plain buttons and links. */
+ion-card[button].ion-focused,
+ion-item[button].ion-focused,
+ion-chip.ion-focused,
+ion-segment-button.ion-focused {
+  outline: none;
+  box-shadow: var(--hc-focus-ring);
+}
+
+/* ===== 7. ERROR STATE =====
+   Pairs with .hc-empty-state: same visual weight, but always offers a way
+   forward (Retry / Check connection / Go back) instead of a dead end. */
+.hc-error-state {
+  border: 1px solid rgba(var(--ion-color-danger-rgb), 0.28);
+  border-radius: var(--hc-radius-lg);
+  background: color-mix(in srgb, var(--hc-surface) 92%, var(--ion-color-danger) 8%);
+  padding: 22px 18px;
+  text-align: center;
+}
+
+.hc-error-state__icon {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 12px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--ion-color-danger-rgb), 0.12);
+  color: var(--ion-color-danger);
+}
+
+.hc-error-state__icon ion-icon {
+  font-size: 22px !important;
+}
+
+.hc-error-state h3 {
+  margin: 0 0 6px;
+  color: var(--ion-text-color);
+  font-size: var(--hc-text-lg);
+  font-weight: var(--hc-weight-bold);
+}
+
+.hc-error-state p {
+  margin: 0;
+  color: var(--hc-text-muted);
+  font-size: var(--hc-text-sm);
+  line-height: 1.45;
+}
+
+.hc-error-state__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--hc-space-2);
+  margin-top: var(--hc-space-4);
+}
+
+.hc-error-state__detail {
+  display: block;
+  margin-top: var(--hc-space-3);
+  color: var(--hc-text-muted);
+  font-size: var(--hc-text-xs);
+  overflow-wrap: anywhere;
+}
+
+/* ===== 8. RESULT SHEET =====
+   Pairs with the <ResultSheet> component: bottom-sheet feedback for an action
+   that hit the network (booking an appointment, updating it, …). Visual
+   language mirrors the doctor-rating sheet on the appointments page. */
+ion-modal.hc-result-sheet-modal {
+  --width: 100%;
+  --max-width: 480px;
+  --height: auto;
+  --max-height: 90vh;
+  --border-radius: 24px 24px 0 0;
+  --backdrop-opacity: 0.45;
+  --background: var(--ion-card-background, #ffffff);
+  align-items: flex-end; // with --height: auto this behaves like a bottom sheet
+
+  @media (min-width: 540px) {
+    --border-radius: 24px;
+    align-items: center;
+  }
+}
+
+.hc-result-sheet {
+  width: 100%;
+  max-height: calc(90vh - 24px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 28px 24px calc(24px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+
+  @media (min-width: 540px) {
+    max-height: calc(85vh - 24px);
+  }
+}
+
+.hc-result-sheet__icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ion-color-primary);
+  background: rgba(var(--ion-color-primary-rgb), 0.12);
+  border: 3px solid rgba(var(--ion-color-primary-rgb), 0.2);
+}
+
+.hc-result-sheet__icon ion-icon {
+  font-size: 38px !important;
+}
+
+.hc-result-sheet--success .hc-result-sheet__icon {
+  color: var(--ion-color-success);
+  background: rgba(var(--ion-color-success-rgb), 0.14);
+  border-color: rgba(var(--ion-color-success-rgb), 0.28);
+}
+
+.hc-result-sheet--error .hc-result-sheet__icon {
+  color: var(--ion-color-danger);
+  background: rgba(var(--ion-color-danger-rgb), 0.12);
+  border-color: rgba(var(--ion-color-danger-rgb), 0.28);
+}
+
+.hc-result-sheet__title {
+  margin: 0;
+  color: var(--ion-text-color);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.hc-result-sheet__message {
+  margin: 0;
+  color: var(--ion-color-medium);
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.hc-result-sheet__actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.hc-result-sheet__actions ion-button {
+  --border-radius: var(--hc-border-radius, 999px);
+  text-transform: none;
+  font-weight: 600;
+}
+
+.hc-result-sheet__secondary {
+  flex: 1;
+}
+
+.hc-result-sheet__primary {
+  flex: 1;
+}
+
+/* Primary keeps the wider share when a secondary action is present. */
+.hc-result-sheet__primary:not(:only-child) {
+  flex: 2;
+}
+
+body.dark {
+  ion-modal.hc-result-sheet-modal {
+    --background: var(--ion-item-background);
+  }
+}

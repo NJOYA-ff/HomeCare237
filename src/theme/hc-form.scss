@@ -3,10 +3,11 @@
 // Usage: add class="hc-form-item" to any IonItem that wraps an IonInput,
 //        IonTextarea, or IonSelect with a stacked / floating IonLabel.
 //
-// Import once from any page that needs it:
-//   @use '../../theme/hc-form.scss';   (adjust relative path as needed)
+// Imported ONCE globally from src/App.tsx — do not @use it per page (that
+// would duplicate the rules in the CSS bundle for every importer).
 //
-// Both light and dark modes are covered via @media and body.dark.
+// Both light and dark modes are covered via body.dark (the single dark-mode
+// mechanism — see SettingsContext).
 
 /* ── Light-mode defaults ─────────────────────────────────────────────────── */
 .hc-form-item {
@@ -24,7 +25,7 @@
   --border-width: 1px;
   --border-style: solid;
   --inner-border-width: 0;
-  --highlight-color-focused: var(--ion-color-primary, #3b7dd8);
+  --highlight-color-focused: var(--ion-color-primary);
   --highlight-color-valid: var(--ion-color-success, #2dd36f);
   --highlight-color-invalid: var(--ion-color-danger, #eb445a);
 
@@ -52,7 +53,7 @@
   ion-textarea,
   ion-select {
     font-size: 0.93rem !important;
-    color: var(--ion-text-color, #1a1a2e) !important;
+    color: var(--ion-text-color, #0f172a) !important;
     --padding-start: 0px;
     --padding-end: 0px;
   }
@@ -71,7 +72,7 @@
 }
 
 /* ── Dark mode ───────────────────────────────────────────────────────────── */
-@media (prefers-color-scheme: dark) {
+body.dark {
   .hc-form-item {
     --background: var(--ion-item-background, #1a1d27);
     --border-color: var(--ion-color-step-150, #252839);

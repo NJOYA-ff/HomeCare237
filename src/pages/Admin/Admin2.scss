@@ -2,114 +2,512 @@
 // Admin2.scss — Appointments + Health Units + SMS
 // ============================================================
 
-// ---- Appointments ----------------------------------------
-.appointment-header {
-  ion-toolbar {
-    --background: var(--ion-background-color);
-    --border-width: 0 0 1px 0;
-    --border-color: var(--ion-color-step-100);
+// ---- Export Section ------------------------------------
+.export-card {
+  --background: var(--ion-card-background, var(--ion-background-color));
+  border-radius: 18px;
+  margin: 0 0 16px;
+  padding: 4px;
+  border: 1px solid var(--hc-border, var(--ion-color-step-150));
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.07);
+
+  ion-card-header { padding-bottom: 2px; }
+  ion-card-content { padding-top: 6px; }
+
+  &:hover {
+    box-shadow: 0 10px 26px rgba(15, 23, 42, 0.1);
   }
 }
 
-.page-title {
-  font-size: 1.1rem;
+.export-card-title {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ion-color-dark);
+}
+
+// Rounded icon tile that anchors the header visually.
+.export-title-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: linear-gradient(
+    135deg,
+    var(--ion-color-primary),
+    var(--ion-color-primary-shade)
+  );
+  box-shadow: 0 4px 12px rgba(var(--ion-color-primary-rgb), 0.32);
+}
+
+.export-title-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.export-title-heading {
+  font-size: 1rem;
   font-weight: 700;
   letter-spacing: -0.2px;
+  line-height: 1.25;
 }
 
-.search-toolbar {
-  --background: var(--ion-background-color);
-  padding: 4px 8px 8px;
+.export-title-icon {
+  font-size: 1.25rem;
+  color: #fff;
 }
 
-.appointment-searchbar {
-  --background: var(--ion-color-step-50, rgba(0,0,0,0.04));
+.export-desc {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--ion-color-medium);
+  margin: 0;
+  line-height: 1.4;
+}
+
+// ── Date range From / To row ──────────────────────────────
+// Two side-by-side pickers that look like proper input fields.
+.export-date-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.export-date-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 130px;
+}
+
+.export-date-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--ion-color-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding-left: 4px;
+}
+
+.export-date-btn {
   --border-radius: 10px;
-  --box-shadow: none;
-  --placeholder-color: var(--ion-color-medium);
-  padding: 0;
+  --border-width: 1.5px;
+  --border-color: var(--ion-color-step-200, rgba(0,0,0,0.12));
+  --background: var(--ion-background-color);
+  --background-hover: var(--ion-color-step-50, rgba(0,0,0,0.03));
+  --color: var(--ion-color-dark);
+  font-size: 0.82rem;
+  font-weight: 600;
+  width: 100%;
+  height: 38px;
+  letter-spacing: 0;
+
+  ion-icon { font-size: 15px; opacity: 0.7; }
 }
 
+.export-btn {
+  --border-radius: 14px;
+  font-weight: 700;
+  font-size: 0.92rem;
+  height: 50px;
+  letter-spacing: 0.01em;
+  --box-shadow: 0 6px 16px rgba(var(--ion-color-primary-rgb), 0.28);
+  margin: 0;
+
+  &:hover:not(.ion-disabled) {
+    --box-shadow: 0 8px 20px rgba(var(--ion-color-primary-rgb), 0.36);
+  }
+}
+
+.date-picker-modal {
+  --height: auto;
+  --width: 320px;
+  --border-radius: 16px;
+  align-items: center;
+  justify-content: center;
+}
+
+// ── Filter panel: date range ───────────────────────────────
+// 12px matches the segment's horizontal inset so everything lines up neatly.
+.filter-date-block {
+  padding: 4px 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 1px solid var(--ion-color-step-100, rgba(0,0,0,0.06));
+}
+
+// ── Date preset chips row ──────────────────────────────────
+// Quick-select buttons scroll horizontally on narrow screens.
+.date-preset-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 4px 0 4px;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar { display: none; }
+
+  // Preset chips — compact rounded pills
+  ion-button.date-preset-btn {
+    flex: 0 0 auto;
+    --border-radius: 999px;
+    --padding-start: 14px;
+    --padding-end: 14px;
+    --padding-top: 0;
+    --padding-bottom: 0;
+    height: 30px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    transition: transform 0.15s ease;
+
+    &:active { transform: scale(0.95); }
+
+    // Active/selected chip gets a filled primary style
+    &[fill="solid"] {
+      --box-shadow: 0 2px 8px rgba(var(--ion-color-primary-rgb), 0.28);
+    }
+  }
+
+  // Clear dates — lighter ghost button
+  ion-button.date-clear-btn {
+    flex: 0 0 auto;
+    --border-radius: 999px;
+    --padding-start: 10px;
+    --padding-end: 10px;
+    height: 30px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    opacity: 0.85;
+
+    ion-icon { font-size: 14px; }
+  }
+}
+
+// ── Date filter status hint ────────────────────────────────
+// Subtle one-liner below the date row; turns amber when dates are swapped.
+.date-filter-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--ion-color-medium);
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--ion-color-step-50, rgba(0,0,0,0.03));
+
+  &.is-warning {
+    color: var(--ion-color-warning-shade);
+    font-weight: 600;
+    background: rgba(var(--ion-color-warning-rgb), 0.08);
+    border: 1px solid rgba(var(--ion-color-warning-rgb), 0.22);
+  }
+}
+.date-picker-modal {
+  ion-datetime {
+    width: 100%;
+    max-width: 320px;
+    padding: 0 8px 12px;
+  }
+}
+
+.date-picker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 16px 4px;
+
+  .date-picker-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--ion-color-dark);
+  }
+}
+
+// ── Filter button + badge in main toolbar ─────────────────
+// The button itself looks like a rounded icon tile; the badge
+// floats in the corner showing how many filters are active.
+.filter-button {
+  position: relative;
+  --border-radius: 10px;
+  --background: var(--ion-color-step-50, rgba(0,0,0,0.04));
+  --background-hover: var(--ion-color-step-100, rgba(0,0,0,0.07));
+  --padding-start: 10px;
+  --padding-end: 10px;
+  height: 36px;
+  width: 36px;
+  margin: 0 6px 0 0;
+  transition: background 0.15s ease, transform 0.15s ease;
+
+  &:active { transform: scale(0.94); }
+
+  .filter-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 0.6rem;
+    font-weight: 800;
+    min-width: 16px;
+    height: 16px;
+    line-height: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    // Keep badge on top of the button icon
+    z-index: 1;
+    pointer-events: none;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+  }
+}
+
+// ---- Export scope summary -------------------------------------
+.export-scope {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--ion-color-step-50, rgba(0, 0, 0, 0.04));
+  border: 1px solid var(--ion-color-step-100, rgba(0, 0, 0, 0.06));
+}
+
+.export-scope-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--ion-color-medium);
+}
+
+.export-scope-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.export-scope-chip {
+  margin: 0;
+  height: 24px;
+  min-height: 24px;
+  padding: 0 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  --background: var(--ion-color-primary-tint, rgba(255, 255, 255, 0.6));
+  color: var(--ion-color-dark);
+}
+
+// The row count is the single most important number — lead with it.
+.export-scope-chip--primary {
+  font-weight: 700;
+  --background: rgba(var(--ion-color-primary-rgb), 0.14);
+  color: var(--ion-color-primary-shade);
+}
+
+.export-scope-edit {
+  align-self: flex-start;
+  font-size: 0.8rem;
+  --color: var(--ion-color-primary);
+  font-weight: 600;
+  margin-left: -10px;
+  margin-top: -2px;
+}
+
+.export-hint {
+  margin: 8px 2px 0;
+  font-size: 0.75rem;
+  color: var(--ion-color-medium);
+  text-align: center;
+}
+
+// ---- Result bar above the list --------------------------------
+.result-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 2px 0 10px;
+}
+
+.result-count {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ion-color-medium);
+}
+
+.result-note {
+  margin: -2px 0 10px;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--ion-color-warning-shade);
+}
+
+@media (max-width: 575.98px) {
+  .export-date-field {
+    min-width: 0;
+  }
+
+  .export-date-btn {
+    font-size: 0.78rem;
+    letter-spacing: 0;
+  }
+
+  .date-picker-modal {
+    --width: 92vw;
+    --max-width: 340px;
+  }
+
+  .result-bar {
+    align-items: flex-start;
+  }
+}
+// ---- Appointments ----------------------------------------
+// Main toolbar + searchbar use shared classes from Admin3.scss:
+//   .header-toolbar-p, .patient-title, .filter-toolbar, .search-bar--full
+
+// ── Filter panel container ──────────────────────────────────
+// Slides in below the searchbar with a polished card look.
 .filter-container {
-  background: var(--ion-background-color);
+  margin: 4px 12px 8px;
+  background: var(--ion-card-background, var(--ion-background-color));
+  border: 1px solid var(--ion-color-step-150, rgba(0,0,0,0.1));
+  border-radius: 16px;
+  box-shadow:
+    0 4px 6px -1px rgba(15, 23, 42, 0.06),
+    0 10px 22px -2px rgba(15, 23, 42, 0.08);
   overflow: hidden;
-  border-bottom: 1px solid var(--ion-color-step-100);
+  animation: appointmentsFilterIn 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+// Transparent toolbar inside the panel so the card bg shows through
+.filter-container .filter-toolbar {
+  --background: transparent;
+  --border-width: 0;
+  padding: 8px 4px 4px;
+}
+
+// Standalone filter-toolbar (used outside the filter-container)
 .filter-toolbar {
   --background: var(--ion-background-color);
-  padding: 4px 8px 8px;
+  --border-width: 0;
+  padding: 6px 0 10px;
 }
 
+// ── Status segment — pill-style tabs ───────────────────────
 .status-segment {
-  --background: var(--ion-color-step-50, rgba(0,0,0,0.04));
-  border-radius: 10px;
+  // Pill track
+  --background: var(--ion-color-step-100, rgba(0,0,0,0.06));
+  border-radius: 14px;
   padding: 3px;
+  margin: 0 8px;
 }
 
 .segment-button {
+  // Pill indicator fills the entire button (not just underline)
   --indicator-color: var(--ion-color-primary);
+  --indicator-height: 100%;
+  --border-radius: 11px;
+
+  // Text colours
   --color: var(--ion-color-medium);
-  --color-checked: var(--ion-color-primary);
-  --border-radius: 8px;
+  --color-checked: #fff;
+
   --padding-top: 6px;
   --padding-bottom: 6px;
-  min-width: 88px;
-  font-size: 0.82rem;
-  font-weight: 500;
+  --padding-start: 14px;
+  --padding-end: 14px;
+  min-width: 78px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+
+  // Checked state: white text on solid primary background
+  &.segment-button-checked {
+    --color: #fff;
+    font-weight: 700;
+  }
 }
 
 .appointment-content {
-  --padding-top: 10px;
-  --padding-bottom: 16px;
+  --padding-top: 14px;
+  --padding-bottom: 28px;
   --padding-start: 12px;
   --padding-end: 12px;
 }
 
+@keyframes appointmentsFilterIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+// ---- Empty state ----------------------------------------------
 .empty-state {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 65vh;
+  min-height: 55vh;
   text-align: center;
+  padding: 24px;
 }
 
 .empty-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  max-width: 75%;
+  max-width: 78%;
 }
 
 .empty-icon {
-  font-size: 60px;
+  font-size: 64px;
   color: var(--ion-color-step-300, #c7c7cc);
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .empty-text {
   color: var(--ion-color-medium);
   font-size: 1rem;
-  margin-bottom: 14px;
+  font-weight: 500;
+  line-height: 1.45;
+  margin: 0 0 14px;
 }
 
 .clear-filter-button { --color: var(--ion-color-primary); }
-
-.appointment-list { background: transparent; }
+// ---- Appointment cards ----------------------------------------
+.appointment-list {
+  background: transparent;
+  padding: 0;
+}
 
 .appointment-item-container { margin-bottom: 10px; }
 
 .appointment-item {
   --border-radius: 14px;
-  --padding-start: 14px;
-  --padding-end: 12px;
-  --inner-padding-end: 8px;
+  --padding-start: 16px;
+  --padding-end: 14px;
+  --inner-padding-end: 6px;
+  --min-height: 84px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
   border-radius: 14px;
-  transition: box-shadow 0.2s ease;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
   overflow: hidden;
 
-  &:active { opacity: 0.85; }
+  &:hover {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+  }
+
+  &:active { transform: scale(0.995); }
 }
 
 .patient-avatar {
@@ -118,17 +516,22 @@
   margin-right: 12px;
 }
 
-.appointment-details { margin: 12px 0; }
+.appointment-details { margin: 10px 0; }
 
 .patient-name {
   font-weight: 700;
   font-size: 1rem;
+  line-height: 1.25;
   color: var(--ion-color-dark);
-  margin-bottom: 2px;
+  margin: 0 0 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .service-name {
   font-size: 0.85rem;
+  font-weight: 550;
   color: var(--ion-color-medium);
   margin-bottom: 8px;
 }
@@ -138,29 +541,53 @@
   flex-direction: column;
   gap: 5px;
   margin-top: 6px;
+  min-width: 0;
 }
 
 .meta-item {
   display: flex;
   align-items: center;
   gap: 5px;
+  min-width: 0;
   color: var(--ion-color-medium);
-  font-size: 0.82rem;
+  font-size: 0.8rem;
 }
 
 .meta-icon {
-  font-size: 0.88rem;
+  font-size: 0.9rem;
   color: var(--ion-color-primary);
   flex-shrink: 0;
 }
 
+.meta-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .status-badge-a {
+  flex-shrink: 0;
+  padding: 0 10px;
   font-size: 0.72rem;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: capitalize;
-  border-radius: 20px;
-  padding: 4px 10px;
-  align-self: flex-start;
+  border-radius: 999px;
+}
+
+// ---- Responsive -----------------------------------------------
+@media (min-width: 768px) {
+  .appointment-content {
+    --padding-start: 20px;
+    --padding-end: 20px;
+  }
+
+  .appointment-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+    gap: 12px;
+  }
+
+  .appointment-item-container { margin-bottom: 0; }
 }
 
 // ---- Health Units ----------------------------------------
@@ -172,6 +599,9 @@
   padding: 10px 14px;
   background: var(--ion-background-color);
   border-bottom: 1px solid var(--ion-color-step-100);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .health-searchbar {
@@ -236,9 +666,17 @@
 .card-image-container {
   height: 170px;
   width: 100%;
-  background-size: cover;
-  background-position: center;
   position: relative;
+  overflow: hidden;
+  background: var(--ion-color-step-100);
+
+  .card-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+  }
 }
 
 .card-overlay {
@@ -716,11 +1154,6 @@
 
 // ---- Responsive ----------------------------------------
 @media (min-width: 768px) {
-  .appointment-content {
-    --padding-start: 20px;
-    --padding-end: 20px;
-  }
-
   .health-units-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
@@ -731,7 +1164,7 @@
 }
 
 // ---- Dark mode ----------------------------------------
-@media (prefers-color-scheme: dark) {
+body.dark {
   .health-unit-card { background: var(--ion-item-background, #1a1d27); }
   .expanded-content { border-top-color: var(--ion-color-step-150, #252839); }
   .service-chip { --background: var(--ion-color-step-100, #1e2130); }
@@ -782,4 +1215,51 @@ body.dark {
       }
     }
   }
+}
+
+// ---- Image Preview (form modal) -------------------------
+.image-preview-container {
+  margin: 10px 16px 6px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--ion-color-step-150);
+
+  .image-preview {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+  }
+
+  .image-preview-label {
+    font-size: 0.75rem;
+    color: var(--ion-color-medium);
+    text-align: center;
+    margin: 0;
+    padding: 6px;
+    background: var(--ion-color-step-50, rgba(0,0,0,0.03));
+  }
+}
+
+.image-preview-hint {
+  font-size: 0.78rem;
+  color: var(--ion-color-medium);
+  text-align: center;
+  margin: 8px 16px;
+  padding: 10px;
+  border: 1px dashed var(--ion-color-step-200);
+  border-radius: 8px;
+  background: var(--ion-color-step-50, rgba(0,0,0,0.02));
+}
+
+// ---- Family-member bookings (Appointments list) ---------
+// Appointments booked by an account holder on behalf of a relative keep the
+// recipient's details in `patientDetails`; the list shows the relative's name
+// plus this summary, mirroring the patient booking form's "Booked for" card.
+.family-booking-chip {
+  margin: 2px 0 4px;
+  height: 26px;
+  font-size: 11px;
+  font-weight: 600;
 }

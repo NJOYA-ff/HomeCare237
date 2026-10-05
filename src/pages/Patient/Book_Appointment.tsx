@@ -1,4 +1,16 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import LoadingHelix from "../../components/LoadingHelix";
+import {
+  DEFAULT_AVATAR,
+  getDocumentImageUrl,
+  handleImageError,
+} from "../../utils/profileImageStorage";
+import {
+  formatRecipientMeta,
+  getBookingRecipient,
+  resolveRecipientName,
+  type BookingRecipient,
+} from "../../utils/appointmentRecipient";
 import { useLocation } from "react-router-dom";
 import { db, auth } from "../../firebaseconfig";
 import {
@@ -43,8 +55,6 @@ import {
   IonAvatar,
   IonSearchbar,
   IonChip,
-  IonAlert,
-  IonLoading,
   IonSegment,
   IonSegmentButton,
   IonInput,
@@ -52,6 +62,7 @@ import {
   IonButtons,
   IonBackButton,
 } from "@ionic/react";
+import { MessageBox } from "../../components/ui/MessageBox";
 import {
   calendar,
   location,
@@ -90,6 +101,9 @@ import {
 } from "react-icons/fa";
 import "./Appointment.scss";
 import RatingModal from "../../components/RatingModal";
+import { PreConsultTriageModal, TriageResult } from "../../components/telehealth/PreConsultTriageModal";
+import { FamilyMembersModal } from "../../components/Family/FamilyMembersModal";
+import { FamilyMember } from "../../components/Services/familyService";
 
 // Types
 interface Doctor {
@@ -116,6 +130,9 @@ interface PatientDetails {
   name?: string;
   age?: string;
   gender?: string;
+  /** Only written for family-member bookings. */
+  relationship?: string;
+  bloodType?: string;
 }
 
 interface Appointment {
@@ -137,6 +154,11 @@ interface Appointment {
   consultationFee: number;
   doctor?: Doctor;
   patientDetails?: PatientDetails;
+  /**
+   * Normalised "booked for" details captured when the patient books on behalf
+   * of a relative. Null for appointments booked for the account holder.
+   */
+  recipient?: BookingRecipient | null;
   rated?: boolean;
 }
 
@@ -202,6 +224,30 @@ const specialtyIcons: { [key: string]: React.ReactNode } = {
   Physiotherapist: <FaStethoscope />,
 };
 
+/**
+ * Turns a triage result into the "Reason for Visit" line the booking form
+ * submits. The chief complaint leads, because that is what a doctor scans
+ * first; the rest is the context the patient already gave during triage, so
+ * they should not have to type it a second time.
+ *
+ * Red-flag *reporting* is deliberately left out. It is already surfaced on the
+ * form as a separate warning badge and saved under the appointment's `triage`
+ * field, so repeating "⚠️ WARNING SEVERITY SIGNS: ..." here would both bloat
+ * the one-line field and bury the actual reason.
+ */
+const buildReasonFromTriage = (triage: TriageResult): string => {
+  const complaint = triage.chiefComplaint.trim() || "General consultation";
+  const details: string[] = [];
+
+  if (triage.duration.trim()) details.push(triage.duration.trim());
+  if (triage.severity > 0) details.push(`intensity ${triage.severity}/10`);
+  if (triage.associatedSymptoms.length) {
+    details.push(`also: ${triage.associatedSymptoms.join(", ")}`);
+  }
+
+  return details.length ? `${complaint} (${details.join(", ")})` : complaint;
+};
+
 // No global default slots: use per-doctor availableSlots only
 
 const Book_Appointment: React.FC = () => {
@@ -234,9 +280,6 @@ const Book_Appointment: React.FC = () => {
   const [bookingFor, setBookingFor] = useState<"myself" | "someoneElse">(
     "myself",
   );
-  const [recipientName, setRecipientName] = useState<string>("");
-  const [recipientAge, setRecipientAge] = useState<string>("");
-  const [recipientGender, setRecipientGender] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<
     "list" | "detail" | "update" | "viewAppointment"
@@ -256,6 +299,18 @@ const Book_Appointment: React.FC = () => {
   const [ratingAppointment, setRatingAppointment] = useState<Appointment | null>(null);
   // Track which appointment IDs this patient has already rated (local, refreshed on load)
   const [ratedAppointments, setRatedAppointments] = useState<Set<string>>(new Set());
+
+  // ── Pre-consult triage state ───────────────────────────────
+  const [triageOpen, setTriageOpen] = useState(false);
+  const [triageResult, setTriageResult] = useState<TriageResult | null>(null);
+  /* The reason text triage last wrote into the form. Tracked so redoing the
+     triage can overwrite its own previous autofill, while a reason the patient
+     typed by hand is never clobbered. Empty means "not autofilled". */
+  const [triageFilledReason, setTriageFilledReason] = useState<string>("");
+
+  // ── Family member state ────────────────────────────────────
+  const [familyModalOpen, setFamilyModalOpen] = useState(false);
+  const [selectedFamilyMember, setSelectedFamilyMember] = useState<FamilyMember | null>(null);
 
   // Get current user
   useEffect(() => {
@@ -299,7 +354,12 @@ const Book_Appointment: React.FC = () => {
       // Use Set to track unique doctor IDs
       const uniqueDoctors = new Map<string, Doctor>();
 
-      doctorSnapshot.forEach((doc) => {
+      // Sequential (not forEach) because resolving a doctor's picture is async:
+      // `getDocumentImageUrl` accepts every historical field name and turns a
+      // bare Storage path into a real download URL. This page used to read
+      // `doctorData.avatar` and fall back to the remote Ionic placeholder, which
+      // no write path populates and which cannot load offline.
+      for (const doc of doctorSnapshot.docs) {
         const doctorData = doc.data();
         const doctorId = doc.id;
 
@@ -309,9 +369,7 @@ const Book_Appointment: React.FC = () => {
             id: doctorId,
             name: doctorData.name || "Unknown Doctor",
             specialization: doctorData.specialization || "General Practitioner",
-            avatar:
-              doctorData.avatar ||
-              "https://ionicframework.com/docs/img/demos/avatar.svg",
+            avatar: (await getDocumentImageUrl(doctorData)) || DEFAULT_AVATAR,
             rating: doctorData.rating || 4.0,
             reviews: doctorData.reviews || 0,
             region: doctorData.region || "Centre",
@@ -330,7 +388,7 @@ const Book_Appointment: React.FC = () => {
             phone: doctorData.phone || doctorData.contact,
           } as Doctor);
         }
-      });
+      }
 
       const doctorsList = Array.from(uniqueDoctors.values());
       console.log(`Loaded ${doctorsList.length} unique doctors`);
@@ -421,9 +479,7 @@ const Book_Appointment: React.FC = () => {
           id: doctorDoc.id,
           name: doctorData.name || "Unknown Doctor",
           specialization: doctorData.specialization || "General Practitioner",
-          avatar:
-            doctorData.avatar ||
-            "https://ionicframework.com/docs/img/demos/avatar.svg",
+          avatar: (await getDocumentImageUrl(doctorData)) || DEFAULT_AVATAR,
           rating: doctorData.rating || 4.0,
           reviews: doctorData.reviews || 0,
           region: doctorData.region || "Centre",
@@ -540,6 +596,9 @@ const Book_Appointment: React.FC = () => {
               createdAt: data.createdAt?.toDate?.() || data.createdAt,
               updatedAt: data.updatedAt?.toDate?.() || data.updatedAt,
               rated: data.rated || false,
+              // Detects appointments booked for a family member: the booking
+              // flow only writes `patientDetails` in that case.
+              recipient: getBookingRecipient(data.patientDetails),
             } as Appointment;
 
             // Get doctor data for this appointment
@@ -584,13 +643,17 @@ const Book_Appointment: React.FC = () => {
       return;
     }
 
+    /* The recipient is whatever the family-member modal handed us — there is no
+       manual entry form, so the old `recipientName/Age/Gender` state was never
+       written by anything and this guard rejected every family booking. Validate
+       the member that was actually selected. */
     if (
       bookingFor === "someoneElse" &&
-      (!recipientName || !recipientAge || !recipientGender)
+      (!selectedFamilyMember ||
+        selectedFamilyMember.id === "self" ||
+        !selectedFamilyMember.fullName?.trim())
     ) {
-      alert(
-        "Please fill in all the details for the person you are booking for.",
-      );
+      alert("Please select the family member this appointment is for.");
       return;
     }
 
@@ -598,8 +661,8 @@ const Book_Appointment: React.FC = () => {
 
     try {
       const patientName =
-        bookingFor === "someoneElse"
-          ? recipientName
+        bookingFor === "someoneElse" && selectedFamilyMember
+          ? selectedFamilyMember.fullName
           : currentUser.displayName || "Patient";
 
       const newAppointment: any = {
@@ -617,16 +680,21 @@ const Book_Appointment: React.FC = () => {
         notes: notes,
         consultationFee: selectedDoctor.consultationFee,
         createdAt: Timestamp.now(),
+        ...(triageResult ? { triage: triageResult } : {}),
+        ...(selectedFamilyMember && selectedFamilyMember.id !== "self"
+          ? { patientDetails: {
+              name: selectedFamilyMember.fullName,
+              age:
+                selectedFamilyMember.age != null
+                  ? String(selectedFamilyMember.age)
+                  : "",
+              gender: selectedFamilyMember.gender ?? "",
+              relationship: selectedFamilyMember.relationship,
+              bloodType: selectedFamilyMember.bloodType ?? "",
+            }}
+          : {}),
         updatedAt: Timestamp.now(),
       };
-
-      if (bookingFor === "someoneElse") {
-        newAppointment.patientDetails = {
-          name: recipientName,
-          age: recipientAge,
-          gender: recipientGender,
-        };
-      }
 
       console.log("Booking appointment:", newAppointment);
 
@@ -1026,6 +1094,10 @@ const Book_Appointment: React.FC = () => {
     setReason("");
     setNotes("");
     setSelectedAppointment(null);
+    setTriageResult(null);
+    setTriageFilledReason("");
+    setSelectedFamilyMember(null);
+    setBookingFor("myself");
   };
 
   const getSpecialtyIcon = (specialty: string): React.ReactNode => {
@@ -1218,32 +1290,54 @@ const Book_Appointment: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent className="appointment-content">
-        <IonLoading isOpen={isLoading} message="Processing..." />
+        {isLoading && (
+          <div className="appt-loading-overlay">
+            <div className="appt-loading-card">
+              <LoadingHelix />
+              <p className="appt-loading-text">Processing...</p>
+            </div>
+          </div>
+        )}
 
-        <IonAlert
+        <MessageBox
           isOpen={showCancelAlert}
-          onDidDismiss={() => setShowCancelAlert(false)}
-          header={"Cancel Appointment"}
-          message={"Are you sure you want to cancel this appointment?"}
-          buttons={[
+          title="Cancel Appointment"
+          message="Are you sure you want to cancel this appointment?"
+          tone="info"
+          actions={[
             {
-              text: "No",
-              role: "cancel",
-              cssClass: "secondary",
+              label: "No",
+              color: "medium",
+              onClick: () => setShowCancelAlert(false),
             },
             {
-              text: "Yes",
-              handler: confirmCancelAppointment,
+              /* Cancelling withdraws a booked slot, so the confirm action takes
+                 the danger colour; "No" stays quiet because keeping the
+                 appointment is the safe default. */
+              label: "Yes",
+              color: "danger",
+              onClick: () => {
+                setShowCancelAlert(false)
+                confirmCancelAppointment();
+              },
             },
           ]}
+          onDismiss={() => setShowCancelAlert(false)}
         />
 
-        <IonAlert
+        <MessageBox
           isOpen={showConfirmation}
-          onDidDismiss={() => setShowConfirmation(false)}
-          header={"Success!"}
-          message={"Your appointment has been successfully processed."}
-          buttons={["OK"]}
+          title="Success!"
+          message="Your appointment has been successfully processed."
+          tone="success"
+          actions={[
+            {
+              label: "OK",
+              color: "primary",
+              onClick: () => setShowConfirmation(false),
+            },
+          ]}
+          onDismiss={() => setShowConfirmation(false)}
         />
 
         {!currentUser ? (
@@ -1259,6 +1353,7 @@ const Book_Appointment: React.FC = () => {
           <>
             <IonSegment
               className="appointment-segment"
+              color="primary"
               value={activeSegment}
               onIonChange={(e) => setActiveSegment(e.detail.value as any)}
             >
@@ -1338,13 +1433,13 @@ const Book_Appointment: React.FC = () => {
                       }`}
                       onClick={() => handleViewAppointment(appointment)}
                     >
+                      {/* Bundled SVG placeholder rather than initials, so the
+                          patient screens match the doctor/admin ones. */}
                       <IonAvatar>
                         <img
-                          src={
-                            appointment.doctor?.avatar ||
-                            "https://ionicframework.com/docs/img/demos/avatar.svg"
-                          }
+                          src={appointment.doctor?.avatar || DEFAULT_AVATAR}
                           alt={appointment.doctorName}
+                          onError={handleImageError}
                         />
                       </IonAvatar>
                       <div className="todays-item-meta">
@@ -1495,8 +1590,9 @@ const Book_Appointment: React.FC = () => {
                                 <div className="doctor-header">
                                   <IonAvatar className="doctor-avatar">
                                     <img
-                                      src={doctor.avatar}
+                                      src={doctor.avatar || DEFAULT_AVATAR}
                                       alt={doctor.name}
+                                      onError={handleImageError}
                                     />
                                   </IonAvatar>
                                   <div className="doctor-info">
@@ -1594,11 +1690,9 @@ const Book_Appointment: React.FC = () => {
                               <div className="appointment-header">
                                 <IonAvatar className="doctor-avatar">
                                   <img
-                                    src={
-                                      appointment.doctor?.avatar ||
-                                      "https://ionicframework.com/docs/img/demos/avatar.svg"
-                                    }
+                                    src={appointment.doctor?.avatar || DEFAULT_AVATAR}
                                     alt={appointment.doctor?.name || "Doctor"}
+                                    onError={handleImageError}
                                   />
                                 </IonAvatar>
                                 <div className="appointment-info">
@@ -1608,10 +1702,7 @@ const Book_Appointment: React.FC = () => {
                                       onClick={() =>
                                         handleViewAppointment(appointment)
                                       }
-                                      style={{
-                                        cursor: "pointer",
-                                        textDecoration: "underline",
-                                      }}
+                                      style={{ cursor: "pointer" }}
                                     >
                                       {appointment.doctorName}
                                     </h3>
@@ -1631,6 +1722,38 @@ const Book_Appointment: React.FC = () => {
                                   </IonChip>
                                 </div>
                               </div>
+
+                              {/* Booked-for-a-relative summary, mirroring the
+                                  recipient card in the booking form so the
+                                  patient can tell whose appointment this is. */}
+                              {appointment.recipient && (
+                                <div className="recipient-details">
+                                  <div className="recipient-avatar-wrap">
+                                    <img
+                                      className="patient-picker-avatar"
+                                      src={DEFAULT_AVATAR}
+                                      alt={resolveRecipientName(
+                                        appointment.recipient,
+                                        appointment.patientName,
+                                      )}
+                                    />
+                                  </div>
+                                  <div className="recipient-info">
+                                    <span className="recipient-tag">Booked for</span>
+                                    <span className="recipient-name">
+                                      {resolveRecipientName(
+                                        appointment.recipient,
+                                        appointment.patientName,
+                                      )}
+                                    </span>
+                                    {formatRecipientMeta(appointment.recipient) && (
+                                      <span className="recipient-meta">
+                                        {formatRecipientMeta(appointment.recipient)}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
 
                               <div className="appointment-details">
                                 <div className="detail-item-d">
@@ -1682,7 +1805,7 @@ const Book_Appointment: React.FC = () => {
 
                               <div className="appointment-actions">
                                 <IonButton
-                                  fill="outline"
+                                  fill="solid"
                                   color="primary"
                                   size="small"
                                   onClick={() =>
@@ -1696,7 +1819,7 @@ const Book_Appointment: React.FC = () => {
                                 {appointment.status === "accepted" && (
                                   <>
                                     <IonButton
-                                      fill="outline"
+                                      fill="solid"
                                       color="danger"
                                       size="small"
                                       onClick={() =>
@@ -1769,52 +1892,78 @@ const Book_Appointment: React.FC = () => {
               <IonCardContent>
                 <div className="appointment-detail-content">
                   <div className="detail-section">
-                    <h3>Doctor Information</h3>
+                    <h3 className="detail-section-title">Doctor Information</h3>
                     {selectedAppointment.doctor ? (
-                      <div className="doctor-info-detail">
-                        <IonAvatar className="detail-avatar">
-                          <img
-                            src={
-                              selectedAppointment.doctor.avatar ||
-                              "https://ionicframework.com/docs/img/demos/avatar.svg"
-                            }
-                            alt={selectedAppointment.doctor.name}
-                          />
-                        </IonAvatar>
-                        <div className="doctor-details">
-                          <h4>{selectedAppointment.doctor.name}</h4>
-                          <p>
-                            {getSpecialtyIcon(
-                              selectedAppointment.doctor.specialization,
-                            )}
-                            {selectedAppointment.doctor.specialization}
-                          </p>
-                          <p>
-                            <IonIcon icon={location} />
-                            {selectedAppointment.doctor.city},{" "}
-                            {selectedAppointment.doctor.region}
-                          </p>
-                          <p>
-                            <IonIcon icon={star} color="warning" />
-                            {selectedAppointment.doctor.rating} (
-                            {selectedAppointment.doctor.reviews} reviews)
-                          </p>
-                          <p>
-                            <IonIcon icon={cashOutline} color="success" />
-                            Consultation:{" "}
-                            {selectedAppointment.doctor.consultationFee.toLocaleString()}{" "}
-                            XAF
-                          </p>
-                          <p>
-                            <IonIcon icon={timeOutline} color="primary" />
-                            {selectedAppointment.doctor.experience} years
-                            experience
-                          </p>
-                          <p>
-                            <IonIcon icon={people} />
-                            Languages:{" "}
-                            {selectedAppointment.doctor.languages.join(", ")}
-                          </p>
+                      <div className="doc-profile-card">
+                        {/* ── Top: avatar + name + specialty ── */}
+                        <div className="doc-profile-hero">
+                          <IonAvatar className="doc-profile-avatar">
+                            <img
+                              src={selectedAppointment.doctor.avatar || DEFAULT_AVATAR}
+                              alt={selectedAppointment.doctor.name}
+                              onError={handleImageError}
+                            />
+                          </IonAvatar>
+                          <div className="doc-profile-identity">
+                            <h4 className="doc-profile-name">
+                              {selectedAppointment.doctor.name}
+                            </h4>
+                            <p className="doc-profile-specialty">
+                              {getSpecialtyIcon(
+                                selectedAppointment.doctor.specialization,
+                              )}
+                              {selectedAppointment.doctor.specialization}
+                            </p>
+                            {/* Rating inline under name */}
+                            <div className="doc-profile-rating">
+                              <IonIcon icon={star} color="warning" />
+                              <span>{selectedAppointment.doctor.rating}</span>
+                              <span className="doc-profile-reviews">
+                                ({selectedAppointment.doctor.reviews} reviews)
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* ── Info rows ── */}
+                        <div className="doc-profile-rows">
+                          <div className="doc-profile-row">
+                            <span className="doc-row-icon">
+                              <IonIcon icon={location} color="primary" />
+                            </span>
+                            <span className="doc-row-label">Location</span>
+                            <span className="doc-row-value">
+                              {selectedAppointment.doctor.city},{" "}
+                              {selectedAppointment.doctor.region}
+                            </span>
+                          </div>
+                          <div className="doc-profile-row">
+                            <span className="doc-row-icon">
+                              <IonIcon icon={cashOutline} color="success" />
+                            </span>
+                            <span className="doc-row-label">Consultation fee</span>
+                            <span className="doc-row-value doc-row-fee">
+                              {selectedAppointment.doctor.consultationFee.toLocaleString()} XAF
+                            </span>
+                          </div>
+                          <div className="doc-profile-row">
+                            <span className="doc-row-icon">
+                              <IonIcon icon={timeOutline} color="primary" />
+                            </span>
+                            <span className="doc-row-label">Experience</span>
+                            <span className="doc-row-value">
+                              {selectedAppointment.doctor.experience} years
+                            </span>
+                          </div>
+                          <div className="doc-profile-row">
+                            <span className="doc-row-icon">
+                              <IonIcon icon={people} color="primary" />
+                            </span>
+                            <span className="doc-row-label">Languages</span>
+                            <span className="doc-row-value">
+                              {selectedAppointment.doctor.languages.join(", ")}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     ) : (
@@ -1930,7 +2079,7 @@ const Book_Appointment: React.FC = () => {
                       <IonButton
                         expand="block"
                         color="danger"
-                        fill="outline"
+                        fill="solid"
                         onClick={() =>
                           handleCancelAppointment(selectedAppointment.id)
                         }
@@ -1972,52 +2121,71 @@ const Book_Appointment: React.FC = () => {
                 </div>
               </IonCardHeader>
               <IonCardContent>
-                <div className="doctor-profile">
-                  <div className="profile-header">
-                    <IonAvatar className="profile-avatar">
+                {/* ── Doctor profile card ── */}
+                <h3 className="detail-section-title">Doctor Information</h3>
+                <div className="doc-profile-card" style={{ marginBottom: 20 }}>
+                  {/* Hero */}
+                  <div className="doc-profile-hero">
+                    <IonAvatar className="doc-profile-avatar">
                       <img
-                        src={selectedDoctor.avatar}
+                        src={selectedDoctor.avatar || DEFAULT_AVATAR}
                         alt={selectedDoctor.name}
+                        onError={handleImageError}
                       />
                     </IonAvatar>
-                    <div className="profile-info">
-                      <h2>{selectedDoctor.name}</h2>
-                      <p>{selectedDoctor.specialization}</p>
-                      <div className="rating">
+                    <div className="doc-profile-identity">
+                      <h4 className="doc-profile-name">{selectedDoctor.name}</h4>
+                      <p className="doc-profile-specialty">
+                        {getSpecialtyIcon(selectedDoctor.specialization)}
+                        {selectedDoctor.specialization}
+                      </p>
+                      <div className="doc-profile-rating">
                         <IonIcon icon={star} color="warning" />
-                        <span>
-                          {selectedDoctor.rating} ({selectedDoctor.reviews}{" "}
-                          reviews)
+                        <span>{selectedDoctor.rating}</span>
+                        <span className="doc-profile-reviews">
+                          ({selectedDoctor.reviews} reviews)
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="profile-details">
-                    <div className="detail-row">
-                      <IonIcon icon={location} />
-                      <span>
+                  {/* Info rows */}
+                  <div className="doc-profile-rows">
+                    <div className="doc-profile-row">
+                      <span className="doc-row-icon">
+                        <IonIcon icon={location} color="primary" />
+                      </span>
+                      <span className="doc-row-label">Location</span>
+                      <span className="doc-row-value">
                         {selectedDoctor.address}, {selectedDoctor.city},{" "}
                         {selectedDoctor.region}
                       </span>
                     </div>
-                    <div className="detail-row">
-                      <IonIcon icon={cashOutline} />
-                      <span>
-                        Consultation:{" "}
+                    <div className="doc-profile-row">
+                      <span className="doc-row-icon">
+                        <IonIcon icon={cashOutline} color="success" />
+                      </span>
+                      <span className="doc-row-label">Consultation fee</span>
+                      <span className="doc-row-value doc-row-fee">
                         {selectedDoctor.consultationFee.toLocaleString()} XAF
                       </span>
                     </div>
-                    <div className="detail-row">
-                      <IonIcon icon={timeOutline} />
-                      <span>
-                        {selectedDoctor.experience} years of experience
+                    <div className="doc-profile-row">
+                      <span className="doc-row-icon">
+                        <IonIcon icon={timeOutline} color="primary" />
+                      </span>
+                      <span className="doc-row-label">Experience</span>
+                      <span className="doc-row-value">
+                        {selectedDoctor.experience} years
                       </span>
                     </div>
-                    <div className="detail-row">
-                      <IonIcon icon={people} />
-                      <span>
-                        Languages: {selectedDoctor.languages.join(", ")}
+                    <div className="doc-profile-row">
+                      <span className="doc-row-icon">
+                        <IonIcon icon={people} color="primary" />
+                      </span>
+                      <span className="doc-row-label">Languages</span>
+                      <span className="doc-row-value">
+                        {selectedDoctor.languages.join(", ")}
                       </span>
                     </div>
                   </div>
@@ -2025,73 +2193,95 @@ const Book_Appointment: React.FC = () => {
 
                 <div className="booking-form">
                   <h3>Appointment Details</h3>
-                  <IonItem>
-                    <IonLabel>This appointment is for:</IonLabel>
-                    <IonSegment
-                      value={bookingFor}
-                      onIonChange={(e) => setBookingFor(e.detail.value as any)}
-                    >
-                      <IonSegmentButton value="myself">
-                        <IonLabel>Myself</IonLabel>
-                      </IonSegmentButton>
-                      <IonSegmentButton value="someoneElse">
-                        <IonLabel>Someone Else</IonLabel>
-                      </IonSegmentButton>
-                    </IonSegment>
-                  </IonItem>
 
-                  {bookingFor === "someoneElse" && (
-                    <>
-                      <IonItem className="form-item">
-                        <IonLabel position="stacked">
-                          Patient's Full Name
-                        </IonLabel>
-                        <IonInput
-                          value={recipientName}
-                          onIonInput={(e) => setRecipientName(e.detail.value!)}
-                          placeholder="Enter the full name of the patient"
+                  {/* ── Who is this appointment for? ── */}
+                  <p className="booking-for-label">This appointment is for:</p>
+                  <div className="booking-for-group">
+                    <button
+                      type="button"
+                      className={`appt-seg-btn${!selectedFamilyMember || selectedFamilyMember.id === "self" ? " active" : ""}`}
+                      onClick={() => {
+                        setSelectedFamilyMember(null);
+                        setBookingFor("myself");
+                      }}
+                    >
+                      Myself
+                    </button>
+                    <button
+                      type="button"
+                      className={`appt-seg-btn${selectedFamilyMember && selectedFamilyMember.id !== "self" ? " active" : ""}`}
+                      onClick={() => setFamilyModalOpen(true)}
+                    >
+                      {selectedFamilyMember && selectedFamilyMember.id !== "self"
+                        ? selectedFamilyMember.fullName
+                        : "Family Member"}
+                    </button>
+                  </div>
+
+                  {/* Show selected family member summary */}
+                  {selectedFamilyMember && selectedFamilyMember.id !== "self" && (
+                    <div className="recipient-details">
+                      <div className="recipient-avatar-wrap">
+                        {/* Family members carry no photo field, so the bundled
+                            placeholder is the only sensible picture here. */}
+                        <img
+                          className="patient-picker-avatar"
+                          src={DEFAULT_AVATAR}
+                          alt={selectedFamilyMember.fullName}
                         />
-                      </IonItem>
-                      <IonRow>
-                        <IonCol size="6">
-                          <IonItem className="form-item">
-                            <IonLabel position="stacked">Age</IonLabel>
-                            <IonInput
-                              type="number"
-                              value={recipientAge}
-                              onIonInput={(e) =>
-                                setRecipientAge(e.detail.value!)
-                              }
-                              placeholder="e.g., 35"
-                            />
-                          </IonItem>
-                        </IonCol>
-                        <IonCol size="6">
-                          <IonItem className="form-item">
-                            <IonLabel position="stacked">Gender</IonLabel>
-                            <IonSelect
-                              value={recipientGender}
-                              onIonChange={(e) =>
-                                setRecipientGender(e.detail.value)
-                              }
-                              interface="popover"
-                              placeholder="Select Gender"
-                            >
-                              <IonSelectOption value="male">
-                                Male
-                              </IonSelectOption>
-                              <IonSelectOption value="female">
-                                Female
-                              </IonSelectOption>
-                              <IonSelectOption value="other">
-                                Other
-                              </IonSelectOption>
-                            </IonSelect>
-                          </IonItem>
-                        </IonCol>
-                      </IonRow>
-                    </>
+                      </div>
+                      <div className="recipient-info">
+                        <span className="recipient-name">{selectedFamilyMember.fullName}</span>
+                        <span className="recipient-meta">
+                          {selectedFamilyMember.relationship}
+                          {selectedFamilyMember.age ? ` · ${selectedFamilyMember.age} yrs` : ""}
+                          {selectedFamilyMember.bloodType ? ` · ${selectedFamilyMember.bloodType}` : ""}
+                        </span>
+                      </div>
+                      <IonButton fill="clear" size="small" onClick={() => setFamilyModalOpen(true)}>
+                        Change
+                      </IonButton>
+                    </div>
                   )}
+
+                  {/* ── Pre-consultation triage ── */}
+                  <div className="triage-trigger-wrap">
+                    {!triageResult ? (
+                      <IonButton
+                        expand="block"
+                        fill="outline"
+                        color="primary"
+                        className="triage-trigger-btn"
+                        onClick={() => setTriageOpen(true)}
+                      >
+                        <IonIcon slot="start" icon="sparkles-outline" />
+                        Start AI Pre-Consultation Triage
+                      </IonButton>
+                    ) : (
+                      <div className="triage-result-summary">
+                        <div className="triage-result-header">
+                          <IonIcon icon="checkmark-circle-outline" color="success" />
+                          <strong>Triage Completed</strong>
+                          <IonButton
+                            fill="clear"
+                            size="small"
+                            color="medium"
+                            onClick={() => { setTriageResult(null); setTriageOpen(true); }}
+                          >
+                            Redo
+                          </IonButton>
+                        </div>
+                        <p className="triage-result-text">{triageResult.summary}</p>
+                        {triageResult.hasRedFlags && (
+                          <div className="triage-redflag-badge">
+                            ⚠️ Warning signs reported — doctor will be notified
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+
                   <IonGrid>
                     <IonRow>
                       <IonCol size="12" size-md="6">
@@ -2226,6 +2416,43 @@ const Book_Appointment: React.FC = () => {
           doctorName={ratingAppointment?.doctorName ?? ""}
           doctorAvatar={ratingAppointment?.doctor?.avatar}
           onSubmit={handleRateDoctor}
+        />
+
+        <PreConsultTriageModal
+          isOpen={triageOpen}
+          onClose={() => setTriageOpen(false)}
+          onComplete={(result) => {
+            setTriageResult(result);
+            setTriageOpen(false);
+
+            /* Carry the triage answers into "Reason for Visit" so the patient
+               does not retype them. Only fills a blank field, or replaces the
+               previous autofill when they redo the triage — anything the
+               patient typed themselves is left untouched. */
+            const autofilled = buildReasonFromTriage(result);
+            setReason((prev) =>
+              prev.trim() === "" || prev === triageFilledReason ? autofilled : prev,
+            );
+            setTriageFilledReason(autofilled);
+          }}
+          patientName={
+            selectedFamilyMember && selectedFamilyMember.id !== "self"
+              ? selectedFamilyMember.fullName
+              : currentUser?.displayName || "Patient"
+          }
+        />
+
+        <FamilyMembersModal
+          isOpen={familyModalOpen}
+          onClose={() => setFamilyModalOpen(false)}
+          patientId={currentUser?.uid ?? ""}
+          patientName={currentUser?.displayName || "Me"}
+          onSelectMember={(member) => {
+            setSelectedFamilyMember(member);
+            setBookingFor(member.id === "self" ? "myself" : "someoneElse");
+            setFamilyModalOpen(false);
+          }}
+          selectedMemberId={selectedFamilyMember?.id}
         />
       </IonContent>
     </IonPage>

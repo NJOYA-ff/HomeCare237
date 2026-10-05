@@ -1,0 +1,9 @@
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://openrouter.ai",
+    "ANTHROPIC_AUTH_TOKEN": "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",
+    "ANTHROPIC_API_KEY": "dummy-key-to-bypass-validation",
+    "ANTHROPIC_MODEL": "google/gemini-2.5-flash:free"
+  }
+}
+

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <link rel="stylesheet" href="/node_modules/@ionic/core/css/ionic.bundle.css" />
+    <style>
+      .probe-auto {
+        --width: 92%;
+        --max-width: 440px;
+        --height: auto;
+        --max-height: 85vh;
+        --border-radius: 16px;
+      }
+      .probe-fixed {
+        --width: 92%;
+        --max-width: 440px;
+        --height: 85%;
+        --max-height: 85vh;
+        --border-radius: 16px;
+      }
+      .probe-body {
+        padding: 16px;
+        overflow-y: auto;
+        max-height: calc(85vh - 80px);
+      }
+      #results {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 99999;
+        background: #fff;
+        color: #000;
+        font-size: 15px;
+        margin: 0;
+        padding: 4px;
+        white-space: pre-wrap;
+      }
+    </style>
+    <script type="module" src="/node_modules/@ionic/core/dist/ionic/ionic.esm.js"></script>
+  </head>
+  <body>
+    <pre id="results">pending</pre>
+    <div id="mount"></div>
+
+    <script type="module">
+      const variant = new URLSearchParams(location.search).get('variant') || 'auto-content';
+      const mount = document.getElementById('mount');
+      if (variant === 'auto-content') {
+        mount.innerHTML = `
+          <ion-modal class="probe-auto" id="m" animated="false">
+            <ion-header><ion-toolbar><ion-title>auto + ion-content</ion-title></ion-toolbar></ion-header>
+            <ion-content id="c"><div style="height:1200px;background:lightblue">tall content</div></ion-content>
+          </ion-modal>`;
+      } else if (variant === 'auto-div') {
+        mount.innerHTML = `
+          <ion-modal class="probe-auto" id="m" animated="false">
+            <ion-header><ion-toolbar><ion-title>auto + div</ion-title></ion-toolbar></ion-header>
+            <div class="probe-body" id="b"><div style="height:1200px;background:lightgreen">tall content</div></div>
+          </ion-modal>`;
+      } else {
+        mount.innerHTML = `
+          <ion-modal class="probe-fixed" id="m" animated="false">
+            <ion-header><ion-toolbar><ion-title>fixed + ion-content</ion-title></ion-toolbar></ion-header>
+            <ion-content id="c"><div style="height:1200px;background:lightpink">tall content</div></ion-content>
+          </ion-modal>`;
+      }
+
+      const run = async () => {
+        await customElements.whenDefined('ion-modal');
+        const m = document.getElementById('m');
+        m.isOpen = true;
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+        const rect = (el) => (el ? Math.round(el.getBoundingClientRect().height) : null);
+        const body = m.querySelector('#c') || m.querySelector('#b');
+        const inner = body && body.shadowRoot ? body.shadowRoot.querySelector('.inner-scroll') : null;
+        const info = [
+          `variant=${variant} viewport=${window.innerHeight}`,
+          `wrapper=${rect(m.shadowRoot.querySelector('.modal-wrapper'))}`,
+          `body=${rect(body)}`,
+          `inner=${rect(inner)} scrollH=${inner ? inner.scrollHeight : 'n/a'}`,
+          `bodyScrolled? ${body ? body.scrollHeight > rect(body) : 'n/a'}`,
+        ].join('\n');
+        document.getElementById('results').textContent = info;
+      };
+      run();
+    </script>
+  </body>
+</html>

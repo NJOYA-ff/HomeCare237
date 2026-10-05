@@ -1,9 +1,9 @@
+import LoadingHelix from "../../components/LoadingHelix";
 import React, { useState, useEffect, useRef } from "react";
 import {
   IonModal,
   IonContent,
   IonIcon,
-  IonSpinner,
   IonToast,
 } from "@ionic/react";
 import {
@@ -30,7 +30,9 @@ import {
 } from "firebase/firestore";
 import { twilioServiceAlternative } from "../../components/Services/twilioService";
 import { avatarColor } from "../../utils/avatarColor";
-import "./AudioCallModal.scss";
+import CallMessageBox from "../../components/telehealth/CallMessageBox";
+import useCallConnectTimeout from "../../components/hooks/useCallConnectTimeout";
+import "../../components/telehealth/AudioCallModal.scss";
 
 interface AudioCallModalProps {
   isOpen: boolean;
@@ -87,6 +89,9 @@ const AudioCallModal: React.FC<AudioCallModalProps> = ({
   >("idle");
   const [callDuration, setCallDuration] = useState(0);
   const [error, setError] = useState("");
+  /* Separates "the call ran out of time" from an error Twilio raised, so the
+     message box can word and icon the two differently. */
+  const [timedOut, setTimedOut] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isSpeakerOn, setIsSpeakerOn] = useState(true);
   const [showToast, setShowToast] = useState(false);
@@ -318,7 +323,7 @@ const AudioCallModal: React.FC<AudioCallModalProps> = ({
   const cleanupCall = () => {
     try {
       twilioServiceAlternative.disconnectCall();
-    } catch (_) {}
+    } catch (_) { /* call already torn down */ }
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -391,11 +396,71 @@ const AudioCallModal: React.FC<AudioCallModalProps> = ({
       case "connected":
         return "Call in progress";
       case "error":
-        return error || "Call failed";
+        return "Call failed";
       default:
         return doctorInfo.specialization || "Doctor";
     }
   };
+
+  /** Records an unanswered call as missed WITHOUT closing the screen. The
+   *  timeout path hangs up on its own, so it cannot go through `endCall` —
+   *  that one is for a call the user deliberately ended and it dismisses the
+   *  whole modal, which is not what a timeout should do. */
+  const markCallMissed = () => {
+    if (!callLogId) return;
+    void updateCallLog({
+      status: "missed",
+      endTime: serverTimestamp() as Timestamp,
+    });
+  };
+
+  /** "Try again" on the message box: drop the failure and re-dial. */
+  const retryCall = () => {
+    setError("");
+    /* A retry is a fresh attempt, so the previous timeout verdict must not
+       survive into it — otherwise a later real failure would still be reported
+       as a timeout and show the clock icon. */
+    setTimedOut(false);
+    setCallStatus("idle");
+    void startCall();
+  };
+
+  /** "Cancel" on the message box: give up on this attempt and stay on screen.
+   *
+   *  It has to hang up, not merely hide the box. A failure can land while the
+   *  call is still ringing at the other end, and without the teardown that call
+   *  keeps ringing out for someone the user has already walked away from — and
+   *  the next "Try again" would open a second connection on top of the first.
+   *  `cleanupCall` is the existing teardown for exactly this: disconnect, stop
+   *  the timer, and return to the ready-to-dial state. */
+  const dismissError = () => {
+    markCallMissed();
+    cleanupCall();
+    setTimedOut(false);
+  };
+
+  /* Armed only while the call is genuinely out and nobody has answered yet, and
+     disarmed as soon as an error lands or the call connects. Without this the
+     phone rings forever: Twilio raises nothing if the other end never picks up
+     and the network stays nominally fine, so "calling"/"ringing" is a terminal
+     state the user cannot otherwise escape. */
+  useCallConnectTimeout(
+    isOpen && (callStatus === "calling" || callStatus === "ringing") && !error,
+    () => {
+      console.warn("[AudioCallModal] Call was not answered in time");
+      /* Hang the unanswered call up BEFORE the box appears, for the same reason
+         `dismissError` does: a call left ringing here would still be ringing at
+         the other end while the user is being asked whether to try again, and
+         "Try again" would stack a second connection on top of it. */
+      markCallMissed();
+      cleanupCall();
+      setTimedOut(true);
+      /* Set after the teardown, which clears `error` on its way out. */
+      setError(
+        "Nobody answered in time. Check the number and your signal, then try again — or cancel to go back."
+      );
+    },
+  );
 
   const isActive =
     callStatus === "calling" ||
@@ -403,15 +468,17 @@ const AudioCallModal: React.FC<AudioCallModalProps> = ({
     callStatus === "connected";
 
   return (
-    <IonModal
-      isOpen={isOpen}
-      onDidDismiss={onClose}
-      className="audio-call-modal"
-    >
+    <>
+      <IonModal
+        isOpen={isOpen}
+        onDidDismiss={onClose}
+        backdropDismiss={false}
+        className="audio-call-modal"
+      >
       <IonContent className="audio-call-content">
         {isLoading ? (
           <div className="loading-container">
-            <IonSpinner name="crescent" />
+            <LoadingHelix />
             <p>Loading doctor information...</p>
           </div>
         ) : (
@@ -523,10 +590,10 @@ const AudioCallModal: React.FC<AudioCallModalProps> = ({
               )}
             </div>
 
-            {callStatus === "error" && <p className="wa-error">{error}</p>}
           </div>
         )}
       </IonContent>
+      </IonModal>
 
       <IonToast
         isOpen={showToast}
@@ -535,7 +602,22 @@ const AudioCallModal: React.FC<AudioCallModalProps> = ({
         duration={3000}
         position="top"
       />
-    </IonModal>
+
+      {/* Failures open the dedicated message box, not a second modal — see
+          CallMessageBox for why a nested ion-modal is the wrong shape over a
+          call screen. */}
+      <CallMessageBox
+        isOpen={!!error}
+        timedOut={timedOut}
+        title={timedOut ? "Call timed out" : "Call not connected"}
+        message={error}
+        /* Try again re-dials; cancel dismisses the box and leaves this screen on its
+           ready-to-dial state, so the user is never trapped and never has the
+           screen taken away from under them. */
+        onRetry={retryCall}
+        onCancel={dismissError}
+      />
+    </>
   );
 };
 

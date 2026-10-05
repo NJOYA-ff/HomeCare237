@@ -1,0 +1,260 @@
+.family-modal {
+  --width: 94%;
+  --max-width: 480px;
+  --height: auto;
+  --max-height: 85vh;
+  --border-radius: 16px;
+  --backdrop-opacity: 0.6;
+  --background: var(--ion-background-color, #f8fafc);
+}
+
+/*
+ * An <ion-content> collapses to 0px inside a `--height: auto` modal, which hid
+ * the family list and the add-member form. The body is a plain scrollable
+ * element instead so the modal keeps sizing itself to its content.
+ */
+.family-modal-body {
+  padding: 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  max-height: calc(85vh - 80px);
+  background: var(--ion-background-color, #f8fafc);
+}
+
+.family-intro-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+
+.family-banner-icon {
+  font-size: 28px;
+  color: #2563eb;
+  flex-shrink: 0;
+}
+
+.family-intro-banner h4 {
+  margin: 0 0 2px 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ion-text-color, #1e293b);
+}
+
+.family-intro-banner p {
+  margin: 0;
+  font-size: 11px;
+  color: var(--ion-color-step-600, #64748b);
+  line-height: 1.4;
+}
+
+.family-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--ion-card-background, #ffffff);
+  border: 1.5px solid var(--ion-color-step-150, #e2e8f0);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.family-card.is-active {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.04);
+}
+
+.family-avatar-badge {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.family-avatar-badge.self {
+  background: #3b82f6;
+  color: white;
+}
+
+.family-avatar-badge.other {
+  background: #10b981;
+  color: white;
+}
+
+/* The bundled placeholder SVG fills the badge; `self`/`other` keep the tinted
+   background only as a backdrop in case the image ever fails to decode. */
+.family-avatar-badge img {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+  display: block;
+}
+
+.family-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.family-info strong {
+  font-size: 14px;
+  color: var(--ion-text-color, #1e293b);
+}
+
+.family-info span {
+  font-size: 11px;
+  color: var(--ion-color-step-600, #64748b);
+}
+
+.family-meta-tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.rel-chip {
+  --background: rgba(59, 130, 246, 0.1);
+  --color: #2563eb;
+  font-size: 10px;
+  height: 20px;
+  margin: 0;
+  font-weight: 600;
+}
+
+.age-tag,
+.blood-tag {
+  font-size: 10px;
+  background: var(--ion-color-step-100, #f1f5f9);
+  color: var(--ion-color-step-700, #475569);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.family-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.selected-check-icon {
+  font-size: 22px;
+  color: #3b82f6;
+}
+
+.delete-fam-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #94a3b8;
+  font-size: 18px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  border-radius: 6px;
+}
+
+.delete-fam-btn:hover {
+  color: #ef4444;
+  background: #fee2e2;
+}
+
+.add-member-trigger {
+  margin-top: 8px;
+  --border-radius: 10px;
+  font-weight: 600;
+}
+
+/* Add member form card */
+.add-member-card {
+  background: var(--ion-card-background, #ffffff);
+  border: 1px solid var(--ion-color-step-200, #cbd5e1);
+  border-radius: 14px;
+  padding: 16px;
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.add-member-card h4 {
+  margin: 0 0 4px 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ion-text-color, #1e293b);
+}
+
+.fam-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.fam-input-group label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ion-color-step-700, #475569);
+}
+
+.fam-input-row {
+  display: flex;
+  gap: 10px;
+}
+
+.fam-input-row .fam-input-group {
+  min-width: 0;
+}
+
+/* Ionic field wrapper: single themed surface for IonInput / IonSelect inside
+   the family add-member form — matches .filter-item/.form-item. */
+.fam-ion-item {
+  --background: var(--ion-item-background, #ffffff);
+  --border-radius: 12px;
+  --padding-start: 14px;
+  --inner-padding-end: 14px;
+  --padding-top: 8px;
+  --padding-bottom: 8px;
+  --min-height: 52px;
+  --border-color: #dde1f5;
+  --border-width: 1px;
+  --border-style: solid;
+  --inner-border-width: 0;
+  --highlight-color-focused: var(--ion-color-primary);
+  border-radius: 12px;
+  margin: 0;
+}
+
+.fam-ion-item ion-input,
+.fam-ion-item ion-select {
+  font-size: 0.93rem;
+  color: var(--ion-text-color);
+  --placeholder-color: var(--ion-color-medium);
+  --placeholder-opacity: 1;
+}
+
+body.dark .fam-ion-item {
+  --background: var(--ion-item-background, #1a1d27);
+  --border-color: var(--ion-color-step-150, #252839);
+}
+
+.fam-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}

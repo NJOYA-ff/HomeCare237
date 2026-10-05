@@ -203,8 +203,8 @@ export async function isLockEnabled(): Promise<boolean> {
 // threat model as a device keystore (i.e. it protects against offline
 // file inspection, not against a rooted/jailbroken device).
 //
-// The same approach used by major banking apps on mobile: credentials are
-// gated behind the device biometric / PIN prompt before being retrieved.
+// The credentials are gated behind the device biometric / PIN prompt before
+// being retrieved, and are wiped on explicit logout.
 //
 // Storage key:
 //   hc_saved_credentials  – base64(xor(JSON, repeat(KEY)))
@@ -293,7 +293,8 @@ export async function hasCredentials(): Promise<boolean> {
 }
 
 /**
- * Wipe saved credentials — call on explicit logout.
+ * Wipe saved credentials — call on explicit logout only.
+ * (Do NOT call on app startup: that would disable quick sign-in entirely.)
  */
 export async function clearCredentials(): Promise<void> {
   await Preferences.remove({ key: KEY_SAVED_CREDENTIALS });

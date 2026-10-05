@@ -1,5 +1,4 @@
 /* Doc_diagnoses.scss */
-@use '../../theme/hc-form.scss';
 
 // ── Full-page layout ──────────────────────────────────────────
 .diag-content {
@@ -154,21 +153,6 @@
 
   p {
     margin: 8px 0;
-  }
-}
-
-.empty-preview {
-  text-align: center;
-  padding: 40px 20px;
-
-  ion-icon {
-    color: var(--ion-color-medium);
-    margin-bottom: 15px;
-  }
-
-  p {
-    color: var(--ion-color-medium);
-    line-height: 1.5;
   }
 }
 
@@ -353,7 +337,7 @@ ion-card-content.diagnoses {
     --border-color: #dde1f5;
     --border-width: 1px;
     --border-style: solid;
-    --highlight-color-focused: var(--ion-color-primary, #3b7dd8);
+    --highlight-color-focused: var(--ion-color-primary);
     border-radius: 12px;
     overflow: hidden;
     margin-bottom: 12px;
@@ -370,12 +354,12 @@ ion-card-content.diagnoses {
     ion-textarea,
     ion-select {
       font-size: 0.93rem !important;
-      color: var(--ion-text-color, #1a1a2e) !important;
+      color: var(--ion-text-color, #0f172a) !important;
     }
   }
 }
 
-@media (prefers-color-scheme: dark) {
+body.dark {
   ion-card-content.diagnoses ion-item {
     --background: var(--ion-item-background, #1a1d27);
     --border-color: var(--ion-color-step-150, #252839);
@@ -434,13 +418,15 @@ ion-button.diagnoses {
 /* Loading States */
 .loading-container {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   padding: 40px;
+  gap: 12px;
 
-  ion-spinner {
-    width: 40px;
-    height: 40px;
+  l-helix {
+    display: inline-flex;
+    margin-bottom: 4px;
   }
 }
 
@@ -459,14 +445,11 @@ ion-button.diagnoses {
   align-items: center;
   height: 50vh;
   padding: 20px;
+  gap: 12px;
 
-  .loading-spinner {
-    width: 48px;
-    height: 48px;
-    border: 4px solid rgba(var(--ion-color-primary-rgb), 0.2);
-    border-top-color: var(--ion-color-primary);
-    border-radius: 50%;
-    margin-bottom: 16px;
+  l-helix {
+    display: inline-flex;
+    margin-bottom: 4px;
   }
 
   p {

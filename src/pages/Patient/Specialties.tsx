@@ -1,3 +1,4 @@
+import LoadingHelix from "../../components/LoadingHelix";
 import React, { useEffect, useState } from "react";
 import "./Specialties.scss";
 import {
@@ -18,6 +19,7 @@ import {
   IonText,
   IonIcon,
 } from "@ionic/react";
+import { motion } from "framer-motion";
 import { useLocation } from "react-router-dom";
 import {
   star,
@@ -28,9 +30,13 @@ import {
   bandageOutline,
   close,
 } from "ionicons/icons";
-import { db, storage } from "../../firebaseconfig";
+import { db } from "../../firebaseconfig";
 import { collection, query, where, getDocs } from "firebase/firestore";
-import { ref, getDownloadURL } from "firebase/storage";
+import {
+  DEFAULT_AVATAR,
+  getDocumentImageUrl,
+  handleImageError,
+} from "../../utils/profileImageStorage";
 
 type Doctor = {
   id: string;
@@ -86,17 +92,22 @@ const SpecialtiesPage: React.FC = () => {
           : query(doctorsRef);
         const snap = await getDocs(q);
         const list: Doctor[] = [];
-        const DEFAULT_AVATAR = "https://ionicframework.com/docs/img/demos/avatar.svg";
-        await Promise.all(snap.docs.map(async (d) => {
+        await Promise.all((snap.docs || []).map(async (d) => {
           const data = d.data() as any;
-          let avatar = DEFAULT_AVATAR;
-          if (data.profileImage) {
-            try { avatar = await getDownloadURL(ref(storage, data.profileImage)); } catch {}
-          } else if (data.avatar) {
-            avatar = data.avatar;
-          } else if (data.image) {
-            avatar = data.image;
+          if (
+            data.isEnabled === false ||
+            data.isVerified === false ||
+            data.status === "inactive" ||
+            data.status === "pending"
+          ) {
+            return;
           }
+          // `getDocumentImageUrl` checks every historical field name
+          // (`profilePhoto`, `profileImage`, `avatar`, …) and accepts both a
+          // download URL and a bare Storage path. This used to read
+          // `data.profileImage`, which no write path ever populates, so every
+          // doctor card fell back to the remote placeholder.
+          const avatar = await getDocumentImageUrl(data);
           list.push({
             id: d.id,
             name: data.name || "Unknown Doctor",
@@ -154,7 +165,12 @@ const SpecialtiesPage: React.FC = () => {
             </IonCardHeader>
             <IonCardContent>
               {loading ? (
-                <IonText>Loading...</IonText>
+                <div className="loading-container">
+                  <LoadingHelix />
+                  <IonText className="ion-text-center ion-padding">
+                    <p>Loading doctors...</p>
+                  </IonText>
+                </div>
               ) : doctors.length === 0 ? (
                 <IonText color="medium">
                   No doctors found for this specialty.
@@ -168,7 +184,11 @@ const SpecialtiesPage: React.FC = () => {
                           <IonCardContent>
                             <div className="doctor-row">
                               <IonAvatar className="doctor-avatar">
-                                <img src={doc.avatar} alt={doc.name} />
+                                <img
+                                  src={doc.avatar || DEFAULT_AVATAR}
+                                  alt={doc.name}
+                                  onError={handleImageError}
+                                />
                               </IonAvatar>
                               <div className="doctor-meta">
                                 <h4>{doc.name}</h4>

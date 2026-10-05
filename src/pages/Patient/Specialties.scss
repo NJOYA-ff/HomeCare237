@@ -1,7 +1,7 @@
 .specialties-dashboard-page {
   .specialties-toolbar {
     --background: transparent;
-    --color: #191d38;
+    --color: var(--ion-text-color);
   }
 
   .specialties-content {
@@ -23,7 +23,7 @@
   .specialties-title {
     margin: 0;
     font-size: 20px;
-    color: #191d38;
+    color: var(--ion-text-color);
     font-weight: 700;
   }
 
@@ -92,12 +92,12 @@
     margin: 0 0 8px 0;
     font-size: 13px;
     font-weight: 700;
-    color: #3a4361;
+    color: var(--ion-text-color);
   }
 
   .book-now-btn {
-    --background: linear-gradient(140deg, #6b86ff 0%, #4b77e5 100%);
-    --border-radius: 999px;
+    --background: linear-gradient(140deg, var(--ion-color-primary-tint) 0%, var(--ion-color-primary) 100%);
+    --border-radius: var(--hc-border-radius);
     height: 34px;
     font-size: 12px;
     text-transform: none;
@@ -117,32 +117,32 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
+body.dark {
   .specialties-dashboard-page {
     .specialties-content {
       --background: var(--background);
     }
 
     .specialties-toolbar {
-      --color: #f0f2ff;
+      --color: var(--ion-text-color);
     }
 
     .specialties-card,
     .specialty-doctor-card {
       --background: var(--background);
-      border: 1px solid #2a2f57;
+      border: 1px solid var(--hc-border);
       
     }
 
     .specialties-title,
     .doctor-meta h4 {
-      color: #eef0ff;
+      color: var(--ion-text-color);
     }
 
     .doctor-meta .muted,
     .doctor-meta .small,
     .fee {
-      color: #b1b6d5;
+      color: var(--hc-text-muted);
     }
   }
 }

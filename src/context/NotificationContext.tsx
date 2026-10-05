@@ -20,7 +20,8 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import { db } from "../firebaseconfig";
-import { useIonToast } from "@ionic/react";
+import { useIonToast, isPlatform } from "@ionic/react";
+import { webPushService } from "../utils/WebPushService";
 
 interface NotificationContextType {
   notifications: NotificationPayload[];
@@ -60,8 +61,66 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
   const [present] = useIonToast();
 
   useEffect(() => {
-    // Initialize notification service
+    // Initialize notification service (handles native Capacitor push)
     NotificationService.initialize();
+
+    // ── Web / PWA push (firebase-messaging) ────────────────────────────────
+    // Only run in the browser.  The Capacitor native layer handles push on
+    // Android/iOS through @capacitor/push-notifications.
+    let webPushUnsub: (() => void) | undefined;
+
+    if (!isPlatform("hybrid")) {
+      // Lazily import messaging to avoid bundling it into native builds
+      import("../firebaseconfig").then(({ messaging }) => {
+        if (!messaging) return; // browser doesn't support service workers
+
+        // Subscribe to foreground messages from WebPushService
+        webPushUnsub = webPushService.subscribe(({ title, body, data }) => {
+          const notification: NotificationPayload = { title, body, data, id: Date.now() };
+          setNotifications((prev) => {
+            const updated = [notification, ...prev];
+            try { localStorage.setItem("notifications", JSON.stringify(updated)); } catch { /* storage full or unavailable — notifications stay in memory */ }
+            return updated;
+          });
+          setUnreadCount((prev) => prev + 1);
+          try {
+            present({
+              message: `${title}: ${body}`,
+              duration: 3000,
+              position: "top",
+              buttons: [{ text: "View", handler: () => {} }],
+            });
+          } catch { /* toast host not ready — notification is still recorded */ }
+        });
+
+        // Initialise web push once the auth state is available
+        const unsubAuth = getAuth().onAuthStateChanged((user) => {
+          if (user) {
+            // VAPID key from Firebase Console → Project Settings → Cloud Messaging
+            // Replace the placeholder below with your actual VAPID key.
+            const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY || "";
+            if (VAPID_KEY) {
+              webPushService.init(messaging!, VAPID_KEY).catch((err) =>
+                console.warn("[NotificationContext] Web push init failed:", err)
+              );
+            } else {
+              console.info(
+                "[NotificationContext] VITE_FIREBASE_VAPID_KEY not set — web push token registration skipped. " +
+                "Add it to your .env file to enable PWA push notifications."
+              );
+            }
+          }
+        });
+
+        // Store unsub so cleanup works
+        const prevUnsub = webPushUnsub;
+        webPushUnsub = () => {
+          prevUnsub?.();
+          unsubAuth();
+          webPushService.destroy();
+        };
+      });
+    }
 
     // Subscribe to new notifications from the local NotificationService
     const localUnsubscribe = NotificationService.subscribe((notification) => {
@@ -183,6 +242,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
       localUnsubscribe();
       authUnsub();
       if (firestoreUnsub) firestoreUnsub();
+      webPushUnsub?.();
     };
   }, [present]);
 

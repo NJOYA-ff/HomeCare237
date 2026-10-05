@@ -17,8 +17,8 @@ import {
   IonNote,
   IonListHeader,
   useIonToast,
-  useIonAlert,
 } from "@ionic/react";
+import { useMessageBox } from "../../components/ui/useMessageBox";
 import {
   languageOutline,
   notificationsOutline,
@@ -30,6 +30,11 @@ import {
   keypadOutline,
   calendarOutline,
   personOutline,
+  starOutline,
+  shieldCheckmarkOutline,
+  mailOutline,
+  documentTextOutline,
+  shareSocialOutline,
 } from "ionicons/icons";
 import { useSettings } from "../../context/SettingsContext";
 import {
@@ -38,8 +43,9 @@ import {
   disablePin,
 } from "../../utils/BiometricAuthService";
 import PinSetupModal from "../../components/PinSetupModal";
+import PasswordResetModal from "../../components/PasswordResetModal";
+import { aboutMessage } from "../../data/appCredits";
 import { auth } from "../../firebaseconfig";
-import { sendPasswordResetEmail } from "firebase/auth";
 import "../Settings/Settings.scss";
 
 const PatientSettings: React.FC = () => {
@@ -53,7 +59,7 @@ const PatientSettings: React.FC = () => {
   } = useSettings();
 
   const [presentToast] = useIonToast();
-  const [presentAlert] = useIonAlert();
+  const presentMessage = useMessageBox();
 
   // Biometry
   const [bioAvailable, setBioAvailable] = useState(false);
@@ -62,6 +68,9 @@ const PatientSettings: React.FC = () => {
   // PIN modal
   const [pinModalOpen, setPinModalOpen] = useState(false);
   const [pinModalMode, setPinModalMode] = useState<"setup" | "verify">("setup");
+
+  // Password reset modal
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
 
   // Patient-specific prefs (localStorage)
   const [appointmentReminders, setAppointmentReminders] = useState(
@@ -93,23 +102,24 @@ const PatientSettings: React.FC = () => {
       setPinModalMode("setup");
       setPinModalOpen(true);
     } else {
-      presentAlert({
+      presentMessage({
         header: t("disablePin"),
         message: "Are you sure you want to remove your PIN?",
-        buttons: [
-          { text: t("cancel"), role: "cancel" },
-          {
-            text: "Remove", role: "destructive",
-            handler: async () => {
+        /* Deleting the PIN is destructive, so the confirm action carries the
+           danger colour and Cancel stays quiet — backing out is the safe
+           default and red would imply something is about to be lost. */
+        action: {
+          text: "Remove", color: "danger",
+          handler: async () => {
               await disablePin();
               setPinEnabledSetting(false);
               presentToast({ message: "PIN disabled", duration: 2000, color: "medium", position: "top" });
-            },
           },
-        ],
-      });
+        },
+        cancel: { text: t("cancel") },
+        });
     }
-  }, [t, setPinEnabledSetting, presentAlert, presentToast]);
+  }, [t, setPinEnabledSetting, presentMessage, presentToast]);
 
   const handlePinSuccess = useCallback(() => {
     setPinModalOpen(false);
@@ -123,33 +133,51 @@ const PatientSettings: React.FC = () => {
       presentToast({ message: "No account email found.", duration: 3000, color: "warning", position: "top" });
       return;
     }
-    presentAlert({
-      header: t("changePassword"),
-      message: `A password reset link will be sent to:\n${email}`,
-      buttons: [
-        { text: t("cancel"), role: "cancel" },
-        {
-          text: "Send",
-          handler: async () => {
-            try {
-              await sendPasswordResetEmail(auth, email);
-              presentToast({ message: "Password reset email sent.", duration: 3500, color: "success", position: "top" });
-            } catch (err: any) {
-              presentToast({ message: err?.message || "Failed to send reset email.", duration: 3500, color: "danger", position: "top" });
-            }
-          },
-        },
-      ],
-    });
-  }, [presentAlert, presentToast, t]);
+    setPasswordModalOpen(true);
+  }, [presentToast]);
 
   const handleAbout = useCallback(() => {
-    presentAlert({
+    presentMessage({
       header: "HomeCare237",
-      message: "Version 1.0.0\n\nConnecting patients with healthcare professionals across Cameroon.\n\n© 2026 HomeCare237. All rights reserved.",
-      buttons: ["OK"],
-    });
-  }, [presentAlert]);
+      message: aboutMessage(
+        "Connecting patients with healthcare professionals across Cameroon.",
+      ),
+      /* Informational, not a failure — info tone keeps red for real errors. */
+      tone: "info",
+      action: { text: "OK" },
+      });
+  }, [presentMessage]);
+
+  const handleRateApp = useCallback(() => {
+    // Deep-link to the Play Store / App Store listing.
+    // Replace with your actual package name / App Store ID.
+    const androidUrl = "market://details?id=com.homecare237.app";
+    const webFallback = "https://play.google.com/store/apps/details?id=com.homecare237.app";
+    try {
+      window.location.href = androidUrl;
+    } catch {
+      window.open(webFallback, "_blank");
+    }
+  }, []);
+
+  const handleShareApp = useCallback(async () => {
+    const message = t("shareAppMessage");
+    const url = "https://homecare237.com";
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "HomeCare237", text: message, url });
+      } catch {
+        // user dismissed share sheet — no action needed
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(`${message}\n${url}`);
+        presentToast({ message: "Link copied to clipboard!", duration: 2500, color: "success", position: "top" });
+      } catch {
+        presentToast({ message: "Could not share. Please copy the link manually.", duration: 3000, color: "warning", position: "top" });
+      }
+    }
+  }, [t, presentToast]);
 
   return (
     <IonPage>
@@ -282,9 +310,67 @@ const PatientSettings: React.FC = () => {
           </IonItem>
         </IonList>
 
+        {/* App */}
+        <IonListHeader className="settings-section-header">App</IonListHeader>
+        <IonList className="settings-list">
+
+          {/* Rate App */}
+          <IonItem button detail onClick={handleRateApp}>
+            <IonIcon icon={starOutline} slot="start" className="settings-icon" />
+            <IonLabel>
+              <h3>{t("rateApp")}</h3>
+              <p className="settings-desc">{t("rateAppDesc")}</p>
+            </IonLabel>
+          </IonItem>
+
+          {/* Privacy Policy */}
+          <IonItem button detail routerLink="/patient/privacy-policy">
+            <IonIcon icon={shieldCheckmarkOutline} slot="start" className="settings-icon" />
+            <IonLabel>
+              <h3>{t("privacyPolicy")}</h3>
+              <p className="settings-desc">{t("privacyPolicyDesc")}</p>
+            </IonLabel>
+          </IonItem>
+
+          {/* Contact Us */}
+          <IonItem button detail routerLink="/patient/contact">
+            <IonIcon icon={mailOutline} slot="start" className="settings-icon" />
+            <IonLabel>
+              <h3>{t("contactUs")}</h3>
+              <p className="settings-desc">{t("contactUsDesc")}</p>
+            </IonLabel>
+          </IonItem>
+
+          {/* Terms & Conditions */}
+          <IonItem button detail routerLink="/patient/terms">
+            <IonIcon icon={documentTextOutline} slot="start" className="settings-icon" />
+            <IonLabel>
+              <h3>{t("termsConditions")}</h3>
+              <p className="settings-desc">{t("termsConditionsDesc")}</p>
+            </IonLabel>
+          </IonItem>
+
+          {/* Share App */}
+          <IonItem button detail onClick={handleShareApp}>
+            <IonIcon icon={shareSocialOutline} slot="start" className="settings-icon" />
+            <IonLabel>
+              <h3>{t("shareApp")}</h3>
+              <p className="settings-desc">{t("shareAppDesc")}</p>
+            </IonLabel>
+          </IonItem>
+
+        </IonList>
+
       </IonContent>
 
       <PinSetupModal isOpen={pinModalOpen} mode={pinModalMode} onSuccess={handlePinSuccess} onDismiss={() => setPinModalOpen(false)} />
+
+      {/* Reset Password modal */}
+      <PasswordResetModal
+        isOpen={passwordModalOpen}
+        email={auth.currentUser?.email ?? null}
+        onDidDismiss={() => setPasswordModalOpen(false)}
+      />
     </IonPage>
   );
 };

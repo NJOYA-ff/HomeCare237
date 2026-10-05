@@ -1,4 +1,6 @@
 import { avatarColor } from "../../utils/avatarColor";
+import LoadingHelix from "../../components/LoadingHelix";
+import { useLocation } from "react-router-dom";
 import React, { useState, useRef, useEffect } from "react";
 import {
   IonContent,
@@ -27,13 +29,13 @@ import {
   IonThumbnail,
   useIonViewWillEnter,
   useIonViewWillLeave,
-  IonAlert,
   IonProgressBar,
   IonImg,
   useIonActionSheet,
   IonBackButton,
   IonFooter,
 } from "@ionic/react";
+import { MessageBox } from "../../components/ui/MessageBox";
 import { useNotifications } from "../../context/NotificationContext";
 import { useChatContext } from "../../context/ChatContext";
 import { db, auth, storage } from "../../firebaseconfig";
@@ -125,6 +127,7 @@ interface Attachment {
 interface ChatSession {
   id: string;
   doctorId: string;
+  adminId?: string;
   patientId: string;
   doctor?: Doctor;
   lastMessage?: string;
@@ -204,6 +207,48 @@ const Consult: React.FC = () => {
     file: File | null;
     type: "image" | "document";
   }>({ file: null, type: "image" });
+
+  // Admin chat state
+  const [adminChatSession, setAdminChatSession] = useState<ChatSession | null>(null);
+  const [isAdminChat, setIsAdminChat] = useState(false);
+
+  const location = useLocation();
+
+  // Auto-open a specific doctor's chat when navigated here with ?doctorId=
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const targetId = params.get("doctorId");
+    if (!targetId || !currentUser) return;
+
+    const openDoctor = async () => {
+      // Try to find doctor already in the loaded list
+      let doctor = doctors.find((d) => d.id === targetId) || null;
+
+      // If not in appointment-filtered list, fetch directly from Firestore
+      if (!doctor) {
+        try {
+          const snap = await getDoc(doc(db, "doctors", targetId));
+          if (snap.exists()) {
+            doctor = { id: snap.id, ...snap.data() } as Doctor;
+            // Add to local list so the chat UI can reference it
+            setDoctors((prev) =>
+              prev.find((d) => d.id === targetId) ? prev : [...prev, doctor!],
+            );
+          }
+        } catch (err) {
+          console.error("Failed to fetch doctor for auto-open:", err);
+        }
+      }
+
+      if (doctor) {
+        handleSelectDoctor(doctor);
+      }
+    };
+
+    openDoctor();
+    // Only re-run when the query param or user changes, not on every doctors reload
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search, currentUser]);
 
   const handleCallButtonClick = () => {
     setIsCallModalOpen(true);
@@ -323,9 +368,11 @@ const Consult: React.FC = () => {
     }
   };
 
-  // Load chat sessions for current user
+  // Load chat sessions for current user (doctor chats + admin chats)
   const loadChatSessions = (userId: string) => {
     const chatsRef = collection(db, "chats");
+
+    // Single query — all chats where patientId matches; split into doctor/admin in JS
     const q = query(
       chatsRef,
       where("patientId", "==", userId),
@@ -333,36 +380,34 @@ const Consult: React.FC = () => {
     );
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const sessions: ChatSession[] = [];
+      const doctorSessions: ChatSession[] = [];
 
       for (const document of snapshot.docs) {
         const chatData = document.data();
-        let doctorData = chatData.doctor;
 
-        // If doctor data is missing, fetch it from doctors collection
-        if (!doctorData) {
+        // Admin chat — has adminId set (or isAdminChat flag)
+        if (chatData.adminId !== undefined || chatData.isAdminChat) {
+          setAdminChatSession({ id: document.id, ...chatData } as ChatSession);
+          continue;
+        }
+
+        // Doctor chat
+        let doctorData = chatData.doctor;
+        if (!doctorData && chatData.doctorId) {
           try {
-            const doctorDoc = await getDoc(
-              doc(db, "doctors", chatData.doctorId),
-            );
+            const doctorDoc = await getDoc(doc(db, "doctors", chatData.doctorId));
             if (doctorDoc.exists()) {
               doctorData = doctorDoc.data() as Doctor;
-              // Update the chat with doctor data
               await updateDoc(document.ref, { doctor: doctorData });
             }
           } catch (error) {
             console.error("Error fetching doctor data:", error);
           }
         }
-
-        sessions.push({
-          id: document.id,
-          ...chatData,
-          doctor: doctorData,
-        } as ChatSession);
+        doctorSessions.push({ id: document.id, ...chatData, doctor: doctorData } as ChatSession);
       }
 
-      setChatSessions(sessions);
+      setChatSessions(doctorSessions);
     });
 
     return unsubscribe;
@@ -637,6 +682,85 @@ const Consult: React.FC = () => {
           color: "danger",
         });
       }
+    }
+  };
+
+  /** Open or create a chat with Admin Support */
+  const handleSelectAdmin = async () => {
+    if (!currentUser) {
+      presentToast({ message: "Please sign in to contact admin", duration: 2000, color: "danger" });
+      return;
+    }
+
+    if (adminChatSession) {
+      // Existing admin chat — open it directly
+      setSelectedChat(adminChatSession);
+      setIsAdminChat(true);
+      setSelectedDoctor({
+        id: "__admin__",
+        name: "Admin Support",
+        specialization: "HomeCare237 Support",
+        rating: 5,
+        reviews: 0,
+        town: "",
+        availability: "Online",
+        image: "",
+        languages: [],
+        yearsOfExperience: "",
+        lastSeen: "",
+        online: true,
+        userId: adminChatSession.adminId || "",
+      });
+      setChatOpen(true);
+      return;
+    }
+
+    // No existing admin chat — create one (admin will see it in SMS_patient)
+    try {
+      const chatData = {
+        patientId: currentUser.uid,
+        adminId: "",          // admin will claim it when they open SMS_patient
+        isAdminChat: true,
+        lastMessage: "",
+        lastMessageTime: serverTimestamp(),
+        unreadCount: 0,
+        createdAt: serverTimestamp(),
+      };
+      const docRef = await addDoc(collection(db, "chats"), chatData);
+      const newChat: ChatSession = { id: docRef.id, doctorId: "", ...chatData, lastMessageTime: new Date() };
+
+      // Opening message from patient
+      await addDoc(collection(db, "chats", docRef.id, "messages"), {
+        text: "Hello, I would like to speak with an admin.",
+        sender: "patient",
+        senderId: currentUser.uid,
+        timestamp: serverTimestamp(),
+        status: "sent",
+        chatId: docRef.id,
+      });
+
+      setAdminChatSession(newChat);
+      setSelectedChat(newChat);
+      setIsAdminChat(true);
+      setSelectedDoctor({
+        id: "__admin__",
+        name: "Admin Support",
+        specialization: "HomeCare237 Support",
+        rating: 5,
+        reviews: 0,
+        town: "",
+        availability: "Online",
+        image: "",
+        languages: [],
+        yearsOfExperience: "",
+        lastSeen: "",
+        online: true,
+        userId: "",
+      });
+      setChatOpen(true);
+    } catch (error) {
+      console.error("Error creating admin chat:", error);
+      presentToast({ message: "Failed to contact admin", duration: 2000, color: "danger" });
     }
   };
 
@@ -1135,6 +1259,7 @@ const Consult: React.FC = () => {
     setSelectedChat(null);
     setAttachments([]);
     setNewMessage("");
+    setIsAdminChat(false);
     pauseAllAudio();
     setChatOpen(false);
   };
@@ -1285,7 +1410,7 @@ const Consult: React.FC = () => {
       <IonPage>
         <IonContent>
           <div className="loading-container">
-            <IonSpinner name="crescent" />
+            <LoadingHelix />
             <IonText>Loading...</IonText>
           </div>
         </IonContent>
@@ -1367,6 +1492,44 @@ const Consult: React.FC = () => {
         {!selectedDoctor ? (
           <>
             <div className="wa-doctor-list">
+              {/* ── Admin Support — pinned at top ── */}
+              <IonItem
+                className="wa-doctor-item wa-admin-item"
+                button
+                lines="full"
+                onClick={handleSelectAdmin}
+              >
+                <div className="avatar-container-c" slot="start">
+                  <div
+                    className="initials-avatar wa-avatar wa-admin-avatar"
+                    style={{ background: "var(--ion-color-primary)" }}
+                  >
+                    HC
+                  </div>
+                  <span className="wa-online-dot online" />
+                </div>
+                <div className="wa-info">
+                  <div className="wa-top">
+                    <span className="wa-name">Admin Support</span>
+                    {adminChatSession?.lastMessageTime && (
+                      <span className="wa-time">
+                        {formatMessageTime(adminChatSession.lastMessageTime)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="wa-meta">HomeCare237 Support</div>
+                  <div className="wa-bottom">
+                    <span className="wa-preview">
+                      {adminChatSession?.lastMessage || "Tap to contact admin"}
+                    </span>
+                    {(adminChatSession?.unreadCount ?? 0) > 0 && (
+                      <span className="wa-unread">{adminChatSession!.unreadCount}</span>
+                    )}
+                  </div>
+                </div>
+              </IonItem>
+              {/* ── End Admin Support ── */}
+
               {filteredDoctors.map((doctor) => {
                 const existingChat = chatSessions.find(
                   (c) => c.doctorId === doctor.id,
@@ -1551,12 +1714,20 @@ const Consult: React.FC = () => {
             startVideoCall();
           }}
         />
-        <IonAlert
+<MessageBox
           isOpen={showAlert}
-          onDidDismiss={() => setShowAlert(false)}
-          header={"Microphone Access"}
+          title="Microphone Access"
           message={alertMessage}
-          buttons={["OK"]}
+          tone="danger"
+          actions={[
+            {
+
+              label: "OK",
+              color: "primary",
+              onClick: () => setShowAlert(false),
+            },
+          ]}
+          onDismiss={() => setShowAlert(false)}
         />
       </IonContent>
       {selectedDoctor && (

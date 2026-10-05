@@ -192,13 +192,18 @@ export class WebRTCService {
   private createSignalingChannel() {
     // This would connect to your backend's signaling mechanism
     // For example, using Socket.io, WebSockets, or Firebase
+    // Note: HomeCare237 currently uses Twilio Video SDK instead of custom WebRTC
+    // This service is provided as an alternative implementation
     return {
       send: (message: SignalMessage) => {
         // Implementation for sending signals to backend
         console.log("Sending signal:", message);
+        // TODO: Integrate with your signaling server (WebSocket, Socket.io, or Firebase Realtime Database)
       },
       onMessage: (callback: (message: SignalMessage) => void) => {
         // Implementation for receiving signals from backend
+        // TODO: Set up listener for signaling server messages
+        console.log("Signaling channel listener would be set up here");
       },
     };
   }

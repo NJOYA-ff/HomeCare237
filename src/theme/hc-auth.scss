@@ -1,0 +1,1151 @@
+/* hc-auth.scss — design system for the unauthenticated screens.
+ *
+ * Continuation of the onboarding language (Landingpage / Roleselect) rather than
+ * a parallel one. Every auth screen (sign in, sign up, password recovery) is
+ * rendered by <AuthShell/>, which produces this exact structure:
+ *
+ *   .auth-page            full-bleed <ion-content> over the brand gradient
+ *     .auth-canvas        gradient + drifting glass orbs (aria-hidden)
+ *     .auth-backrow       flat light-white circular back control, safe-area aware
+ *     .auth-sheet         frosted bottom sheet / centred card
+ *       .auth-grip        drag affordance (mobile only)
+ *       .auth-head        .auth-eyebrow + .auth-title + .auth-subtitle
+ *       …page children…   the form itself
+ *
+ * Shared with onboarding on purpose: same 135deg brand gradient, same glassy
+ * orbs, same 28px sheet radius, same 46px back button. What changed
+ * versus the previous flat `--ion-color-light` panel is that the sheet is now
+ * translucent, so the artwork reads through it and the two halves of the funnel
+ * look like one product.
+ *
+ * The page-level class names the eight auth screens already use
+ * (.form-item, .submit-button, .error-message, …) are restyled here rather than
+ * in the components, so long forms do not have to be rewritten to inherit the
+ * new look. They are scoped under .auth-sheet, which is what removes the need
+ * for !important fights with the global ion-* rules in variables.css.
+ */
+
+/* ── Tokens ────────────────────────────────────────────────────────────── */
+.auth-page {
+  /* Backdrop ramp comes from the shared funnel token. */
+  --hc-auth-grad: var(--hc-gradient-funnel);
+
+  /* Sheet surface — light frosted glass over the gradient. */
+  --hc-auth-sheet: var(--hc-glass-sheet);
+  --hc-auth-sheet-solid: var(--hc-surface);
+  --hc-auth-sheet-line: rgba(var(--hc-glass-ink-rgb), 0.62);
+  --hc-auth-blur: saturate(1.6) blur(var(--hc-glass-blur));
+
+  /* Ink on the sheet. Deliberately not --ion-text-color: the sheet is a light
+   * surface even in dark mode until the dark override below kicks in. */
+  --hc-auth-ink: var(--hc-ink);
+  --hc-auth-ink-soft: color-mix(in srgb, var(--hc-ink) 82%, var(--hc-surface));
+  --hc-auth-muted: var(--hc-text-muted);
+
+  /* Controls. */
+  --hc-auth-line: var(--hc-border);
+  --hc-auth-line-strong: var(--hc-border-strong);
+  --hc-auth-field: var(--hc-surface);
+  --hc-auth-field-ink: var(--hc-ink);
+  --hc-auth-field-placeholder: var(--hc-text-muted);
+  --hc-auth-field-radius: var(--hc-radius-lg);
+  --hc-auth-field-h: 52px;
+  --hc-auth-focus: 0 0 0 4px rgba(var(--ion-color-primary-rgb), 0.14);
+
+  --hc-auth-radius: var(--hc-radius-lg);
+  --hc-auth-sheet-radius: 28px;
+  --hc-auth-btn-h: 52px;
+  --hc-auth-danger: var(--hc-status-danger-text);
+  --hc-auth-danger-bg: rgba(var(--ion-color-danger-rgb), 0.07);
+  --hc-auth-danger-line: rgba(var(--ion-color-danger-rgb), 0.22);
+  --hc-auth-success: var(--hc-status-success-text);
+
+  --background: var(--hc-auth-grad);
+  --color: var(--hc-glass-ink);
+  position: fixed;
+  overflow: hidden;
+}
+
+/* ── Backdrop: brand gradient + drifting glass orbs ────────────────────── */
+.auth-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--hc-auth-grad);
+}
+
+/* Soft light bloom, keeps the gradient from reading as flat CSS. */
+.auth-canvas::before {
+  content: "";
+  position: absolute;
+  top: -18%;
+  left: 50%;
+  width: 130%;
+  height: 62%;
+  transform: translateX(-50%);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(var(--hc-glass-ink-rgb), 0.28) 0%,
+    rgba(var(--hc-glass-ink-rgb), 0.08) 42%,
+    rgba(var(--hc-glass-ink-rgb), 0) 72%
+  );
+}
+
+.auth-orb {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 32% 28%,
+    rgba(var(--hc-glass-ink-rgb), 0.95) 0%,
+    rgba(var(--ion-color-primary-tint-rgb), 0.6) 44%,
+    rgba(var(--ion-color-primary-tint-rgb), 0.3) 78%,
+    rgba(var(--ion-color-primary-tint-rgb), 0.16) 100%
+  );
+  box-shadow:
+    0 24px 48px -22px rgba(var(--ion-color-primary-shade-rgb), 0.55),
+    inset -10px -14px 26px rgba(var(--ion-color-primary-rgb), 0.22),
+    inset 8px 10px 20px rgba(var(--hc-glass-ink-rgb), 0.7);
+  /* Deterministic placement — the previous implementation generated these in
+   * render with Math.random(), so positions churned on every re-render. */
+  animation: auth-orb-drift 22s ease-in-out infinite alternate;
+}
+
+/* Matches the onboarding composition: small top-right, large left, mid right. */
+.auth-orb-1 {
+  width: 210px;
+  height: 210px;
+  top: 4%;
+  right: -60px;
+  animation-duration: 26s;
+}
+
+.auth-orb-2 {
+  width: 300px;
+  height: 300px;
+  bottom: 12%;
+  left: -110px;
+  animation-duration: 32s;
+  animation-delay: -8s;
+}
+
+.auth-orb-3 {
+  width: 120px;
+  height: 120px;
+  top: 30%;
+  left: 14%;
+  animation-duration: 20s;
+  animation-delay: -14s;
+}
+
+@keyframes auth-orb-drift {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(10px, -22px, 0) scale(1.06);
+  }
+}
+
+/* ── Back control ──────────────────────────────────────────────────────── */
+.auth-backrow {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  padding: calc(env(safe-area-inset-top, 0px) + 12px) 14px 12px;
+  pointer-events: none;
+}
+
+.auth-backrow > * {
+  pointer-events: auto;
+}
+
+.auth-back {
+  /* Kill Ionic's own button fill in every state, otherwise the hover and
+   * activated backgrounds paint flat rectangles over the scrim. */
+  --background: transparent;
+  --background-activated: transparent;
+  --background-focused: transparent;
+  --background-hover: transparent;
+  --border-radius: 50%;
+  --box-shadow: none;
+  /* White, matching the rest of the gradient furniture — and only readable
+     because the scrim below stays faint. See --hc-back-ink in variables.css. */
+  --color: var(--hc-back-ink);
+  --padding-start: 0;
+  --padding-end: 0;
+  /* The global `ion-icon { font-size: var(--hc-icon-size) !important }` rule in
+   * variables.css outranks any class selector, so the glyph size is retuned by
+   * re-pointing that variable instead of fighting it with !important. */
+  --hc-icon-size: 22px;
+  width: 46px;
+  height: 46px;
+  min-width: 46px;
+  min-height: 46px;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--hc-back-ink);
+  /* No border and no rim: the circle is defined purely by its fill. */
+  border: 0;
+  border-radius: 50%;
+  /* Flat translucent light white. Kept deliberately plain — no gradient body and
+   * no backdrop blur — so the control sits quietly on the funnel gradient instead
+   * of refracting it. The alpha lets the artwork read through the scrim. */
+  background: var(--hc-back-scrim);
+  box-shadow: var(--hc-back-shadow);
+  transition:
+    transform 0.22s cubic-bezier(0.34, 1.4, 0.64, 1),
+    background-color 0.18s ease;
+}
+
+.auth-back ion-icon {
+  position: relative;
+  color: var(--hc-back-ink);
+  /* The white chevron sits on a faint scrim over live artwork (the drifting
+     orbs). This shadow is what keeps it legible where an orb passes behind. */
+  filter: drop-shadow(var(--hc-back-ink-shadow));
+}
+
+/* Pressed: the disc compresses and the scrim deepens. */
+.auth-back:active {
+  transform: scale(0.94);
+  background: var(--hc-back-scrim-press);
+}
+
+/* The focus ring was keyed to --hc-back-ink, which is white — invisible on the
+   scrim it is meant to be highlighting. Ring is now dark navy, which reads against
+   both the white glyph and the pale scrim. */
+.auth-back:focus-visible {
+  outline: 2px solid var(--hc-ink);
+  outline-offset: 3px;
+}
+
+/* ── Sheet: frosted bottom sheet on mobile, centred card on desktop ────── */
+.auth-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  max-height: 92vh;
+  max-height: 92dvh;
+  padding: 10px 20px calc(env(safe-area-inset-bottom, 0px) + 24px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  /* Contain the scroll so rubber-banding never drags the gradient. */
+  overscroll-behavior-y: contain;
+  border-radius: var(--hc-auth-sheet-radius) var(--hc-auth-sheet-radius) 0 0;
+  border-top: 1px solid var(--hc-auth-sheet-line);
+  background: var(--ion-color-light);
+  -webkit-backdrop-filter: var(--hc-auth-blur);
+  backdrop-filter: var(--hc-auth-blur);
+  scrollbar-width: thin;
+  scrollbar-color: var(--hc-auth-line-strong) transparent;
+}
+
+.auth-sheet::-webkit-scrollbar {
+  width: 6px;
+}
+
+.auth-sheet::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.auth-sheet::-webkit-scrollbar-thumb {
+  background: var(--hc-auth-line-strong);
+  border-radius: 3px;
+}
+
+/* Drag affordance — signals that the panel is a sheet, matching .ob-sheet. */
+.auth-grip {
+  width: 40px;
+  height: 4px;
+  margin: 0 auto 14px;
+  border-radius: 999px;
+  background: var(--hc-auth-line-strong);
+  opacity: 0.7;
+}
+
+/* ── Sheet header: role chip + title + subtitle ────────────────────────── */
+.auth-head {
+  margin-bottom: 20px;
+}
+
+/* Role chip, centred above the (left-aligned) title. `inline-flex` would pin it
+ * to the start of the line, so it becomes a block-level flex box shrink-wrapped
+ * to its own content and pushed to the middle with auto side margins. */
+.auth-eyebrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
+  height: 26px;
+  padding: 0 11px;
+  border-radius: 999px;
+  background: rgba(var(--ion-color-primary-rgb), 0.09);
+  border: 1px solid rgba(var(--ion-color-primary-rgb), 0.16);
+  color: var(--ion-color-primary-shade);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.auth-title {
+  margin: 12px 0 0;
+  color: var(--hc-auth-ink);
+  font-family: var(--hc-font-sans, inherit);
+  font-size: 1.55rem;
+  font-weight: 800;
+  letter-spacing: -0.022em;
+  line-height: 1.15;
+}
+
+.auth-subtitle {
+  margin: 8px 0 0;
+  color: var(--hc-auth-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.auth-subtitle strong {
+  color: var(--hc-auth-ink-soft);
+  font-weight: 700;
+}
+
+/* ── Fields ───────────────────────────────────────────────────────────── */
+.auth-sheet .form-item {
+  --background: var(--hc-auth-field);
+  --color: var(--hc-auth-field-ink);
+  --border-radius: var(--hc-auth-field-radius);
+  --border-color: var(--hc-auth-line);
+  --inner-border-width: 0;
+  --highlight-color-focused: transparent;
+  --highlight-color-valid: transparent;
+  --padding-start: 14px;
+  --padding-end: 14px;
+  --min-height: var(--hc-auth-field-h);
+  --min-width: 0;
+  min-height: var(--hc-auth-field-h);
+  margin: 0 0 14px;
+  border: 1px solid var(--hc-auth-line);
+  border-radius: var(--hc-auth-field-radius);
+  box-shadow: 0 1px 2px rgba(var(--ion-color-primary-rgb), 0.04);
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background-color 0.18s ease;
+}
+
+@media (hover: hover) {
+  .auth-sheet .form-item.item-interactive:hover {
+    border-color: var(--hc-auth-line-strong);
+  }
+}
+
+.auth-sheet .form-item.ion-focused,
+.auth-sheet .form-item:focus-within {
+  border-color: var(--ion-color-primary);
+  box-shadow: var(--hc-auth-focus);
+}
+
+/* react-icons render at 1em, so font-size scales them. */
+.auth-sheet .input-icon {
+  flex: 0 0 auto;
+  margin: 0 12px 0 0;
+  font-size: 19px;
+  color: var(--ion-color-primary);
+  opacity: 0.85;
+}
+
+/* 16px minimum: anything smaller makes iOS Safari zoom the viewport on focus. */
+.auth-sheet .form-item ion-input,
+.auth-sheet .form-item ion-select,
+.auth-sheet .form-item ion-textarea {
+  --color: var(--hc-auth-field-ink);
+  --placeholder-color: var(--hc-auth-field-placeholder);
+  --placeholder-opacity: 1;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+}
+
+/* ── Validation messaging ─────────────────────────────────────────────── */
+.auth-sheet .error-message,
+.auth-sheet .error-text {
+  display: block;
+  margin: 6px 2px 0;
+  color: var(--hc-auth-danger);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.35;
+
+  p {
+    margin: 0;
+  }
+}
+
+.auth-sheet .error-container {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--hc-auth-danger-line);
+  border-radius: 12px;
+  background: var(--hc-auth-danger-bg);
+
+  ion-text,
+  p {
+    margin: 0;
+    color: var(--hc-auth-danger);
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+}
+
+.auth-sheet .root-error {
+  margin: 4px 0 0;
+}
+
+/* ── Primary action ───────────────────────────────────────────────────── */
+.auth-sheet .submit-container {
+  margin: 0;
+}
+
+.auth-sheet .submit-button {
+  --background: linear-gradient(
+    90deg,
+    var(--ion-color-primary-shade) 0%,
+    var(--ion-color-primary) 100%
+  );
+  --background-hover: linear-gradient(
+    90deg,
+    var(--ion-color-primary) 0%,
+    var(--ion-color-primary-tint) 100%
+  );
+  --background-activated: var(--ion-color-primary-shade);
+  --border-radius: var(--hc-auth-radius);
+  --box-shadow: 0 10px 22px -8px rgba(var(--ion-color-primary-shade-rgb), 0.55);
+  width: 100%;
+  height: var(--hc-auth-btn-h);
+  margin: 20px 0 0;
+  font-size: 0.97rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  text-transform: none;
+  color: var(--hc-glass-ink);
+}
+
+.auth-sheet .submit-button .spinner {
+  margin-right: 10px;
+}
+
+.auth-sheet .submit-button[disabled] {
+  --background: var(--hc-auth-line-strong);
+  --box-shadow: none;
+  opacity: 1;
+  color: var(--hc-glass-ink);
+}
+
+/* Two-column rows (age / sex, contact pairs) need the gutter tightened so the
+ * 52px fields still read as a pair rather than two floating inputs. */
+.auth-sheet .row-fields {
+  margin: 0 0 14px;
+}
+
+.auth-sheet .hint {
+  display: block;
+  margin: -6px 2px 16px;
+  color: var(--hc-auth-field-placeholder);
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* Inline spinners on submit buttons (ion-spinner and the LoadingHelix svg). */
+.auth-sheet .spinner {
+  margin-right: 10px;
+  flex: 0 0 auto;
+}
+
+.auth-sheet .compact-grid {
+  padding: 0;
+}
+
+.auth-sheet .compact-grid ion-row {
+  flex-wrap: nowrap;
+}
+
+.auth-sheet .compact-grid ion-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.auth-sheet .compact-grid ion-col + ion-col {
+  padding-left: 10px;
+}
+
+/* ── Secondary actions ────────────────────────────────────────────────── */
+.auth-sheet .forgot-password {
+  display: flex;
+  justify-content: flex-end;
+  margin: -4px 0 16px;
+}
+
+.auth-sheet .forgot-password ion-button {
+  --color: var(--ion-color-primary);
+  --background: transparent;
+  --background-hover: transparent;
+  --background-activated: rgba(var(--ion-color-primary-rgb), 0.1);
+  --border-radius: 8px;
+  --padding-start: 8px;
+  --padding-end: 8px;
+  height: 32px;
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: none;
+}
+
+.auth-sheet .signup-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  margin: 18px 0 0;
+  color: var(--hc-auth-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.auth-sheet .signup-button2 {
+  --color: var(--ion-color-primary);
+  --background: transparent;
+  --background-hover: transparent;
+  --background-activated: rgba(var(--ion-color-primary-rgb), 0.1);
+  --border-radius: 8px;
+  --padding-start: 6px;
+  --padding-end: 6px;
+  height: 32px;
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: none;
+}
+
+.auth-sheet .or-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 14px;
+
+  &::before,
+  &::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--hc-auth-line);
+  }
+
+  span {
+    color: var(--hc-auth-field-placeholder);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+}
+
+.auth-sheet .google-signin-btn {
+  --background: var(--hc-surface);
+  --background-hover: var(--hc-surface-muted);
+  --color: var(--ion-text-color);
+  --border-color: var(--hc-auth-line);
+  --border-style: solid;
+  --border-width: 1px;
+  --border-radius: var(--hc-auth-radius);
+  --box-shadow: 0 1px 2px rgba(var(--ion-color-primary-rgb), 0.05);
+  width: 100%;
+  height: var(--hc-auth-btn-h);
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+
+.auth-sheet .google-icon {
+  width: 18px;
+  height: 18px;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+
+/* Outline button used by the recovery success state. */
+.auth-sheet .login-button {
+  --border-radius: var(--hc-auth-radius);
+  --border-color: var(--ion-color-primary);
+  --border-style: solid;
+  --border-width: 1.5px;
+  --color: var(--ion-color-primary);
+  width: 100%;
+  height: var(--hc-auth-btn-h);
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  text-transform: none;
+}
+
+.auth-sheet .back-to-login {
+  margin-top: 24px;
+}
+
+/* ── Profile photo picker (sign up) ───────────────────────────────────── */
+.auth-sheet .photo-upload-container {
+  align-items: center;
+  margin: 0 0 20px;
+}
+
+.auth-sheet .profile-avatar {
+  width: 96px;
+  height: 96px;
+  margin: 0 auto;
+  border: 2px solid var(--ion-color-primary);
+  background: rgba(var(--ion-color-primary-rgb), 0.07);
+  overflow: hidden;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+@media (hover: hover) {
+  .auth-sheet .profile-avatar:hover {
+    transform: scale(1.04);
+    box-shadow: 0 8px 20px -8px rgba(var(--ion-color-primary-shade-rgb), 0.5);
+  }
+}
+
+.auth-sheet .profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.auth-sheet .avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--ion-color-primary-rgb), 0.07);
+  color: var(--ion-color-primary);
+}
+
+.auth-sheet .photo-label {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  margin: 10px 0 0;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(var(--ion-color-primary-rgb), 0.09);
+  color: var(--ion-color-primary-shade);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* ── Grouped sections (doctor sign up) ────────────────────────────────── */
+.auth-sheet .form-section {
+  margin: 0 0 18px;
+  padding: 14px;
+  border: 1px solid var(--hc-auth-line);
+  border-radius: var(--hc-auth-radius);
+  background: rgba(var(--ion-color-primary-rgb), 0.035);
+
+  .section-label {
+    display: block;
+    margin: 0 0 12px;
+    color: var(--ion-color-primary-shade);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+}
+
+/* ── Password recovery ────────────────────────────────────────────────── */
+/* The envelope circle and its caption stack in the middle of the column.
+ * `align-items` only does anything inside a flex container — without the
+ * `display` here it was silently inert and both children fell back to
+ * block-level, pinning them to the left edge. Shared by the patient, doctor
+ * and admin recovery screens, which all render this exact markup. */
+.auth-sheet .recovery-illustration {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin: 0 0 20px;
+}
+
+.auth-sheet .illustration-circle {
+  flex: 0 0 auto;
+  width: 64px;
+  height: 64px;
+  margin: 0 0 12px;
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg,
+    var(--ion-color-primary-shade) 0%,
+    var(--ion-color-primary) 100%
+  );
+  box-shadow: 0 10px 22px -10px rgba(var(--ion-color-primary-shade-rgb), 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--hc-glass-ink);
+}
+
+/* Once the email is on screen the sheet header already explains the state, so
+ * the in-sheet illustration steps back to avoid saying it twice. */
+.auth-sheet .illustration-text {
+  max-width: 320px;
+  margin: 0 auto;
+  color: var(--hc-auth-muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.auth-sheet .success-container {
+  padding: 4px 0 0;
+}
+
+.auth-sheet .success-illustration {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0 0 8px;
+  text-align: center;
+}
+
+.auth-sheet .success-circle {
+  flex: 0 0 auto;
+  width: 88px;
+  height: 88px;
+  margin: 0 0 16px;
+  border-radius: 50%;
+  background: rgba(var(--ion-color-success-rgb), 0.09);
+  border: 2px solid var(--hc-auth-success);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--hc-auth-success);
+}
+
+.auth-sheet .success-title {
+  display: block;
+  margin: 0 0 8px;
+  color: var(--hc-auth-ink);
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+}
+
+.auth-sheet .success-message {
+  max-width: 340px;
+  margin: 0 auto;
+  color: var(--hc-auth-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.55;
+
+  strong {
+    color: var(--hc-auth-ink-soft);
+    font-weight: 700;
+    word-break: break-word;
+  }
+}
+
+.auth-sheet .resend-container {
+  margin-top: 18px;
+}
+
+.auth-sheet .resend-container ion-text {
+  color: var(--hc-auth-muted);
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.auth-sheet .resend-link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--ion-color-primary);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.auth-sheet .resend-link:disabled {
+  color: var(--hc-auth-muted);
+  cursor: default;
+}
+
+.auth-sheet .resend-link:focus-visible {
+  outline: 2px solid var(--ion-color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ── Desktop: the sheet becomes a centred card over the artwork ───────── */
+@media (min-width: 768px) {
+  .auth-page {
+    display: grid;
+    place-items: center;
+  }
+
+  .auth-sheet {
+    position: relative;
+    inset: auto;
+    width: min(480px, calc(100vw - 48px));
+    max-height: 86vh;
+    max-height: 86dvh;
+    margin: 24px;
+    padding: 28px 32px 32px;
+    border: 1px solid var(--hc-auth-sheet-line);
+    border-radius: 28px;
+    box-shadow: 0 32px 72px -24px rgba(var(--ion-color-primary-shade-rgb), 0.5);
+  }
+
+  /* No sheet to drag on desktop. */
+  .auth-grip {
+    display: none;
+  }
+
+  .auth-title {
+    font-size: 1.7rem;
+  }
+}
+
+/* ── Dark mode ────────────────────────────────────────────────────────── */
+body.dark .auth-page {
+  --hc-auth-sheet: rgba(var(--hc-surface-rgb), 0.9);
+  --hc-auth-sheet-line: rgba(var(--ion-color-primary-tint-rgb), 0.18);
+  --hc-auth-blur: saturate(1.3) blur(22px);
+
+  --hc-auth-ink: var(--ion-text-color);
+  --hc-auth-ink-soft: color-mix(in srgb, var(--ion-text-color) 84%, transparent);
+  --hc-auth-muted: var(--hc-text-muted);
+
+  --hc-auth-line: var(--hc-border);
+  --hc-auth-line-strong: var(--hc-border-strong);
+  --hc-auth-field: rgba(var(--hc-glass-ink-rgb), 0.05);
+  --hc-auth-field-ink: var(--ion-text-color);
+  --hc-auth-field-placeholder: var(--hc-text-muted);
+
+  --hc-auth-danger: var(--hc-status-danger-text);
+  --hc-auth-danger-bg: rgba(var(--ion-color-danger-rgb), 0.12);
+  --hc-auth-danger-line: rgba(var(--ion-color-danger-rgb), 0.3);
+  --hc-auth-success: var(--hc-status-success-text);
+}
+
+body.dark .auth-eyebrow {
+  background: rgba(var(--ion-color-primary-tint-rgb), 0.14);
+  border-color: rgba(var(--ion-color-primary-tint-rgb), 0.26);
+  color: var(--hc-status-info-text);
+}
+
+body.dark .auth-orb {
+  background: radial-gradient(
+    circle at 32% 28%,
+    rgba(var(--ion-color-primary-tint-rgb), 0.4) 0%,
+    rgba(var(--ion-color-primary-tint-rgb), 0.2) 46%,
+    rgba(var(--ion-color-primary-rgb), 0.1) 100%
+  );
+  box-shadow:
+    0 24px 48px -22px rgba(var(--ion-color-primary-shade-rgb), 0.6),
+    inset 8px 10px 20px rgba(var(--ion-color-primary-tint-rgb), 0.16);
+}
+
+body.dark .auth-sheet .submit-button[disabled] {
+  --background: var(--hc-border-strong);
+  color: var(--hc-text-muted);
+}
+
+body.dark .auth-sheet .google-signin-btn {
+  --background: var(--hc-surface);
+  --background-hover: var(--hc-surface-muted);
+  --color: var(--ion-text-color);
+  --border-color: var(--hc-border-strong);
+  --box-shadow: none;
+}
+
+body.dark .auth-sheet .profile-avatar,
+body.dark .auth-sheet .avatar-placeholder {
+  background: rgba(var(--ion-color-primary-tint-rgb), 0.12);
+}
+
+body.dark .auth-sheet .photo-label {
+  background: rgba(var(--ion-color-primary-tint-rgb), 0.16);
+  color: var(--hc-status-info-text);
+}
+
+body.dark .auth-sheet .form-section {
+  background: rgba(var(--ion-color-primary-tint-rgb), 0.06);
+}
+
+/* ── Compact phones (Galaxy S8+ and narrower) ─────────────────────────── */
+@media (max-width: 380px) {
+  .auth-page {
+    --hc-auth-field-h: 48px;
+    --hc-auth-btn-h: 48px;
+  }
+
+  .auth-sheet {
+    padding: 8px 16px calc(env(safe-area-inset-bottom, 0px) + 20px);
+  }
+
+  .auth-title {
+    font-size: 1.4rem;
+  }
+
+  .auth-head {
+    margin-bottom: 16px;
+  }
+
+  .auth-back {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    min-height: 42px;
+    --hc-icon-size: 20px;
+  }
+
+  .auth-backrow {
+    padding: calc(env(safe-area-inset-top, 0px) + 10px) 12px 10px;
+  }
+
+  .auth-orb-1 {
+    width: 170px;
+    height: 170px;
+  }
+
+  .auth-orb-2 {
+    width: 240px;
+    height: 240px;
+  }
+
+  .auth-orb-3 {
+    width: 96px;
+    height: 96px;
+  }
+}
+
+/* ── Motion & contrast preferences ────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .auth-orb {
+    animation: none;
+  }
+
+  .auth-sheet .form-item,
+  .auth-sheet .profile-avatar,
+  .auth-back {
+    transition: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .auth-sheet {
+    background: var(--hc-auth-sheet-solid);
+    border-top-color: var(--hc-auth-line-strong);
+  }
+
+  .auth-sheet .form-item {
+    border-color: var(--hc-auth-line-strong);
+  }
+
+  /* No rim to strengthen any more, so the scrim itself is the affordance:
+     deepen it so the control still separates from the gradient. Deep glass
+     rather than the white press tint — the glyph is white, and only a darker
+     backdrop lets it stay legible. */
+  .auth-back {
+    background: var(--hc-back-scrim-strong);
+  }
+}
+
+/* ── Language picker ─────────────────────────────────────────────────────────
+ * Rendered by pages/ChooseLanguage.tsx inside <AuthShell>, so these rules only
+ * need to supply the option cards and the commit button — the gradient, sheet
+ * and back control all come from the shell. */
+
+.lang-eyebrow-icon {
+  /* Matches the ~13px uppercase eyebrow it sits in, with a small optical nudge:
+     Ionicons are drawn on a square grid and read as sitting slightly low
+     against cap-height text. */
+  font-size: 0.95rem;
+  vertical-align: -0.12em;
+  margin-right: 2px;
+}
+
+.lang-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.auth-sheet .lang-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  /* 68px clears the 44px minimum target with room for the two-line label, and
+     keeps both cards the same height so the shorter sample ("Fever") cannot
+     make the lower card look secondary. */
+  min-height: 68px;
+  padding: 14px 16px;
+  text-align: start;
+  cursor: pointer;
+  border: 1.5px solid var(--hc-auth-line);
+  border-radius: var(--hc-auth-radius);
+  background: var(--hc-auth-field);
+  transition: border-color 0.18s ease, background 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.auth-sheet .lang-card:hover {
+  border-color: var(--hc-auth-line-strong);
+}
+
+.auth-sheet .lang-card-on {
+  border-color: var(--ion-color-primary);
+  background: rgba(var(--ion-color-primary-rgb), 0.1);
+}
+
+.lang-card-check {
+  /* Fixed-size whether or not it holds a tick, so selecting a language does not
+     reflow the label leftwards. */
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1.5px solid var(--hc-auth-line-strong);
+  color: var(--ion-color-primary-contrast, #fff);
+  font-size: 17px;
+}
+
+.auth-sheet .lang-card-on .lang-card-check {
+  background: var(--ion-color-primary);
+  border-color: var(--ion-color-primary);
+}
+
+.lang-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.lang-card-native {
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--hc-auth-ink);
+  line-height: 1.25;
+}
+
+/* The endonym carries the whole card now; the muted preview line under it was
+   removed with LangOption.sample in ChooseLanguage. */
+
+/* Commit row: the spinner overlays the button instead of displacing it, so the
+   label never shifts sideways mid-navigation. */
+.lang-continue-row {
+  position: relative;
+  margin-top: 22px;
+}
+
+.auth-sheet .lang-continue {
+  width: 100%;
+  height: var(--hc-auth-btn-h);
+  font-size: 0.97rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  color: var(--hc-glass-ink);
+  background: linear-gradient(
+    90deg,
+    var(--ion-color-primary-shade) 0%,
+    var(--ion-color-primary) 100%
+  );
+  border: none;
+  border-radius: var(--hc-auth-radius);
+  cursor: pointer;
+  transition: filter 0.18s ease;
+}
+
+.auth-sheet .lang-continue:hover {
+  filter: brightness(1.06);
+}
+
+.auth-sheet .lang-continue:focus-visible {
+  outline: 2px solid var(--hc-focus-ring, var(--ion-color-primary));
+  outline-offset: 3px;
+}
+
+.auth-sheet .lang-continue[disabled] {
+  cursor: default;
+  background: var(--hc-auth-line-strong);
+}
+
+.lang-spinner {
+  position: absolute;
+  top: 50%;
+  left: 18px;
+  transform: translateY(-50%);
+  /* Hidden but still rendered: `visibility` rather than `display` keeps the
+     spinner mounted so there is no layout shift when it appears. */
+  visibility: hidden;
+  color: var(--hc-glass-ink);
+  z-index: 1;
+}
+
+.lang-spinner-on {
+  visibility: visible;
+}
+
+.lang-note {
+  margin: 14px 0 0;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--hc-auth-muted);
+}
+
+@media (prefers-contrast: more) {
+  .auth-sheet .lang-card {
+    border-color: var(--hc-auth-line-strong);
+  }
+
+  /* The tinted selected background carries the state, but contrast modes
+     flatten tints, so the check ring is thickened to keep it legible. */
+  .auth-sheet .lang-card-on {
+    border-width: 2px;
+  }
+}

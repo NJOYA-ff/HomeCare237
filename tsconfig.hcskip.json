@@ -1,0 +1,27 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "noEmit": true },
+  "include": [
+    "src/pages/Patient/Medications.tsx",
+    "src/pages/Patient/Vitals.tsx",
+    "src/pages/Patient/SOS.tsx",
+    "src/pages/Patient/Timeline.tsx",
+    "src/pages/Patient/Articles.tsx",
+    "src/pages/Patient/Receipts.tsx",
+    "src/pages/Patient/data/articles.ts",
+    "src/components/Services/medicationService.ts",
+    "src/components/Services/patientVitals.ts",
+    "src/components/Tabs.tsx",
+    "src/components/Menu.tsx",
+    "src/context/SettingsContext.tsx"
+  ],
+  "exclude": [
+    "src/pages/Admin/Health_units.tsx",
+    "src/pages/Admin/**",
+    "src/pages/Doctor/**",
+    "src/pages/AdminSignin.tsx",
+    "src/pages/AdminSignup.tsx",
+    "src/pages/DoctorSignin.tsx",
+    "src/pages/DoctorSignup.tsx"
+  ]
+}

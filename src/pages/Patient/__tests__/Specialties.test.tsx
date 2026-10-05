@@ -5,12 +5,14 @@ import { vi } from "vitest";
 import SpecialtiesPage from "../Specialties";
 
 // Mock firebase/firestore used in Specialties.tsx
-vi.mock("firebase/firestore", () => {
+vi.mock("firebase/firestore", async () => {
+  const actual = await vi.importActual<typeof import("firebase/firestore")>("firebase/firestore");
   return {
+    ...actual,
     collection: vi.fn(),
     query: vi.fn(),
     where: vi.fn(),
-    getDocs: vi.fn(async () => ({ forEach: (cb: any) => {} })),
+    getDocs: vi.fn(async () => ({ docs: [], forEach: () => {} })),
   };
 });
 

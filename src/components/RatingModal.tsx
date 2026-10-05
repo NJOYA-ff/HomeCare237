@@ -5,7 +5,7 @@ import {
   IonTextarea,
   IonSpinner,
 } from "@ionic/react";
-import { avatarColor } from "../utils/avatarColor";
+import { DEFAULT_AVATAR, handleImageError } from "../utils/profileImage";
 import "./RatingModal.css";
 
 interface RatingModalProps {
@@ -75,28 +75,22 @@ const RatingModal: React.FC<RatingModalProps> = ({
       onDidDismiss={handleDismiss}
       className="rating-modal"
       backdropDismiss={!submitting}
+      initialBreakpoint={1}
+      breakpoints={[0, 1]}
     >
+      {/* Avatar overflows above the sheet */}
+      <div className="rating-avatar-overflow">
+        {/* Bundled SVG placeholder when the doctor has no picture, matching
+            the doctor/admin screens instead of showing coloured initials. */}
+        <img
+          src={doctorAvatar || DEFAULT_AVATAR}
+          alt={doctorName}
+          className="rating-doctor-avatar"
+          onError={handleImageError}
+        />
+      </div>
+
       <div className="rating-modal-inner">
-        {/* Avatar */}
-        {doctorAvatar ? (
-          <img
-            src={doctorAvatar}
-            alt={doctorName}
-            className="rating-doctor-avatar"
-          />
-        ) : (
-          <div
-            className="rating-doctor-initials"
-            style={{ background: avatarColor(doctorName) }}
-          >
-            {doctorName
-              .split(" ")
-              .map((p) => p[0])
-              .join("")
-              .slice(0, 2)
-              .toUpperCase()}
-          </div>
-        )}
 
         <p className="rating-title">Rate your doctor</p>
         <p className="rating-subtitle">
@@ -139,7 +133,7 @@ const RatingModal: React.FC<RatingModalProps> = ({
         {/* Actions */}
         <div className="rating-actions">
           <IonButton
-            fill="outline"
+            fill="clear"
             color="medium"
             className="rating-cancel-btn"
             onClick={handleDismiss}

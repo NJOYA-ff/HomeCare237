@@ -2,46 +2,46 @@
 
 :root {
   /* Brand Colors */
-  --ion-color-primary: #3b7dd8;
-  --ion-color-primary-rgb: 59, 125, 216;
+  --ion-color-primary: #2563eb;
+  --ion-color-primary-rgb: 37, 99, 235;
   --ion-color-primary-contrast: #ffffff;
   --ion-color-primary-contrast-rgb: 255, 255, 255;
-  --ion-color-primary-shade: #346ebe;
-  --ion-color-primary-tint: #4f8ddc;
+  --ion-color-primary-shade: #1d4ed8;
+  --ion-color-primary-tint: #3b82f6;
 
-  --ion-color-secondary: #5260ff;
-  --ion-color-secondary-rgb: 82, 96, 255;
+  --ion-color-secondary: #0f766e;
+  --ion-color-secondary-rgb: 15, 118, 110;
   --ion-color-secondary-contrast: #ffffff;
   --ion-color-secondary-contrast-rgb: 255, 255, 255;
-  --ion-color-secondary-shade: #4854e0;
-  --ion-color-secondary-tint: #6370ff;
+  --ion-color-secondary-shade: #0c5f58;
+  --ion-color-secondary-tint: #2e857c;
 
-  --ion-color-tertiary: #5ac8fa;
-  --ion-color-tertiary-rgb: 90, 200, 250;
-  --ion-color-tertiary-contrast: #000000;
-  --ion-color-tertiary-shade: #4fb0dc;
-  --ion-color-tertiary-tint: #6bcefb;
+  --ion-color-tertiary: #7c3aed;
+  --ion-color-tertiary-rgb: 124, 58, 237;
+  --ion-color-tertiary-contrast: #ffffff;
+  --ion-color-tertiary-shade: #6d28d9;
+  --ion-color-tertiary-tint: #8b5cf6;
 
-  --ion-color-success: #2dd36f;
-  --ion-color-success-rgb: 45, 211, 111;
+  --ion-color-success: #15803d;
+  --ion-color-success-rgb: 21, 128, 61;
   --ion-color-success-contrast: #ffffff;
-  --ion-color-success-shade: #28ba62;
-  --ion-color-success-tint: #42d77d;
+  --ion-color-success-shade: #137337;
+  --ion-color-success-tint: #2c8d50;
 
-  --ion-color-warning: #ffc409;
-  --ion-color-warning-rgb: 255, 196, 9;
-  --ion-color-warning-contrast: #000000;
-  --ion-color-warning-shade: #e0ac08;
-  --ion-color-warning-tint: #ffca22;
+  --ion-color-warning: #ffaa00;
+  --ion-color-warning-rgb: 180, 83, 9;
+  --ion-color-warning-contrast: #ffffff;
+  --ion-color-warning-shade: #9e4908;
+  --ion-color-warning-tint: #bc6420;
 
-  --ion-color-danger: #eb445a;
-  --ion-color-danger-rgb: 235, 68, 90;
+  --ion-color-danger: #dc2626;
+  --ion-color-danger-rgb: 220, 38, 38;
   --ion-color-danger-contrast: #ffffff;
-  --ion-color-danger-shade: #cf3c4f;
-  --ion-color-danger-tint: #ed576b;
+  --ion-color-danger-shade: #c62222;
+  --ion-color-danger-tint: #e03c3c;
 
-  --ion-color-medium: #92949c;
-  --ion-color-medium-rgb: 146, 148, 156;
+  --ion-color-medium: #64748b;
+  --ion-color-medium-rgb: 100, 116, 139;
   --ion-color-medium-contrast: #ffffff;
   --ion-color-medium-shade: #808289;
   --ion-color-medium-tint: #9d9fa6;
@@ -53,10 +53,10 @@
   --ion-color-light-tint: #f5f6f9;
 
   /* Light mode backgrounds */
-  --ion-background-color: #f4f5f8;
-  --ion-background-color-rgb: 244, 245, 248;
-  --ion-text-color: #1a1a2e;
-  --ion-text-color-rgb: 26, 26, 46;
+  --ion-background-color: #f8fafc;
+  --ion-background-color-rgb: 248, 250, 252;
+  --ion-text-color: #0f172a;
+  --ion-text-color-rgb: 15, 23, 42;
   --ion-item-background: #ffffff;
   --ion-card-background: #ffffff;
   --ion-toolbar-background: #ffffff;
@@ -67,50 +67,120 @@
   --ion-toolbar-box-shadow: none;
 
   /* Button sizing - compact for Galaxy S8+ (360px wide) */
-  --hc-btn-height: 36px;
+  --hc-font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --hc-surface: #ffffff;
+  --hc-surface-muted: #f1f5f9;
+  --hc-border: #e2e8f0;
+  --hc-border-strong: #cbd5e1;
+  --hc-text-muted: #64748b;
+  --hc-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --hc-shadow-md: 0 12px 30px rgba(15, 23, 42, 0.08);
+  --hc-focus-ring: 0 0 0 3px rgba(37, 99, 235, 0.18);
+  --hc-btn-height: 38px;
   --hc-btn-font-size: 13px;
   --hc-btn-padding: 0 12px;
   --hc-icon-size: 16px;
   --hc-border-radius: 10px;
-}
+  --hc-radius-sm: 8px;
+  --hc-radius-md: 10px;
+  --hc-radius-lg: 14px;
 
-/* ===== DARK MODE ===== */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --ion-background-color: #0f1117;
-    --ion-background-color-rgb: 15, 17, 23;
-    --ion-text-color: #e8eaf0;
-    --ion-text-color-rgb: 232, 234, 240;
-    --ion-item-background: #1a1d27;
-    --ion-card-background: #1a1d27;
-    --ion-toolbar-background: #13151e;
-    --ion-tab-bar-background: #13151e;
-    /* Override light/dark semantic colors for dark mode */
-    --ion-color-light: #1e2130;
-    --ion-color-light-rgb: 30, 33, 48;
-    --ion-color-light-contrast: #e8eaf0;
-    --ion-color-light-shade: #181b28;
-    --ion-color-light-tint: #252839;
-    --ion-color-step-50: #1a1d27;
-    --ion-color-step-100: #1e2130;
-    --ion-color-step-150: #252839;
-    --ion-color-step-200: #2b2e42;
-    --ion-color-step-250: #31354b;
-    --ion-color-step-300: #383c54;
-    --ion-color-step-350: #3e425d;
-    --ion-color-step-400: #454966;
-    --ion-color-step-450: #4b4f6f;
-    --ion-color-step-500: #525678;
-    --ion-color-step-550: #585c81;
-    --ion-color-step-600: #5f638a;
-    --ion-color-step-650: #656993;
-    --ion-color-step-700: #6c709c;
-    --ion-color-step-750: #7276a5;
-    --ion-color-step-800: #797dae;
-    --ion-color-step-850: #7f83b7;
-    --ion-color-step-900: #8689c0;
-    --ion-color-step-950: #8c90c9;
-  }
+  /* Deep navy "ink" surface (inverse panels).
+     NOTE: this used to read `--hc-ink: var(--hc-ink)` — a self-reference. A
+     self-referential custom property is *invalid at computed-value time*, so
+     every consumer (`background: var(--hc-ink)` on the telehealth stages) fell
+     back to `unset`, which rendered the video/audio call screens transparent. */
+  --hc-ink: #0f172a;
+  --hc-ink-border: #1b2a3d;
+
+  /* Telehealth call surfaces (video chat + audio call) — light theme */
+  --hc-call-stage: #eef2f7; /* backdrop behind the video / avatar stage */
+  --hc-call-surface: #ffffff; /* control bar, rails, header pill */
+  --hc-call-surface-muted: #e2e8f0; /* resting control buttons */
+  --hc-call-border: #d7e0ec;
+  --hc-call-text: #0f172a;
+  --hc-call-text-muted: #55657c;
+  --hc-call-on-accent: #ffffff; /* label drawn on brand / danger buttons */
+  --hc-call-scrim: rgba(241, 245, 249, 0.88); /* connecting / waiting veil */
+  --hc-call-shadow: 0 10px 26px rgba(15, 23, 42, 0.12);
+
+  /* The one brand gradient — every hero/CTA gradient uses this token */
+  --hc-gradient-brand: linear-gradient(
+    140deg,
+    var(--ion-color-primary-tint) 0%,
+    var(--ion-color-primary) 100%
+  );
+
+  /* ===== AUTH FUNNEL (landing · role pickers · sign in/up/recovery) =====
+     The funnel is white-on-brand in *both* themes, so it cannot borrow
+     --ion-text-color (dark in light mode). Rather than hardcode a second
+     palette, it composes the brand tokens above: everything below is a
+     reference or an alpha of a token, never a raw value. Re-theming
+     --ion-color-primary therefore re-themes the whole funnel for free. */
+  --ion-color-primary-shade-rgb: 29, 78, 216;
+  --ion-color-primary-tint-rgb: 59, 130, 246;
+
+  /* Channel twin of --hc-surface, so translucent surfaces can be tinted
+     without hardcoding white-on-light / near-black-on-dark twice. */
+  --hc-surface-rgb: 255, 255, 255;
+
+  /* The one funnel backdrop ramp (replaces three copies of the same 135deg
+     gradient in Onboarding.css, WelcomePage.css and hc-auth.scss). */
+  --hc-gradient-funnel: linear-gradient(
+    135deg,
+    var(--ion-color-primary-shade) 0%,
+    var(--ion-color-primary) 50%,
+    var(--ion-color-primary-tint) 100%
+  );
+
+  /* Glass ink — the white family used on the gradient. Expose the channel
+     separately so each surface can pick its own alpha instead of us shipping
+     one token per opacity step. */
+  --hc-glass-ink: var(--ion-color-primary-contrast);
+  --hc-glass-ink-rgb: var(--ion-color-primary-contrast-rgb);
+
+  /* Frosted sheet resting on the gradient. */
+  --hc-glass-blur: 22px;
+  --hc-glass-sheet: rgba(var(--hc-glass-ink-rgb), 0.9);
+
+  /* Back control (sign in/up/recovery + role pickers) and the showcase's Skip
+     pill: a flat translucent light-white scrim with no rim and no refraction, so
+     the control separates from the funnel gradient without a second edge
+     competing with it.
+
+     INK IS WHITE, WHICH CONSTRAINS THE SCRIM. White content can only read on
+     a backdrop darker than itself, so the scrim cannot also be white — a white
+     glyph on a white scrim is white-on-white. The alpha below is therefore kept
+     low on purpose: just enough to read as a surface, not enough to compete
+     with the glyph sitting on it.
+     Measured worst case (glyph on the lightest gradient corner, #3b82f6):
+       this scrim      ~3.1:1  — clears 3:1 for a non-text icon
+       no scrim at all ~3.7:1
+     So the scrim does cost contrast, and buys the glass read. The glyph also
+     carries a shadow to separate it from the artwork behind.
+     The Skip LABEL is a different matter: 13.6px text needs 4.5:1, which no
+     white-on-light combination reaches on this gradient. It leans on the same
+     shadow plus its heavier weight. If it ever reads poorly, the fix is
+     --hc-back-scrim-strong below (deep glass) — not a darker glyph, since dark
+     ink on a white scrim is the only variant that clears 4.5:1 here. */
+  --hc-back-scrim: rgba(255, 255, 255, 0.12);
+  --hc-back-scrim-press: rgba(255, 255, 255, 0.22);
+  /* Deep glass — the high-contrast escape hatch. */
+  --hc-back-scrim-strong: rgba(15, 23, 42, 0.3);
+  /* Ink for content sitting ON the scrim above. White, matching the rest of the
+     gradient furniture. */
+  --hc-back-ink: var(--hc-glass-ink);
+  --hc-back-shadow: rgba(15, 23, 42, 0.3);
+  /* Keeps a white glyph legible over the busy artwork behind the scrim. */
+  --hc-back-ink-shadow: 0 1px 2px rgba(15, 23, 42, 0.55);
+
+  /* WCAG-AA status text colors for tinted badge/chip backgrounds.
+     Same element → same color, everywhere. */
+  --hc-status-success-text: #166534;
+  --hc-status-warning-text: #92400e;
+  --hc-status-danger-text: #991b1b;
+  --hc-status-info-text: #1d4ed8;
+  --hc-status-neutral-text: #475569;
 }
 
 /* ===== MANUAL DARK CLASS (for in-app toggle) ===== */
@@ -123,6 +193,28 @@ body.dark {
   --ion-card-background: #1a1d27;
   --ion-toolbar-background: #13151e;
   --ion-tab-bar-background: #13151e;
+  --hc-surface: #1a1d27;
+  --hc-surface-rgb: 26, 29, 39;
+  --hc-surface-muted: #111827;
+  --hc-border: #252b3a;
+  --hc-border-strong: #334155;
+  --hc-text-muted: #94a3b8;
+  --hc-shadow-sm: none;
+  --hc-shadow-md: 0 14px 34px rgba(0, 0, 0, 0.24);
+  --hc-status-success-text: #4ade80;
+  --hc-status-warning-text: #fbbf24;
+  --hc-status-danger-text: #f87171;
+  --hc-status-info-text: #93c5fd;
+  --hc-status-neutral-text: #94a3b8;
+  /* Telehealth call surfaces follow the app theme when dark mode is on */
+  --hc-call-stage: #0f1117;
+  --hc-call-surface: #1a1d27;
+  --hc-call-surface-muted: #262c3d;
+  --hc-call-border: #2b3548;
+  --hc-call-text: #e8eaf0;
+  --hc-call-text-muted: #9aa7bd;
+  --hc-call-scrim: rgba(15, 17, 23, 0.72);
+  --hc-call-shadow: 0 10px 26px rgba(0, 0, 0, 0.4);
   /* Override light/dark semantic colors for dark mode */
   --ion-color-light: #1e2130;
   --ion-color-light-rgb: 30, 33, 48;
@@ -151,17 +243,39 @@ body.dark {
 }
 
 /* ===== GLOBAL RESETS - Remove all shadows ===== */
+html,
+body {
+  font-family: var(--hc-font-sans);
+}
+
 ion-card {
-  box-shadow: none !important;
-  border: 1px solid var(--ion-color-step-100, #e8e8e8);
+  box-shadow: var(--hc-shadow-sm) !important;
+  border: 1px solid var(--hc-border);
   border-radius: var(--hc-border-radius) !important;
   margin: 8px 0 !important;
+  --background: var(--hc-surface);
 }
 
 ion-toolbar {
   box-shadow: none !important;
   --box-shadow: none !important;
   border-bottom: 1px solid var(--ion-color-step-100, #e8e8e8);
+}
+
+/* ---- Admin: borderless toolbars with breathing room ----------- */
+/* The global rule above paints a real CSS border-bottom, which the
+   Ionic `--border-width` variable cannot override, so the admin
+   toolbar border is reset explicitly here. */
+.admin-scope ion-toolbar {
+  border-bottom: 0;
+  /* Inset toolbar content from the screen edges while leaving the
+     host's own safe-area padding intact. */
+  --padding-start: 16px;
+  --padding-end: 16px;
+}
+
+body.dark .admin-scope ion-toolbar {
+  border-bottom-color: transparent;
 }
 
 ion-header {
@@ -180,6 +294,7 @@ ion-tab-bar {
 ion-item {
   --box-shadow: none !important;
   --inner-box-shadow: none !important;
+  --border-color: var(--hc-border);
 }
 
 ion-modal {
@@ -205,6 +320,13 @@ ion-button {
   font-weight: 500;
   letter-spacing: 0.2px;
   text-transform: none;
+}
+
+ion-button:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: none;
+  box-shadow: var(--hc-focus-ring);
 }
 
 ion-button[size="small"] {
@@ -243,6 +365,9 @@ ion-fab-button {
 ion-searchbar {
   --box-shadow: none !important;
   --border-radius: var(--hc-border-radius);
+  --background: var(--hc-surface);
+  --color: var(--ion-text-color);
+  --placeholder-color: var(--hc-text-muted);
   padding: 0 !important;
   height: 36px;
 }
@@ -250,27 +375,50 @@ ion-searchbar {
 /* ===== CHIP ===== */
 ion-chip {
   --box-shadow: none;
-  height: 24px;
+  min-height: 26px;
   font-size: 11px;
+  font-weight: 600;
 }
 
-/* ===== SEGMENT ===== */
+/* ===== SEGMENT =====
+   Selected-tab visibility is driven by color="primary" on every <IonSegment>.
+   That activates Ionic's .in-segment-color pathway which correctly renders
+   the checked indicator and label using the primary colour palette in both
+   light and dark mode — no shadow-DOM CSS-variable fights needed. */
+:root {
+  --ion-color-step-350: #a8b4c3; /* mid-grey — keeps iOS pill off pure white */
+}
+
 ion-segment {
   --box-shadow: none;
   border-radius: var(--hc-border-radius);
-  background: var(--ion-color-step-50, #f0f0f0);
+  background: var(--hc-surface-muted);
+  padding: 3px;
 }
 
 ion-segment-button {
   --box-shadow: none;
+  --indicator-box-shadow: none;
   font-size: 12px;
   min-height: 32px;
   text-transform: none;
+  font-weight: 600;
+}
+
+body.dark ion-segment-button {
+  --color-checked: #ffffff;
 }
 
 /* ===== INPUT / TEXTAREA ===== */
 ion-input, ion-textarea, ion-select {
   --box-shadow: none !important;
+}
+
+ion-input,
+ion-textarea,
+ion-select,
+ion-searchbar {
+  --highlight-color-focused: var(--ion-color-primary);
 }
 
 /* ===== ALERT / TOAST ===== */
@@ -280,19 +428,6 @@ ion-alert {
 
 ion-toast {
   --box-shadow: none;
-}
-
-/* ===== DARK MODE - border adjustments ===== */
-@media (prefers-color-scheme: dark) {
-  ion-card {
-    border-color: var(--ion-color-step-150, #252839);
-  }
-  ion-toolbar {
-    border-bottom-color: var(--ion-color-step-150, #252839);
-  }
-  ion-tab-bar {
-    border-top-color: var(--ion-color-step-150, #252839);
-  }
 }
 
 body.dark ion-card {
@@ -346,12 +481,6 @@ body.hide-tabs .custom-tab-bar {
   cursor: not-allowed;
 }
 
-@media (prefers-color-scheme: dark) {
-  .filter-btn-group { background: var(--ion-toolbar-background, #13151e); }
-  .filter-btn { border-color: var(--ion-color-primary-tint); color: var(--ion-color-primary-tint); }
-  .filter-btn.active { background: var(--ion-color-primary); color: #fff; }
-}
-
 body.dark .filter-btn-group { background: var(--ion-toolbar-background, #13151e); }
 body.dark .filter-btn { border-color: var(--ion-color-primary-tint); color: var(--ion-color-primary-tint); }
 body.dark .filter-btn.active { background: var(--ion-color-primary); color: #fff; }
@@ -362,7 +491,7 @@ body.dark .filter-btn.active { background: var(--ion-color-primary); color: #fff
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: linear-gradient(140deg, #6b86ff 0%, #4b77e5 100%);
+  background: var(--hc-gradient-brand);
   color: #ffffff;
   font-weight: 700;
   font-size: 14px;
@@ -378,6 +507,295 @@ body.dark .filter-btn.active { background: var(--ion-color-primary); color: #fff
 ion-spinner {
   width: 20px;
   height: 20px;
+}
+
+.helix-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.helix-loading-dialog {
+  min-width: 148px;
+  max-width: min(280px, calc(100vw - 48px));
+  padding: 18px 20px;
+  border-radius: 14px;
+  background: var(--ion-card-background, var(--ion-background-color));
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.22);
+  color: var(--ion-text-color);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.helix-loading-dialog p {
+  margin: 0;
+  color: var(--ion-color-medium);
+  font-size: 0.9rem;
+}
+
+/* ===== HOMECARE DESIGN SYSTEM PRIMITIVES ===== */
+.hc-loading-state,
+.loading-container {
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--hc-text-muted);
+  text-align: center;
+}
+
+.hc-loading-state p,
+.loading-container p {
+  margin: 0;
+  color: var(--hc-text-muted);
+  font-size: 0.9rem;
+}
+
+.hc-empty-state,
+.empty-state,
+.empty-state-content,
+.receipts-empty,
+.timeline-empty,
+.meds-empty {
+  border: 1px dashed var(--hc-border-strong);
+  border-radius: var(--hc-radius-lg);
+  background: color-mix(in srgb, var(--hc-surface) 88%, var(--ion-color-primary) 12%);
+  color: var(--ion-text-color);
+  padding: 24px 18px;
+  text-align: center;
+}
+
+.hc-empty-state__icon,
+.empty-icon,
+.empty-state-icon {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 12px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--ion-color-primary-rgb), 0.1);
+  color: var(--ion-color-primary);
+}
+
+.hc-empty-state__icon ion-icon,
+.empty-icon,
+.empty-state-icon {
+  font-size: 22px !important;
+}
+
+.hc-empty-state h3,
+.empty-state h3,
+.empty-state-content h3,
+.meds-empty h3 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+  font-weight: 750;
+  color: var(--ion-text-color);
+}
+
+.hc-empty-state p,
+.empty-state p,
+.empty-state-content p,
+.empty-state-text,
+.empty-text,
+.receipts-empty p,
+.timeline-empty p,
+.meds-empty p {
+  margin: 0;
+  color: var(--hc-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+/* Compact variant for empty states nested inside form rows / labels,
+   where the full-size dashed panel would overpower the surrounding item. */
+.hc-empty-state--inline {
+  padding: 14px 12px;
+  text-align: left;
+  background: none;
+  border-style: solid;
+}
+
+.hc-empty-state--inline .hc-empty-state__icon {
+  width: 34px;
+  height: 34px;
+  margin: 0 0 8px;
+  border-radius: 10px;
+}
+
+.hc-empty-state--inline .hc-empty-state__icon ion-icon {
+  font-size: 17px !important;
+}
+
+.hc-empty-state--inline h3 {
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+
+.hc-empty-state--inline p {
+  font-size: 0.8125rem;
+}
+
+.hc-section-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 18px 2px 10px;
+}
+
+.hc-section-header__eyebrow {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--ion-color-primary);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.hc-section-header h2 {
+  margin: 0;
+  color: var(--ion-text-color);
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.hc-section-header p {
+  margin: 4px 0 0;
+  color: var(--hc-text-muted);
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
+.hc-section-header__action {
+  flex-shrink: 0;
+}
+
+.hc-metric-card {
+  margin: 0 !important;
+}
+
+.hc-metric-card ion-card-content {
+  padding: 0 !important;
+}
+
+.hc-metric-card__inner {
+  width: 100%;
+  min-height: 110px;
+  padding: 16px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: inherit;
+}
+
+button.hc-metric-card__inner {
+  cursor: pointer;
+}
+
+.hc-metric-card__label,
+.hc-metric-card__note {
+  display: block;
+  color: var(--hc-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.25;
+}
+
+.hc-metric-card__label {
+  font-weight: 750;
+}
+
+.hc-metric-card__value {
+  display: block;
+  margin-top: 8px;
+  color: var(--ion-text-color);
+  font-size: clamp(1.55rem, 7vw, 2.1rem);
+  line-height: 1;
+}
+
+.hc-metric-card__note {
+  margin-top: 8px;
+}
+
+.hc-metric-card__icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--ion-color-primary-rgb), 0.1);
+  color: var(--ion-color-primary);
+}
+
+.hc-metric-card--green .hc-metric-card__icon { background: rgba(var(--ion-color-success-rgb), 0.12); color: var(--hc-status-success-text); }
+.hc-metric-card--amber .hc-metric-card__icon { background: rgba(var(--ion-color-warning-rgb), 0.12); color: var(--hc-status-warning-text); }
+.hc-metric-card--red .hc-metric-card__icon { background: rgba(var(--ion-color-danger-rgb), 0.12); color: var(--hc-status-danger-text); }
+.hc-metric-card--violet .hc-metric-card__icon { background: rgba(var(--ion-color-tertiary-rgb), 0.12); color: var(--ion-color-tertiary); }
+.hc-metric-card--neutral .hc-metric-card__icon { background: var(--hc-surface-muted); color: var(--hc-text-muted); }
+
+.hc-status-badge,
+.hc-badge-outline {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 24px;
+  border-radius: 999px;
+  border: 1px solid var(--hc-border-strong);
+  background: var(--hc-surface-muted);
+  color: var(--hc-text-muted);
+  font-size: 0.72rem;
+  font-weight: 750;
+  line-height: 1;
+  padding: 5px 9px;
+}
+
+.hc-badge-outline {
+  --background: transparent;
+  --color: var(--ion-text-color);
+  background: transparent;
+}
+
+.hc-status-badge--success { border-color: rgba(var(--ion-color-success-rgb), 0.25); background: rgba(var(--ion-color-success-rgb), 0.1); color: var(--hc-status-success-text); }
+.hc-status-badge--warning { border-color: rgba(var(--ion-color-warning-rgb), 0.3); background: rgba(var(--ion-color-warning-rgb), 0.12); color: var(--hc-status-warning-text); }
+.hc-status-badge--danger { border-color: rgba(var(--ion-color-danger-rgb), 0.25); background: rgba(var(--ion-color-danger-rgb), 0.1); color: var(--hc-status-danger-text); }
+.hc-status-badge--info { border-color: rgba(var(--ion-color-primary-rgb), 0.25); background: rgba(var(--ion-color-primary-rgb), 0.1); color: var(--hc-status-info-text); }
+
+.hc-panel {
+  border: 1px solid var(--hc-border);
+  border-radius: var(--hc-radius-lg);
+  background: var(--hc-surface);
+  box-shadow: var(--hc-shadow-sm);
+}
+
+@media (max-width: 640px) {
+  .hc-section-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .hc-metric-card__inner {
+    min-height: 96px;
+    padding: 14px;
+  }
 }
 
 /* Global toolbar font size */

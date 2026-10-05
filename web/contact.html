@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contact Us – HomeCare237</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary: #4b77e5;
+      --primary-light: #eef1ff;
+      --text: #1a1d2e;
+      --muted: #6b7280;
+      --border: #e5e8f9;
+      --bg: #f8f9ff;
+      --card: #ffffff;
+      --radius: 16px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #4b77e5 0%, #6b86ff 100%);
+      padding: 48px 24px 40px;
+      text-align: center;
+      color: #fff;
+    }
+
+    header .logo {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      opacity: 0.85;
+      margin-bottom: 12px;
+    }
+
+    header h1 {
+      font-size: clamp(24px, 5vw, 36px);
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    header p { opacity: 0.85; font-size: 14px; }
+
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
+    }
+
+    .intro {
+      text-align: center;
+      color: var(--muted);
+      margin-bottom: 36px;
+      font-size: 15px;
+    }
+
+    .channels {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .channel-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 20px;
+      text-align: center;
+      text-decoration: none;
+      color: var(--text);
+      transition: box-shadow 0.2s, transform 0.15s;
+      display: block;
+    }
+
+    .channel-card:hover {
+      box-shadow: 0 6px 24px rgba(75, 119, 229, 0.15);
+      transform: translateY(-2px);
+    }
+
+    .channel-card .ch-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: var(--primary-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin: 0 auto 14px;
+    }
+
+    .channel-card h3 {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .channel-card p {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .channel-card .ch-link {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    /* Contact form */
+    .form-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px 28px;
+      margin-bottom: 24px;
+    }
+
+    .form-card h2 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .form-card .subtitle {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 520px) { .form-row { grid-template-columns: 1fr; } }
+
+    .field {
+      margin-bottom: 18px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--text);
+      background: #fafbff;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(75, 119, 229, 0.12);
+    }
+
+    .field textarea { resize: vertical; min-height: 110px; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #6b86ff 0%, #4b77e5 100%);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 13px 32px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      width: 100%;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+
+    .btn:hover { opacity: 0.92; transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+
+    .success-msg {
+      display: none;
+      background: #ecfdf5;
+      border: 1px solid #6ee7b7;
+      border-radius: 12px;
+      padding: 16px 20px;
+      color: #065f46;
+      font-size: 14px;
+      text-align: center;
+      margin-top: 16px;
+    }
+
+    .hours-card {
+      background: var(--primary-light);
+      border: 1px solid #d4dcfa;
+      border-radius: var(--radius);
+      padding: 22px 24px;
+    }
+
+    .hours-card h3 {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: var(--primary);
+    }
+
+    .hours-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      padding: 6px 0;
+      border-bottom: 1px solid #dde3fa;
+    }
+
+    .hours-row:last-child { border-bottom: none; }
+    .hours-row span:last-child { font-weight: 600; }
+
+    footer {
+      text-align: center;
+      padding: 32px 20px;
+      font-size: 12px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+    }
+    /* ===== Dark theme (follows the in-app ?theme= param, or system preference) ===== */
+    html.dark {
+      --primary: #6f97ea;
+      --primary-light: #232a44;
+      --text: #e8eaf0;
+      --muted: #9aa1b5;
+      --border: #2b2e42;
+      --bg: #0f1117;
+      --card: #1a1d27;
+      color-scheme: dark;
+    }
+
+    html.dark .contact-box,
+    html.dark .hours-card { border-color: #2f3a63; }
+    html.dark .hours-row { border-bottom-color: #262c49; }
+
+    html.dark .field input,
+    html.dark .field select,
+    html.dark .field textarea { background: #222636; }
+
+    html.dark .success-msg {
+      background: #0d2b1e;
+      border-color: #1d5c42;
+      color: #a7f3d0;
+    }
+  </style>
+  <script>
+    (function () {
+      var t = new URLSearchParams(location.search).get("theme");
+      var dark = t ? t === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+      if (dark) document.documentElement.classList.add("dark");
+    })();
+  </script>
+</head>
+<body>
+
+<header>
+  <p class="logo">HomeCare237</p>
+  <h1>Contact Us</h1>
+  <p>We're here to help — reach out any way that works for you</p>
+</header>
+
+<div class="container">
+  <p class="intro">Have a question, feedback, or need support? Our team is ready to assist you.</p>
+
+  <!-- Contact channels -->
+  <div class="channels">
+    <a class="channel-card" href="mailto:support@homecare237.com">
+            <h3>Email Support</h3>
+      <p>For general enquiries and account issues</p>
+      <span class="ch-link">support@homecare237.com</span>
+    </a>
+    <a class="channel-card" href="tel:+237600000000">
+            <h3>Phone</h3>
+      <p>Talk to our support team directly</p>
+      <span class="ch-link">+237 6 00 00 00 00</span>
+    </a>
+    <a class="channel-card" href="https://wa.me/237600000000" target="_blank" rel="noopener">
+            <h3>WhatsApp</h3>
+      <p>Chat with us for quick responses</p>
+      <span class="ch-link">Open WhatsApp</span>
+    </a>
+  </div>
+
+  <!-- Contact form -->
+  <div class="form-card">
+    <h2>Send us a message</h2>
+    <p class="subtitle">Fill in the form below and we'll get back to you within 24 hours.</p>
+
+    <form id="contactForm" onsubmit="handleSubmit(event)">
+      <div class="form-row">
+        <div class="field">
+          <label for="name">Full Name *</label>
+          <input type="text" id="name" placeholder="Your full name" required />
+        </div>
+        <div class="field">
+          <label for="email">Email Address *</label>
+          <input type="email" id="email" placeholder="you@example.com" required />
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="subject">Subject *</label>
+        <select id="subject" required>
+          <option value="">Select a topic…</option>
+          <option value="account">Account &amp; Login</option>
+          <option value="appointment">Appointments</option>
+          <option value="doctor">Doctor / Healthcare Provider</option>
+          <option value="payment">Payments &amp; Receipts</option>
+          <option value="privacy">Privacy &amp; Data</option>
+          <option value="bug">Bug Report</option>
+          <option value="feature">Feature Request</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="message">Message *</label>
+        <textarea id="message" placeholder="Describe your issue or question in detail…" required></textarea>
+      </div>
+
+      <button type="submit" class="btn">Send Message</button>
+
+      <div class="success-msg" id="successMsg">
+        Thank you! Your message has been sent. We'll reply within 24 hours.
+      </div>
+    </form>
+  </div>
+
+  <!-- Support hours -->
+  <div class="hours-card">
+    <h3>Support Hours</h3>
+    <div class="hours-row"><span>Monday – Friday</span><span>8:00 AM – 6:00 PM (WAT)</span></div>
+    <div class="hours-row"><span>Saturday</span><span>9:00 AM – 1:00 PM (WAT)</span></div>
+    <div class="hours-row"><span>Sunday &amp; Public Holidays</span><span>Emergency support only</span></div>
+  </div>
+</div>
+
+<footer>
+  &copy; 2026 HomeCare237. All rights reserved. &nbsp;·&nbsp;
+  <a href="privacy-policy.html" style="color:var(--primary);">Privacy Policy</a> &nbsp;·&nbsp;
+  <a href="terms.html" style="color:var(--primary);">Terms &amp; Conditions</a>
+</footer>
+
+<script>
+  function handleSubmit(e) {
+    e.preventDefault();
+    const btn = e.target.querySelector('.btn');
+    btn.textContent = 'Sending…';
+    btn.disabled = true;
+    // Simulate send (replace with real API call)
+    setTimeout(() => {
+      document.getElementById('successMsg').style.display = 'block';
+      e.target.reset();
+      btn.textContent = 'Send Message';
+      btn.disabled = false;
+    }, 1200);
+  }
+</script>
+
+</body>
+</html>

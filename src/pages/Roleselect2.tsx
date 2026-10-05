@@ -2,25 +2,25 @@ import React, { useEffect } from "react";
 import {
   IonContent,
   IonPage,
-  IonButton,
   IonImg,
   IonText,
   IonGrid,
   IonRow,
   IonCol,
-  IonButtons,
-  IonHeader,
-  IonIcon,
-  IonToolbar,
 } from "@ionic/react";
 import { motion, useAnimation } from "framer-motion";
-import FaUserDoctor from "react-icons/fa";
 import { useHistory } from "react-router-dom";
-import "../pages/Page.scss";
 import icon from "./images/icon.png";
-import { chevronBackOutline } from "ionicons/icons";
+import GlassBackButton from "../components/GlassBackButton";
+import RoleTabs from "./RoleTabs";
+import { LANDING_ROUTE } from "../utils/authFlow";
+import { useSettings } from "../context/SettingsContext";
+import "./WelcomePage.css";
+import "./Onboarding.css";
+import "../theme/hc-auth.scss";
 const Roleselect2: React.FC = () => {
   const history = useHistory();
+  const { t } = useSettings();
   const controls = useAnimation();
   const textControls = useAnimation();
   const buttonControls = useAnimation();
@@ -48,19 +48,17 @@ const Roleselect2: React.FC = () => {
 
   return (
     <IonPage>
-      <IonHeader class="ion-no-border">
-        <IonToolbar className="signuptoolbar">
-          <IonButtons>
-            <IonButton routerLink="/landingpage" className="signupback">
-              <IonIcon icon={chevronBackOutline} />
-              Back
-            </IonButton>
-          </IonButtons>
-        </IonToolbar>
-      </IonHeader>
+      {/* Same fixed glass row the auth screens use, so the back control keeps
+          one position and one treatment across the whole funnel. */}
+      <div className="auth-backrow">
+        <GlassBackButton
+          fallbackHref={LANDING_ROUTE}
+          label={t("funnel_back_home")}
+        />
+      </div>
       <IonContent fullscreen className="welcome-content">
-        <div className="background-gradient">
-          {/* Animated circles in background */}
+        {/* <div className="background-gradient">
+        
           <motion.div
             className="circle circle-1"
             initial={{ scale: 0 }}
@@ -74,7 +72,7 @@ const Roleselect2: React.FC = () => {
             animate={{ scale: 1 }}
             transition={{ duration: 1.5, delay: 0.6 }}
           />
-        </div>
+        </div> */}
 
         <IonGrid className="welcome-grid">
           <IonRow className="ion-justify-content-center">
@@ -95,11 +93,12 @@ const Roleselect2: React.FC = () => {
               >
                 <IonText className="welcome-title">
                   <h1>
-                    Welcome to <span>HomeCare237</span>
+                    {t("funnel_welcome_prefix")}{" "}
+                    <span>HomeCare237</span>
                   </h1>
                 </IonText>
                 <IonText className="welcome-subtitle">
-                  <p>Register as</p>
+                  <p>{t("funnel_register_as")}</p>
                 </IonText>
               </motion.div>
 
@@ -113,38 +112,18 @@ const Roleselect2: React.FC = () => {
                 }}
               ></motion.div>
 
-              {/* Buttons with animation */}
+              {/* Buttons with animation: frosted bottom sheet with side-by-side tabs */}
               <motion.div
                 initial={{ opacity: 0, y: 50 }}
                 animate={buttonControls}
-                className="button-group"
+                className="ob-spread"
               >
-                <IonButton
-                  expand="block"
-                  className="signin-button"
-                  onClick={() => history.push("/Patient_signup")}
-                  shape="round"
-                >
-                  Patient
-                </IonButton>
-
-                <div className="separator-with-text">
-                  <div className="line"></div>
-                  <IonText className="separator-text">
-                    <p>Or</p>
-                  </IonText>
-                  <div className="line"></div>
-                </div>
-
-                <IonButton
-                  expand="block"
-                  fill="outline"
-                  className="signup-button"
-                  onClick={() => history.push("/Doctor_signup")}
-                  shape="round"
-                >
-                  Doctor
-                </IonButton>
+                <RoleTabs
+                  leftLabel={t("funnel_patient")}
+                  rightLabel={t("funnel_doctor")}
+                  onLeft={() => history.push("/Patient_signup")}
+                  onRight={() => history.push("/Doctor_signup")}
+                />
               </motion.div>
             </IonCol>
           </IonRow>

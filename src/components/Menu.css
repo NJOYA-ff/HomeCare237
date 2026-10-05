@@ -53,6 +53,25 @@ ion-item.selected {
   --color: var(--ion-color-primary);
 }
 
+/* ===== UNREAD BADGE ===== */
+.menu-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ion-color-success, #2dd36f);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  padding: 0 5px;
+  margin-left: 4px;
+  line-height: 1;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+  flex-shrink: 0;
+}
+
 /* Split pane sizing */
 ion-split-pane {
   --side-width: 200px;
@@ -145,15 +164,6 @@ ion-split-pane {
   color: var(--ion-color-primary);
   font-weight: 600;
   transform: translateY(-4px);
-}
-
-/* Dark mode */
-@media (prefers-color-scheme: dark) {
-  .custom-tab-bar {
-    border-color: var(--ion-color-step-150, #252839);
-    background: var(--ion-item-background, #1a1d27);
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.35), 0 -1px 6px rgba(0, 0, 0, 0.2) !important;
-  }
 }
 
 body.dark .custom-tab-bar {

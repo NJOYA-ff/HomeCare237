@@ -1,5 +1,4 @@
 // PatientProfile.scss
-@use '../../theme/hc-form.scss';
 .toolbar-profile {
   --color: var(--ion-color-dark);
   border-bottom: 1px solid var(--ion-background-color-step-150, #d7d8da);
@@ -110,7 +109,7 @@
   --border-color: #dde1f5;
   --border-width: 1px;
   --border-style: solid;
-  --highlight-color-focused: var(--ion-color-primary, #3b7dd8);
+  --highlight-color-focused: var(--ion-color-primary);
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 12px;
@@ -126,7 +125,7 @@
 
   p {
     font-size: 0.93rem;
-    color: var(--ion-text-color, #1a1a2e);
+    color: var(--ion-text-color, #0f172a);
   }
 }
 
@@ -157,7 +156,7 @@
 }
 
 // Dark mode
-@media (prefers-color-scheme: dark) {
+body.dark {
   .profile-d-item {
     --background: var(--ion-item-background, #1a1d27);
     --border-color: var(--ion-color-step-150, #252839);
@@ -242,7 +241,7 @@ ion-item:active {
 }
 
 // Dark mode support
-@media (prefers-color-scheme: dark) {
+body.dark {
   .profile-content {
     --background: #121212;
   }
@@ -287,7 +286,7 @@ ion-item:active {
   }
 
   .profile-name {
-    color: #191d38;
+    color: var(--ion-text-color);
   }
 
   .profile-avatar {
@@ -295,7 +294,7 @@ ion-item:active {
   }
 
   .profile-meta ion-chip {
-    --background: #eef0ff;
+    --background: rgba(var(--ion-color-primary-rgb), 0.08);
     --color: #4b55e5;
     border: 1px solid #dfe3fb;
     font-weight: 600;
@@ -311,7 +310,7 @@ ion-item:active {
   }
 
   .profile-d-item p {
-    color: #1a1a2e;
+    color: #0f172a;
   }
 
   .profile-edit-input,
@@ -319,7 +318,7 @@ ion-item:active {
   .item-input {
     --background: transparent;
     border-bottom: 1px solid #dde1f5;
-    color: #1a1a2e;
+    color: #0f172a;
   }
 
   .profile-save-btn {
@@ -329,7 +328,7 @@ ion-item:active {
   }
 }
 
-@media (prefers-color-scheme: dark) {
+body.dark {
   .profile-page {
     .profile-content {
       --background: var(--background);
@@ -343,24 +342,24 @@ ion-item:active {
     .profile-details,
     .edit-actions {
       background: var(--background);
-      border: 1px solid #2a2f57;
+      border: 1px solid var(--hc-border);
     }
 
     .profile-name,
     .profile-d-item h3,
     .stat-value {
-      color: #eef0ff;
+      color: var(--ion-text-color);
     }
 
     .profile-d-item p,
     .stat-label {
-      color: #b1b6d5;
+      color: var(--hc-text-muted);
     }
 
     .profile-meta ion-chip {
-      --background: #252b4f;
-      --color: #aeb5ff;
-      border: 1px solid #313968;
+      --background: var(--ion-color-step-150);
+      --color: var(--ion-color-primary-tint);
+      border: 1px solid var(--hc-border);
     }
 
     .profile-edit-input,
@@ -372,7 +371,7 @@ ion-item:active {
     }
 
     .profile-logout-btn {
-      --color: #aeb5ff;
+      --color: var(--ion-color-primary-tint);
       --border-color: #4f588f;
     }
   }

@@ -17,8 +17,8 @@ import {
   IonNote,
   IonListHeader,
   useIonToast,
-  useIonAlert,
 } from "@ionic/react";
+import { useMessageBox } from "../../components/ui/useMessageBox";
 import {
   languageOutline,
   notificationsOutline,
@@ -39,8 +39,9 @@ import {
   disablePin,
 } from "../../utils/BiometricAuthService";
 import PinSetupModal from "../../components/PinSetupModal";
+import PasswordResetModal from "../../components/PasswordResetModal";
+import { aboutMessage } from "../../data/appCredits";
 import { auth } from "../../firebaseconfig";
-import { sendPasswordResetEmail } from "firebase/auth";
 import "../Settings/Settings.scss";
 
 const AdminSettings: React.FC = () => {
@@ -54,7 +55,7 @@ const AdminSettings: React.FC = () => {
   } = useSettings();
 
   const [presentToast] = useIonToast();
-  const [presentAlert] = useIonAlert();
+  const presentMessage = useMessageBox();
 
   // Biometry
   const [bioAvailable, setBioAvailable] = useState(false);
@@ -63,6 +64,9 @@ const AdminSettings: React.FC = () => {
   // PIN modal
   const [pinModalOpen, setPinModalOpen] = useState(false);
   const [pinModalMode, setPinModalMode] = useState<"setup" | "verify">("setup");
+
+  // Password reset modal
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
 
   // Admin-specific prefs
   const [newRegistrationAlert, setNewRegistrationAlert] = useState(
@@ -97,23 +101,24 @@ const AdminSettings: React.FC = () => {
       setPinModalMode("setup");
       setPinModalOpen(true);
     } else {
-      presentAlert({
+      presentMessage({
         header: t("disablePin"),
         message: "Are you sure you want to remove your PIN?",
-        buttons: [
-          { text: t("cancel"), role: "cancel" },
-          {
-            text: "Remove", role: "destructive",
-            handler: async () => {
+        /* Deleting the PIN is destructive, so the confirm action carries the
+           danger colour and Cancel stays quiet — backing out is the safe
+           default and red would imply something is about to be lost. */
+        action: {
+          text: "Remove", color: "danger",
+          handler: async () => {
               await disablePin();
               setPinEnabledSetting(false);
               presentToast({ message: "PIN disabled", duration: 2000, color: "medium", position: "top" });
-            },
           },
-        ],
-      });
+        },
+        cancel: { text: t("cancel") },
+        });
     }
-  }, [t, setPinEnabledSetting, presentAlert, presentToast]);
+  }, [t, setPinEnabledSetting, presentMessage, presentToast]);
 
   const handlePinSuccess = useCallback(() => {
     setPinModalOpen(false);
@@ -127,33 +132,20 @@ const AdminSettings: React.FC = () => {
       presentToast({ message: "No account email found.", duration: 3000, color: "warning", position: "top" });
       return;
     }
-    presentAlert({
-      header: t("changePassword"),
-      message: `A password reset link will be sent to:\n${email}`,
-      buttons: [
-        { text: t("cancel"), role: "cancel" },
-        {
-          text: "Send",
-          handler: async () => {
-            try {
-              await sendPasswordResetEmail(auth, email);
-              presentToast({ message: "Password reset email sent.", duration: 3500, color: "success", position: "top" });
-            } catch (err: any) {
-              presentToast({ message: err?.message || "Failed to send reset email.", duration: 3500, color: "danger", position: "top" });
-            }
-          },
-        },
-      ],
-    });
-  }, [presentAlert, presentToast, t]);
+    setPasswordModalOpen(true);
+  }, [presentToast]);
 
   const handleAbout = useCallback(() => {
-    presentAlert({
+    presentMessage({
       header: "HomeCare237",
-      message: "Version 1.0.0\n\nConnecting patients with healthcare professionals across Cameroon.\n\n© 2026 HomeCare237. All rights reserved.",
-      buttons: ["OK"],
-    });
-  }, [presentAlert]);
+      message: aboutMessage(
+        "Connecting patients with healthcare professionals across Cameroon.",
+      ),
+      /* Informational, not a failure — info tone keeps red for real errors. */
+      tone: "info",
+      action: { text: "OK" },
+      });
+  }, [presentMessage]);
 
   return (
     <IonPage>
@@ -304,6 +296,13 @@ const AdminSettings: React.FC = () => {
       </IonContent>
 
       <PinSetupModal isOpen={pinModalOpen} mode={pinModalMode} onSuccess={handlePinSuccess} onDismiss={() => setPinModalOpen(false)} />
+
+      {/* Reset Password modal */}
+      <PasswordResetModal
+        isOpen={passwordModalOpen}
+        email={auth.currentUser?.email ?? null}
+        onDidDismiss={() => setPasswordModalOpen(false)}
+      />
     </IonPage>
   );
 };

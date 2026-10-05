@@ -1,0 +1,166 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.role == 'admin' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isDoctor() {
+      return isAuthenticated() && (
+        request.auth.token.role == 'doctor' ||
+        exists(/databases/$(database)/documents/doctors/$(request.auth.uid))
+      );
+    }
+
+    // Patients collection:
+    // - Authenticated users can create their own profile
+    // - Patients can read and update their own document
+    // - Doctors and Admins can view patient profiles for care & administration
+    match /patients/{patientId} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(patientId) || isAdmin();
+      allow update: if isOwner(patientId) || isDoctor() || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Doctors collection:
+    // - Anyone authenticated can read verified doctor profiles (for booking/consults)
+    // - Doctors can update their own profile and availability
+    // - Admins can verify, enable, disable, or delete doctor accounts
+    match /doctors/{doctorId} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(doctorId) || isAdmin();
+      allow update: if isOwner(doctorId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Admins collection:
+    // - Only accessible by verified admins
+    match /admins/{adminId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Appointments collection:
+    // - Patients and Doctors involved in the appointment can read/update
+    // - Patients can create bookings
+    // - Admins can read/manage all appointments
+    match /appointments/{appointmentId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        resource.data.patientId == request.auth.uid ||
+        resource.data.doctorId == request.auth.uid ||
+        resource.data.doctorUserId == request.auth.uid
+      );
+      allow create: if isAuthenticated() && (
+        request.resource.data.patientId == request.auth.uid ||
+        isAdmin()
+      );
+      allow update: if isAuthenticated() && (
+        isAdmin() ||
+        resource.data.patientId == request.auth.uid ||
+        resource.data.doctorId == request.auth.uid ||
+        resource.data.doctorUserId == request.auth.uid
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Diagnoses & Prescriptions collection:
+    // - Highly sensitive medical data
+    // - Patient can read their own diagnoses
+    // - Doctor can create and update diagnoses for their patients
+    // - Admins have clinical oversight
+    match /diagnoses/{diagnosisId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        resource.data.patientId == request.auth.uid ||
+        resource.data.doctorId == request.auth.uid
+      );
+      allow create: if isAuthenticated() && (isDoctor() || isAdmin());
+      allow update: if isAuthenticated() && (
+        isAdmin() ||
+        resource.data.doctorId == request.auth.uid
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Notifications:
+    // - Users can read and update (mark as read) their own notifications
+    // - Any authenticated user or Cloud Function can create a notification for another user
+    match /notifications/{notificationId} {
+      allow read, update, delete: if isAuthenticated() && (
+        resource.data.recipientId == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if isAuthenticated();
+    }
+
+    // Consultations & Messages (real-time chat):
+    // - Messages between doctor and patient
+    match /consultations/{consultationId} {
+      allow read, write: if isAuthenticated();
+
+      match /messages/{messageId} {
+        allow read, write: if isAuthenticated();
+      }
+    }
+
+    match /messages/{messageId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Medications tracker:
+    match /medications/{medicationId} {
+      allow read, write: if isAuthenticated() && (
+        resource.data.patientId == request.auth.uid ||
+        request.resource.data.patientId == request.auth.uid ||
+        isDoctor() ||
+        isAdmin()
+      );
+    }
+
+    // Patient Vitals:
+    match /vitals/{vitalId} {
+      allow read, write: if isAuthenticated() && (
+        resource.data.patientId == request.auth.uid ||
+        request.resource.data.patientId == request.auth.uid ||
+        isDoctor() ||
+        isAdmin()
+      );
+    }
+
+    // Call logs:
+    match /callLogs/{logId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Health units directory:
+    match /health_units/{unitId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Articles / Education:
+    match /articles/{articleId} {
+      allow read: if true;
+      allow write: if isAdmin() || isDoctor();
+    }
+
+    // FCM tokens:
+    match /fcmTokens/{tokenId} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+}

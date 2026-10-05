@@ -1,3 +1,4 @@
+import LoadingHelix from "../../components/LoadingHelix";
 import React, { useState, useEffect, useRef } from "react";
 import {
   IonContent,
@@ -18,7 +19,6 @@ import {
   IonIcon,
   IonButtons,
   IonButton,
-  IonSpinner,
   IonChip,
   IonBadge,
   IonGrid,
@@ -54,6 +54,7 @@ import {
   mapOutline,
 } from "ionicons/icons";
 import { motion, AnimatePresence } from "framer-motion";
+import { EmptyState } from "../../components/ui";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -249,7 +250,7 @@ const Health_units_d: React.FC = () => {
       <IonHeader className="health-units-header">
         <IonToolbar className="health-units-toolbar">
           <IonButtons slot="start">
-            <IonBackButton defaultHref="/doctor/dashboard" />
+            <IonBackButton defaultHref="/doc/dashboard" />
           </IonButtons>
           <IonTitle>Health Facilities</IonTitle>
           <IonButtons slot="end">
@@ -382,7 +383,7 @@ const Health_units_d: React.FC = () => {
         {/* Loading */}
         {isLoading && (
           <div className="loading-container">
-            <IonSpinner name="crescent" color="primary" />
+            <LoadingHelix />
             <p>Finding health facilities near you...</p>
           </div>
         )}
@@ -390,17 +391,19 @@ const Health_units_d: React.FC = () => {
         {/* Empty state */}
         <AnimatePresence>
           {!isLoading && filteredUnits.length === 0 && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="no-results">
-              <IonCard className="empty-state-card">
-                <IonCardContent>
-                  <div className="empty-state-content">
-                    <IonIcon icon={medical} className="empty-state-icon" />
-                    <h3>No Facilities Found</h3>
-                    <p>Try adjusting your filters or search term</p>
-                    <IonButton fill="clear" onClick={clearFilters}>Clear All Filters</IonButton>
-                  </div>
-                </IonCardContent>
-              </IonCard>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="no-results"
+            >
+              <EmptyState
+                icon={medical}
+                title="No facilities found"
+                description="No health facilities match your search or filters. Try adjusting them or searching a different area."
+                actionLabel="Clear all filters"
+                onAction={clearFilters}
+              />
             </motion.div>
           )}
         </AnimatePresence>
@@ -419,7 +422,16 @@ const Health_units_d: React.FC = () => {
                   layout
                 >
                   <IonCard className={`health-unit-card ${expandedCard === unit.id ? "expanded" : ""}`}>
-                    <div className="card-image-container" style={{ backgroundImage: `url(${unit.image || "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80"})` }}>
+                    <div className="card-image-container">
+                      <img
+                        src={unit.image || "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80"}
+                        alt={unit.name}
+                        className="card-image"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src =
+                            "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80";
+                        }
+                    }  />
                       <div className="card-overlay">
                         <IonBadge className="type-badge" style={{ backgroundColor: getTypeColor(unit.type) }}>
                           <IonIcon icon={getTypeIcon(unit.type)} />

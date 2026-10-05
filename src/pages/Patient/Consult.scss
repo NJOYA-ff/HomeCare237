@@ -216,7 +216,7 @@
 }
 
 .consult-page.chat-open .consult-content::part(background) {
-  background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%236b86ff' fill-opacity='0.06'%3E%3Cpath d='M50 50c0-5.523 4.477-10 10-10s10 4.477 10 10-4.477 10-10 10c0 5.523-4.477 10-10 10s-10-4.477-10-10 4.477-10 10-10zM10 10c0-5.523 4.477-10 10-10s10 4.477 10 10-4.477 10-10 10c0 5.523-4.477 10-10 10S0 25.523 0 20s4.477-10 10-10zm10 8c4.418 0 8-3.582 8-8s-3.582-8-8-8-8 3.582-8 8 3.582 8 8 8zm40 40c4.418 0 8-3.582 8-8s-3.582-8-8-8-8 3.582-8 8 3.582 8 8 8z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%232563eb' fill-opacity='0.06'%3E%3Cpath d='M50 50c0-5.523 4.477-10 10-10s10 4.477 10 10-4.477 10-10 10c0 5.523-4.477 10-10 10s-10-4.477-10-10 4.477-10 10-10zM10 10c0-5.523 4.477-10 10-10s10 4.477 10 10-4.477 10-10 10c0 5.523-4.477 10-10 10S0 25.523 0 20s4.477-10 10-10zm10 8c4.418 0 8-3.582 8-8s-3.582-8-8-8-8 3.582-8 8 3.582 8 8 8zm40 40c4.418 0 8-3.582 8-8s-3.582-8-8-8-8 3.582-8 8 3.582 8 8 8z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
 }
 
 .message {
@@ -558,7 +558,7 @@
 }
 
 // ── Dark mode ─────────────────────────────────────────────────
-@media (prefers-color-scheme: dark) {
+body.dark {
   .consult-content { --background: var(--ion-background-color); }
   .wa-doctor-list { background: var(--ion-background-color); }
   .wa-doctor-item { border-bottom-color: var(--ion-color-step-100); }
@@ -575,4 +575,21 @@ body.dark {
   .wa-doctor-list { background: var(--ion-background-color); }
   .message-input-container1 { --background: var(--ion-toolbar-background); }
   .whatsapp-recording-bar { background: var(--ion-item-background); }
+}
+
+// ── Admin Support entry ────────────────────────────────────
+.admin-support-item {
+  --background: rgba(var(--ion-color-tertiary-rgb, 90, 200, 250), 0.06);
+}
+
+// ── Section label between admin and doctors ────────────────
+.wa-section-label {
+  padding: 6px 16px 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--ion-color-medium);
+  background: var(--ion-background-color);
+  border-bottom: 1px solid var(--ion-color-step-100);
 }

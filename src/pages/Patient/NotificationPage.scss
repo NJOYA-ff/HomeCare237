@@ -1,16 +1,16 @@
 .notifications-page {
   .notifications-toolbar {
     --background: transparent;
-    --color: #191d38;
+    --color: var(--ion-text-color);
   }
 
   .notifications-title {
     font-weight: 700;
-    color: #191d38;
+    color: var(--ion-text-color);
   }
 
   .read-all-btn {
-    --color: #5f8cef;
+    --color: var(--ion-color-primary);
     font-weight: 600;
     text-transform: none;
   }
@@ -40,8 +40,8 @@
   }
 
   .notification-item.unread {
-    --background: #eef0ff;
-    border-color: #d9defc;
+    --background: rgba(var(--ion-color-primary-rgb), 0.08);
+    border-color: rgba(var(--ion-color-primary-rgb), 0.2);
   }
 
   .notification-item.read {
@@ -77,32 +77,32 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
+body.dark {
   .notifications-page {
     .notifications-content {
       --background: var(--background);
     }
 
     .notifications-toolbar {
-      --color: #f0f2ff;
+      --color: var(--ion-text-color);
     }
 
     .notifications-title {
-      color: #f0f2ff;
+      color: var(--ion-text-color);
     }
 
     .read-all-btn {
-      --color: #aeb5ff;
+      --color: var(--ion-color-primary-tint);
     }
 
     .notification-item,
     .empty-notification-state {
-      border: 1px solid #2a2f57;
+      border: 1px solid var(--hc-border);
     }
 
     .notification-item.unread {
-      --background: #252b4f;
-      border-color: #313968;
+      --background: var(--ion-color-step-150);
+      border-color: var(--hc-border);
     }
 
     .notification-item.read,
@@ -112,12 +112,12 @@
 
     .notification-item h2,
     .empty-notification-state h2 {
-      color: #eef0ff;
+      color: var(--ion-text-color);
     }
 
     .notification-item p,
     .empty-notification-state p {
-      color: #b1b6d5;
+      color: var(--hc-text-muted);
     }
 
     .notification-time,

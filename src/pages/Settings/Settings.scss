@@ -40,7 +40,25 @@
 .settings-icon {
   font-size: 18px !important;
   color: var(--ion-color-primary);
-  margin-right: 4px;
+  margin-right: 12px;
+}
+
+/* Two-line item labels (title + description) used by the App section */
+.settings-list {
+  ion-label {
+    h3 {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--ion-text-color);
+    }
+
+    .settings-desc {
+      font-size: 12px;
+      color: var(--ion-color-medium);
+      margin-top: 2px;
+      white-space: normal;
+    }
+  }
 }
 
 .settings-select {
@@ -54,7 +72,7 @@
 }
 
 /* Dark mode adjustments */
-@media (prefers-color-scheme: dark) {
+body.dark {
   .settings-list {
     border-color: var(--ion-color-step-150, #252839);
 

@@ -1,5 +1,37 @@
-// DoctorDashboard.scss
-@use '../../theme/hc-form.scss';
+
+// Dashboard analytics
+.doc-dashboard-analytics {
+  padding: 16px;
+  color: var(--ion-text-color);
+
+  h2 { margin: 0 0 12px; font-size: 1.3rem; }
+  .analytics-note { color: var(--ion-color-medium); font-size: .85rem; }
+  .quick-actions, .earnings-cards, .request-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+  .earnings-cards { margin: 20px 0; }
+  .earnings-card {
+    flex: 1 1 180px;
+    padding: 18px;
+    border: 1px solid var(--ion-color-light-shade);
+    border-radius: 16px;
+    background: var(--ion-card-background, var(--ion-background-color));
+    strong { display: block; font-size: 1.35rem; margin-top: 8px; }
+  }
+  .earnings-chart { height: 260px; width: 100%; min-width: 0; }
+  .analytics-table {
+    width: 100%; border-collapse: collapse; margin: 12px 0 24px;
+    th, td { padding: 8px; text-align: left; border-bottom: 1px solid var(--ion-color-light-shade); }
+  }
+  .request-card {
+    border: 1px solid var(--ion-color-light-shade);
+    border-radius: 12px; padding: 16px; margin: 12px 0;
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
+    h3 { margin: 0; font-size: 1rem; }
+    p { margin: 6px 0; }
+  }
+}
+
+// Shared doctor dashboard and profile styles
+
 * {
   text-transform: none;
 }
@@ -41,7 +73,7 @@
   position: relative;
 
   ion-toolbar {
-    border-bottom: 1px solid var(--ion-background-color-step-150, #d7d8da);
+    border-bottom: 1px solid var(--ion-background-color-step-150, var(--ion-color-light-shade));
 
     &:first-of-type {
       padding-top: 5px;
@@ -56,7 +88,7 @@
   .header-avatar {
     width: 36px;
     height: 36px;
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(var(--ion-color-primary-contrast-rgb), 0.2);
     @include flex-center;
     border-radius: 50%;
 
@@ -85,30 +117,28 @@
 
 // Stats Grid - Fixed overlapping issue
 .stats-grid {
-  padding: 16px;
+  padding: 10px;
   position: relative;
   z-index: 5;
   margin-top: 0;
 
   ion-row {
-    margin: -8px;
+    margin: -6px;
   }
 
   ion-col {
-    padding: 8px;
+    padding: 6px;
   }
 
   .stats-card {
-    border-radius: 16px;
+    border-radius: 14px;
     margin: 0;
     overflow: visible;
     height: 100%;
-    
-    
 
     ion-card-content {
       text-align: center;
-      padding: 20px 16px;
+      padding: 12px 10px;
       height: 100%;
       display: flex;
       flex-direction: column;
@@ -116,13 +146,13 @@
     }
 
     .stat-icon-container {
-      width: 60px;
-      height: 60px;
+      width: 42px;
+      height: 42px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin: 0 auto 16px;
+      margin: 0 auto 10px;
 
       // Different colors for different stats
       &:nth-child(1) {
@@ -147,23 +177,118 @@
     }
 
     ion-icon {
-      font-size: 24px;
+      font-size: 20px;
     }
 
     ion-card-title {
-      font-size: 1.8rem;
+      font-size: 1.35rem;
       font-weight: 700;
-      margin: 0 0 8px;
+      margin: 0 0 4px;
       color: var(--ion-color-dark);
       line-height: 1.2;
     }
 
     ion-note {
-      font-size: 0.9rem;
+      font-size: 0.78rem;
       font-weight: 500;
       color: var(--ion-color-medium);
     }
   }
+}
+
+// Today's Agenda strip
+.today-agenda {
+  margin: 0 12px 8px;
+  background: var(--ion-card-background);
+  border: 1px solid var(--ion-color-step-100, var(--ion-color-light-shade));
+  border-radius: 14px;
+  padding: 14px 16px 10px;
+
+  .agenda-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+
+    h2 {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+  }
+
+  .agenda-empty {
+    margin: 6px 0 2px;
+    font-size: 0.85rem;
+    color: var(--ion-color-medium);
+  }
+
+  .agenda-list {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .agenda-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 2px;
+    border-bottom: 1px solid var(--ion-color-step-100, var(--ion-color-light-shade));
+    cursor: pointer;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    .agenda-time {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--ion-color-primary);
+      min-width: 64px;
+    }
+
+    .agenda-main {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+
+      .agenda-patient {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--ion-text-color);
+      }
+
+      .agenda-service {
+        font-size: 0.75rem;
+        color: var(--ion-color-medium);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
+    ion-chip {
+      height: 22px;
+      font-size: 0.7rem;
+      margin: 0;
+    }
+  }
+}
+
+body.dark .today-agenda {
+  background: var(--ion-item-background);
+  border-color: var(--ion-color-step-150, var(--ion-color-light-shade));
+
+  .agenda-row { border-bottom-color: var(--ion-color-step-150, var(--ion-color-light-shade)); }
+}
+
+body.dark {
+  .today-agenda {
+    background: var(--ion-item-background);
+    border-color: var(--ion-color-step-150, var(--ion-color-light-shade));
+  }
+  .today-agenda .agenda-row { border-bottom-color: var(--ion-color-step-150, var(--ion-color-light-shade)); }
 }
 
 // Appointments Section
@@ -282,23 +407,6 @@
     }
   }
 
-  .empty-state {
-    text-align: center;
-    padding: 40px 20px;
-
-    ion-icon {
-      font-size: 48px;
-      margin-bottom: 16px;
-      opacity: 0.5;
-      color: var(--ion-color-medium);
-    }
-
-    p {
-      margin: 0;
-      opacity: 0.7;
-      color: var(--ion-color-medium);
-    }
-  }
 }
 
 // Patients Section - Fixed element placement
@@ -550,12 +658,9 @@ ion-modal {
   height: 50vh;
   padding: 20px;
 
-  .loading-spinner {
-    width: 48px;
-    height: 48px;
-    border: 4px solid rgba(var(--ion-color-primary-rgb), 0.2);
-    border-top-color: var(--ion-color-primary);
-    border-radius: 50%;
+  l-helix,
+  .loading-helix {
+    display: inline-flex;
     margin-bottom: 16px;
   }
 
@@ -569,6 +674,46 @@ ion-modal {
     margin: 0;
     color: var(--ion-color-medium);
     text-align: center;
+  }
+}
+
+// Available Slots Modal
+#slots-modal {
+  --background: var(--ion-background-color, #fff);
+  --border-radius: 16px 16px 0 0;
+  --backdrop-opacity: 0.5;
+  
+  ion-toolbar {
+    --background: var(--ion-color-light);
+    --border-color: var(--ion-color-light-shade);
+  }
+  
+  .slot-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .slot-chips ion-chip {
+    --background: var(--ion-color-primary);
+    --color: var(--ion-color-primary-contrast);
+    font-weight: 600;
+    font-size: 0.8125rem;
+    height: 32px;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+  }
+
+  .slot-chips ion-chip:active {
+    transform: scale(0.95);
+  }
+
+  .slot-chips ion-chip ion-icon {
+    font-size: 16px;
+    margin-left: 6px;
+    cursor: pointer;
+    pointer-events: auto;
   }
 }
 
@@ -640,7 +785,7 @@ ion-modal {
 
     .stats-card {
       ion-card-title {
-        font-size: 1.5rem;
+        font-size: 1.15rem;
       }
     }
   }
@@ -753,7 +898,7 @@ ion-modal {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(var(--ion-color-dark-rgb), 0.5);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -837,11 +982,11 @@ ion-modal {
   --padding-top: 8px;
   --padding-bottom: 8px;
   --min-height: 62px;
-  --background: #ffffff;
-  --border-color: #dde1f5;
+  --background: var(--ion-item-background);
+  --border-color: var(--ion-color-light-shade);
   --border-width: 1px;
   --border-style: solid;
-  --highlight-color-focused: var(--ion-color-primary, #3b7dd8);
+  --highlight-color-focused: var(--ion-color-primary);
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 12px;
@@ -852,13 +997,13 @@ ion-modal {
       font-weight: 600;
       letter-spacing: 0.03em;
       text-transform: uppercase;
-      color: var(--ion-color-medium, #92949c);
+      color: var(--ion-color-medium);
       margin-bottom: 2px;
     }
 
     p {
       font-size: 0.93rem;
-      color: var(--ion-text-color, #1a1a2e);
+      color: var(--ion-text-color);
       margin-top: 0;
       line-height: 1.4;
     }
@@ -869,8 +1014,8 @@ ion-modal {
   --padding-start: 0;
   --padding-end: 0;
   font-size: 0.93rem;
-  color: var(--ion-text-color, #1a1a2e);
-  border-bottom: 1px solid #dde1f5;
+  color: var(--ion-text-color);
+  border-bottom: 1px solid var(--ion-color-light-shade);
   margin: 6px 0;
   width: 100%;
 }
@@ -879,8 +1024,8 @@ ion-modal {
   --padding-start: 0;
   --padding-end: 0;
   font-size: 0.93rem;
-  color: var(--ion-text-color, #1a1a2e);
-  border-bottom: 1px solid #dde1f5;
+  color: var(--ion-text-color);
+  border-bottom: 1px solid var(--ion-color-light-shade);
   margin: 6px 0;
   width: 100%;
 }
@@ -893,46 +1038,46 @@ ion-modal {
   --padding-start: 0;
   --padding-end: 0;
   font-size: 0.93rem;
-  color: var(--ion-text-color, #1a1a2e);
-  border-bottom: 1px solid #dde1f5;
+  color: var(--ion-text-color);
+  border-bottom: 1px solid var(--ion-color-light-shade);
   margin: 6px 0;
   width: 100%;
 }
 
 // Dark mode for profile inputs
-@media (prefers-color-scheme: dark) {
+body.dark {
   .profile-d-item ion-item {
-    --background: var(--ion-item-background, #1a1d27);
-    --border-color: var(--ion-color-step-150, #252839);
+    --background: var(--ion-item-background);
+    --border-color: var(--ion-color-step-150, var(--ion-color-light-shade));
 
     ion-label {
       h3 { color: var(--ion-color-medium); }
-      p  { color: var(--ion-text-color, #e8eaf0); }
+      p  { color: var(--ion-text-color); }
     }
   }
   .profile-edit-input,
   .profile-edit-textarea,
   .language-input {
-    color: var(--ion-text-color, #e8eaf0);
-    border-bottom-color: var(--ion-color-step-150, #252839);
+    color: var(--ion-text-color);
+    border-bottom-color: var(--ion-color-step-150, var(--ion-color-light-shade));
   }
 }
 
 body.dark {
   .profile-d-item ion-item {
-    --background: var(--ion-item-background, #1a1d27);
-    --border-color: var(--ion-color-step-150, #252839);
+    --background: var(--ion-item-background);
+    --border-color: var(--ion-color-step-150, var(--ion-color-light-shade));
 
     ion-label {
       h3 { color: var(--ion-color-medium); }
-      p  { color: var(--ion-text-color, #e8eaf0); }
+      p  { color: var(--ion-text-color); }
     }
   }
   .profile-edit-input,
   .profile-edit-textarea,
   .language-input {
-    color: var(--ion-text-color, #e8eaf0);
-    border-bottom-color: var(--ion-color-step-150, #252839);
+    color: var(--ion-text-color);
+    border-bottom-color: var(--ion-color-step-150, var(--ion-color-light-shade));
   }
 }
 
@@ -1107,11 +1252,11 @@ body.dark {
 }
 
 // ===== DARK MODE =====
-@media (prefers-color-scheme: dark) {
+body.dark {
   .profile-header,
   .profile-stats,
   .profile-details {
-    background: var(--ion-item-background, #1a1d27);
+    background: var(--ion-item-background);
   }
   .profile-name { color: var(--ion-text-color); }
   .stat-value { color: var(--ion-text-color); }
@@ -1121,8 +1266,1070 @@ body.dark {
   .profile-header,
   .profile-stats,
   .profile-details {
-    background: var(--ion-item-background, #1a1d27);
+    background: var(--ion-item-background);
   }
   .profile-name { color: var(--ion-text-color); }
   .stat-value { color: var(--ion-text-color); }
+}
+
+// ===== DOCTOR HERO BANNER =====
+// Use the Ionic primary color and its contrast for the banner.
+.doc-hero-banner {
+  position: relative;
+  // margin: 12px 16px 4px;
+  border-radius: 24px;
+  background: var(--ion-color-primary);
+  padding: 20px 20px 16px;
+  overflow: hidden;
+}
+
+// Decorative blobs
+.doc-hero-blob {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.15;
+  pointer-events: none;
+}
+.doc-hero-blob--1 {
+  width: 160px;
+  height: 160px;
+  // background: var(--ion-color-primary-contrast);
+  top: -50px;
+  right: -40px;
+}
+.doc-hero-blob--2 {
+  width: 100px;
+  height: 100px;
+  // background: var(--ion-color-primary-contrast);
+  bottom: -30px;
+  left: 30px;
+}
+
+// Top row
+.doc-hero-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.doc-hero-greeting {
+  margin: 0 0 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(var(--ion-color-primary-contrast-rgb), 0.75);
+  letter-spacing: 0.04em;
+}
+
+.doc-hero-name {
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--ion-color-primary-contrast);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.doc-hero-spec {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(var(--ion-color-primary-contrast-rgb), 0.80);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.doc-hero-spec-icon {
+  font-size: 13px;
+}
+
+// Avatar circle
+.doc-hero-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+.doc-hero-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  background: rgba(var(--ion-color-primary-contrast-rgb), 0.18);
+  border: 2px solid rgba(var(--ion-color-primary-contrast-rgb), 0.30);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  backdrop-filter: blur(6px);
+}
+.doc-hero-avatar-icon {
+  font-size: 28px;
+  color: var(--ion-color-primary-contrast);
+}
+.doc-hero-avail-dot {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--ion-color-success);
+  border: 2px solid var(--ion-color-primary);
+}
+
+// Stats strip
+.doc-hero-stats {
+  display: flex;
+  align-items: center;
+  background: rgba(var(--ion-color-primary-contrast-rgb), 0.13);
+  border: 1px solid rgba(var(--ion-color-primary-contrast-rgb), 0.18);
+  border-radius: 16px;
+  padding: 12px 0;
+  backdrop-filter: blur(4px);
+}
+.doc-hero-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.doc-hero-stat-val {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--ion-color-primary-contrast);
+  line-height: 1;
+}
+.doc-hero-stat-lbl {
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(var(--ion-color-primary-contrast-rgb), 0.65);
+  text-align: center;
+}
+.doc-hero-stat-divider {
+  width: 1px;
+  height: 32px;
+  background: rgba(var(--ion-color-primary-contrast-rgb), 0.20);
+  flex-shrink: 0;
+}
+
+// Profile-completion nudge inside banner
+.doc-hero-nudge {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(var(--ion-color-primary-contrast-rgb), 0.16);
+  border: 1px solid rgba(var(--ion-color-primary-contrast-rgb), 0.25);
+  border-radius: 12px;
+  padding: 10px 10px 10px 12px;
+}
+.doc-hero-nudge-icon {
+  font-size: 18px;
+  color: rgba(var(--ion-color-primary-contrast-rgb), 0.90);
+  flex-shrink: 0;
+}
+.doc-hero-nudge-text {
+  flex: 1;
+  margin: 0;
+  font-size: 11px;
+  color: rgba(var(--ion-color-primary-contrast-rgb), 0.88);
+  line-height: 1.4;
+}
+.doc-hero-nudge-btn {
+  --background: rgba(var(--ion-color-primary-contrast-rgb), 0.92);
+  --color: var(--ion-color-primary);
+  --border-radius: 8px;
+  --padding-start: 10px;
+  --padding-end: 10px;
+  font-weight: 700;
+  font-size: 11px;
+  flex-shrink: 0;
+  height: 30px;
+}
+.doc-hero-nudge-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: rgba(var(--ion-color-primary-contrast-rgb), 0.55);
+  font-size: 20px;
+  line-height: 1;
+  padding: 0 2px;
+  flex-shrink: 0;
+  &:hover { color: var(--ion-color-primary-contrast); }
+}
+
+// Dashboard layout inherits the application Ionic theme.
+.doctor-dashboard-page {
+  color: var(--ion-text-color);
+  background: var(--ion-background-color);
+
+  &.dashboard-content-p, .dashboard-content-p {
+    --background: var(--ion-background-color);
+    --color: var(--ion-text-color);
+    --padding-top: 0;
+    --padding-bottom: 0;
+    --padding-start: 0;
+    --padding-end: 0;
+  }
+
+  .doctor-workspace {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 1440px;
+    min-width: 0;
+    margin: 0 auto;
+    padding: 32px max(28px, env(safe-area-inset-right)) max(40px, env(safe-area-inset-bottom)) max(28px, env(safe-area-inset-left));
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    font-family: var(--ion-font-family, system-ui, sans-serif);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+
+    *, *::before, *::after { box-sizing: border-box; }
+    > *, ion-label { min-width: 0; }
+    ion-button {
+      --border-radius: 10px;
+      --box-shadow: none;
+      min-height: 44px;
+      max-width: 100%;
+      margin: 0;
+      font-weight: 600;
+      letter-spacing: 0;
+      text-transform: none;
+      white-space: normal;
+    }
+    ion-button:not([color]) {
+      --background: var(--ion-color-primary);
+      --color: var(--ion-color-primary-contrast);
+    }
+    ion-button[fill='clear']:not([color]), ion-button[fill='outline']:not([color]) {
+      --background: transparent;
+      --color: var(--ion-color-primary);
+      --border-color: var(--ion-color-step-150, var(--ion-color-light-shade));
+    }
+    ion-icon { flex-shrink: 0; }
+    ion-text[color='dark'] { color: var(--ion-text-color) !important; }
+    ion-text[color='medium'] { color: var(--ion-color-medium) !important; }
+    ion-chip { max-width: 100%; height: auto; min-height: 26px; white-space: normal; }
+    .animated-card, .animated-list, .animated-item { animation: none; opacity: 1; }
+  }
+
+  .workspace-welcome {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 28px;
+    padding: 30px;
+    border-radius: 10px;
+    background: linear-gradient(115deg, rgba(var(--ion-color-primary-rgb), 0.12), transparent 75%), var(--ion-card-background, var(--ion-background-color));
+    > div { min-width: 0; }
+    .workspace-eyebrow {
+      margin: 0 0 12px;
+      color: var(--ion-color-medium);
+      font-size: 0.6875rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 0;
+      color: var(--ion-text-color);
+      font-size: clamp(1.625rem, 2.8vw, 2.375rem);
+      font-weight: 700;
+      line-height: 1.25;
+      letter-spacing: -0.035em;
+      text-wrap: balance;
+    }
+    .workspace-subtitle { max-width: 52ch; margin: 12px 0 0; color: var(--ion-color-medium); line-height: 1.65; }
+    .workspace-specialty {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      max-width: 100%;
+      margin-top: 16px;
+      padding: 6px 12px;
+      border: 1px solid var(--ion-color-step-150, var(--ion-color-light-shade));
+      border-radius: 20px;
+      background: var(--ion-card-background, var(--ion-background-color));
+      color: var(--ion-text-color);
+      font-size: 0.75rem;
+      font-weight: 600;
+      ion-icon { color: var(--ion-color-primary); }
+    }
+  }
+  .workspace-date {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+    padding: 16px;
+    border: 1px solid var(--ion-color-step-150, var(--ion-color-light-shade));
+    border-radius: 14px;
+    background: var(--ion-card-background, var(--ion-background-color));
+    ion-icon { padding: 12px; border-radius: 12px; background: rgba(var(--ion-color-primary-rgb), 0.12); color: var(--ion-color-primary); font-size: 1.375rem; }
+    span, strong { display: block; }
+    span { margin-bottom: 4px; color: var(--ion-color-medium); font-size: 0.75rem; }
+    strong { color: var(--ion-text-color); font-size: 0.875rem; font-weight: 600; }
+  }
+  .workspace-profile-nudge {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    border: 1px solid var(--ion-color-step-150, var(--ion-color-light-shade));
+    border-inline-start: 3px solid var(--ion-color-primary);
+    border-radius: 12px;
+    background: rgba(var(--ion-color-primary-rgb), 0.12);
+    > ion-icon { color: var(--ion-color-primary); font-size: 1.25rem; }
+    p { flex: 1; margin: 0; font-size: 0.8125rem; }
+  }
+
+  .workspace-metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+
+    ion-button.metric-card {
+      --metric-color: var(--ion-color-primary);
+      --metric-soft: rgba(var(--ion-color-primary-rgb), 0.12);
+      --background: var(--ion-card-background, var(--ion-background-color));
+      --background-hover: var(--ion-color-light);
+      --background-activated: var(--ion-color-light);
+      --color: var(--ion-text-color);
+      --border-radius: 16px;
+      --border-width: 1px;
+      --border-style: solid;
+      --border-color: var(--ion-color-step-150, var(--ion-color-light-shade));
+      --padding-start: 20px;
+      --padding-end: 20px;
+      --padding-top: 22px;
+      --padding-bottom: 22px;
+      display: block;
+      width: 100%;
+      height: auto;
+      min-width: 0;
+      min-height: 146px;
+      margin: 0;
+      border-radius: 16px;
+      background: transparent;
+      box-shadow: var(--ion-card-box-shadow, none);
+      text-align: start;
+      transform: none;
+      transition: box-shadow 160ms ease;
+      &::part(native) { height: 100%; }
+      &.metric-blue { --metric-color: var(--ion-color-secondary); --metric-soft: rgba(var(--ion-color-secondary-rgb), 0.12); }
+      &.metric-amber { --metric-color: var(--ion-color-warning); --metric-soft: rgba(var(--ion-color-warning-rgb), 0.12); }
+      &.metric-violet { --metric-color: var(--ion-color-tertiary); --metric-soft: rgba(var(--ion-color-tertiary-rgb), 0.12); }
+      &.metric-teal { --metric-color: var(--ion-color-primary); --metric-soft: rgba(var(--ion-color-primary-rgb), 0.12); }
+      .metric-copy {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        flex: 1;
+        min-width: 0;
+        white-space: normal;
+        span { font-size: 0.75rem; color: var(--ion-color-medium); font-weight: 500; line-height: 1.4; }
+        strong { font-size: clamp(1.5rem, 2.3vw, 2rem); font-weight: 700; line-height: 1.15; letter-spacing: -0.035em; font-variant-numeric: tabular-nums; }
+        small { color: var(--ion-color-medium); font-size: 0.6875rem; font-weight: 400; line-height: 1.4; }
+      }
+    }
+  }
+
+  .workspace-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    h2 { margin: 0; font-size: 0.8125rem; color: var(--ion-color-medium); font-weight: 600; }
+
+    .quick-actions {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    ion-button.quick-action {
+      --background: var(--ion-card-background, var(--ion-background-color));
+      --background-hover: var(--ion-color-primary);
+      --background-hover-opacity: 0.07;
+      --background-focused: var(--ion-color-primary);
+      --background-focused-opacity: 0.1;
+      --background-activated: var(--ion-color-primary);
+      --background-activated-opacity: 0.14;
+      --color: var(--ion-text-color);
+      --border-color: var(--ion-color-step-200, var(--ion-color-light-shade));
+      --border-style: solid;
+      --border-width: 1px;
+      --border-radius: 10px;
+      --padding-start: 14px;
+      --padding-end: 14px;
+      --padding-top: 0;
+      --padding-bottom: 0;
+      --box-shadow: none;
+      flex: 1 1 0;
+      min-width: 0;
+      height: 38px;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      letter-spacing: 0;
+      text-transform: none;
+
+      &::part(native) {
+        height: 38px;
+        justify-content: center;
+      }
+
+      .quick-action-label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .quick-action-count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 18px;
+        height: 18px;
+        margin-inline-start: 6px;
+        padding: 0 5px;
+        border-radius: 9px;
+        background: rgba(var(--ion-color-primary-rgb), 0.15);
+        color: var(--ion-color-primary);
+        font-size: 0.7rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        flex-shrink: 0;
+      }
+
+      &.quick-action-primary {
+        --background: var(--ion-color-primary);
+        --background-hover: var(--ion-color-primary-shade);
+        --background-focused: var(--ion-color-primary-shade);
+        --background-activated: var(--ion-color-primary-shade);
+        --background-hover-opacity: 1;
+        --background-focused-opacity: 1;
+        --background-activated-opacity: 1;
+        --color: var(--ion-color-primary-contrast);
+        --border-color: var(--ion-color-primary);
+      }
+    }
+  }
+
+  .workspace-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+    > * { min-width: 0; }
+  }
+  .workspace-sidebar { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
+
+  // The workspace ancestor deliberately outranks legacy body.dark rules.
+  .doctor-workspace {
+    .workspace-panel, .appointments-section.workspace-panel,
+    .doc-dashboard-analytics.workspace-panel, .today-agenda, .activity-card {
+      min-width: 0;
+      width: 100%;
+      margin: 0;
+      padding: 24px;
+      border: 1px solid var(--ion-color-step-150, var(--ion-color-light-shade));
+      border-radius: 18px;
+      background: var(--ion-card-background, var(--ion-background-color));
+      color: var(--ion-text-color);
+      box-shadow: var(--ion-card-box-shadow, none);
+    }
+    .workspace-panel-heading, .appointments-section .section-header, .today-agenda .agenda-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      flex-direction: row;
+      gap: 12px;
+      margin: 0 0 20px;
+      > * { min-width: 0; }
+      h2 { margin: 0; color: var(--ion-text-color); font-size: 1.0625rem; font-weight: 700; line-height: 1.4; letter-spacing: -0.015em; }
+      p { margin: 5px 0 0; color: var(--ion-color-medium); font-size: 0.8125rem; line-height: 1.5; }
+    }
+  }
+
+
+  .appointments-section.workspace-panel {
+    .controls-container { display: flex; max-width: 100%; min-width: 0; flex: 1 1 240px; justify-content: flex-end; }
+    ion-segment {
+      --background: var(--ion-color-light);
+      width: 100%; max-width: 100%; min-width: 0;
+      padding: 3px;
+      border: 1px solid var(--ion-color-step-150, var(--ion-color-light-shade));
+      border-radius: 10px;
+      overflow-x: auto;
+    }
+    ion-segment-button {
+      --color: var(--ion-color-medium);
+      --color-checked: var(--ion-color-primary);
+      --indicator-color: rgba(var(--ion-color-primary-rgb), 0.12);
+      --border-radius: 7px;
+      --padding-start: 10px;
+      --padding-end: 10px;
+      --indicator-box-shadow: none;
+      min-width: 0; min-height: 44px;
+      font-size: 0.75rem; font-weight: 600; letter-spacing: 0; text-transform: none;
+      ion-label { white-space: normal; line-height: 1.35; margin: 8px 0; }
+    }
+    ion-searchbar.doctor-search {
+      --background: var(--ion-color-light);
+      --color: var(--ion-text-color);
+      --placeholder-color: var(--ion-color-medium);
+      --placeholder-opacity: 1;
+      --icon-color: var(--ion-color-medium);
+      --clear-button-color: var(--ion-color-medium);
+      --border-radius: 10px;
+      --box-shadow: none;
+      width: 100%; min-width: 0; padding: 0; margin: 0 0 16px;
+      .searchbar-input { border: 1px solid var(--ion-color-step-150, var(--ion-color-light-shade)); font-size: 0.875rem; }
+    }
+    .appointments-view-all {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 16px;
+      ion-button { font-size: 0.75rem; }
+    }
+    .appointment-list {
+      margin: 16px 0 0; padding: 0; background: transparent;
+      .appointment-item {
+        --background: var(--ion-card-background, var(--ion-background-color));
+        --background-hover: var(--ion-color-light);
+        --color: var(--ion-text-color);
+        --border-width: 0;
+        --border-radius: 12px;
+        --padding-start: 12px;
+        --padding-end: 0;
+        --inner-padding-end: 12px;
+        --min-height: 90px;
+        min-width: 0; margin: 0 0 10px;
+        border: 1px solid var(--ion-color-step-150, var(--ion-color-light-shade)); border-radius: 12px; box-shadow: none;
+        &:last-child { margin-bottom: 0; }
+        ion-avatar { width: 42px; height: 42px; flex-shrink: 0; margin-inline-end: 12px; }
+        ion-label { margin: 14px 0; white-space: normal; }
+        ion-label h2 { margin: 0 0 6px; color: var(--ion-text-color); font-size: 0.9375rem; font-weight: 650; line-height: 1.4; }
+        .appointment-meta { display: flex; flex-wrap: wrap; gap: 5px 12px; min-width: 0; }
+        .meta-item { display: inline-flex; align-items: flex-start; gap: 5px; max-width: 100%; color: var(--ion-color-medium); font-size: 0.75rem; }
+        .meta-icon { margin-top: 2px; font-size: 0.875rem; }
+        .meta-text { min-width: 0; white-space: normal; }
+        ion-chip { flex-shrink: 0; max-width: 30%; margin-inline-start: 10px; font-size: 0.6875rem; }
+      }
+    }
+  }
+
+  .doctor-workspace .empty-state {
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    padding: 36px 20px; text-align: center;
+    border: 1px dashed var(--ion-color-step-150, var(--ion-color-light-shade)); border-radius: 12px;
+    background: var(--ion-color-light); color: var(--ion-color-medium);
+    ion-icon { margin: 0; padding: 12px; border-radius: 14px; background: rgba(var(--ion-color-primary-rgb), 0.12); color: var(--ion-color-primary); font-size: 1.75rem; opacity: 1; }
+    p { margin: 0; color: var(--ion-color-medium); font-size: 0.875rem; opacity: 1; }
+  }
+  // Analytics and sidebar.
+  .doc-dashboard-analytics.workspace-panel {
+    h2 { color: var(--ion-text-color); font-size: 1.0625rem; font-weight: 700; }
+    .analytics-note { color: var(--ion-color-medium); font-size: 0.8125rem; line-height: 1.6; margin: 8px 0 16px; }
+    .request-card {
+      display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 10px;
+      margin: 12px 0 0; padding: 14px;
+      border: 1px solid var(--ion-color-step-150, var(--ion-color-light-shade)); border-radius: 12px; background: var(--ion-color-light);
+      > div { min-width: 0; }
+      > div:first-child { flex: 1 1 160px; }
+      h3 { margin: 0; color: var(--ion-text-color); font-size: 0.875rem; font-weight: 650; }
+      p { margin: 5px 0; color: var(--ion-color-medium); font-size: 0.75rem; }
+      .request-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+      ion-button { font-size: 0.75rem; --padding-start: 10px; --padding-end: 10px; }
+    }
+    .earnings-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 20px 0; }
+    .earnings-card {
+      min-width: 0; padding: 18px;
+      border: 1px solid var(--ion-color-step-150, var(--ion-color-light-shade)); border-radius: 12px;
+      background: var(--ion-color-light); color: var(--ion-color-medium); font-size: 0.8125rem;
+      strong { margin: 8px 0 4px; color: var(--ion-text-color); font-size: clamp(1.125rem, 1.8vw, 1.5rem); font-weight: 700; font-variant-numeric: tabular-nums; }
+      small { display: block; font-size: 0.75rem; }
+    }
+    .earnings-chart {
+      width: 100%; min-width: 0; height: 280px; margin: 16px 0;
+      .recharts-cartesian-axis-tick text { fill: var(--ion-color-medium); font-size: 0.6875rem; }
+      .recharts-cartesian-grid line, .recharts-cartesian-axis line { stroke: var(--ion-color-step-150, var(--ion-color-light-shade)); }
+      .recharts-bar-rectangle path { fill: var(--ion-color-primary); }
+      .recharts-tooltip-cursor { fill: var(--ion-color-light); }
+      // Recharts supplies inline colors; override only its themed surfaces.
+      .recharts-default-tooltip { background: var(--ion-card-background, var(--ion-background-color)) !important; border-color: var(--ion-color-step-150, var(--ion-color-light-shade)) !important; border-radius: 10px; color: var(--ion-text-color); box-shadow: var(--ion-card-box-shadow, none); }
+      .recharts-tooltip-item { color: var(--ion-color-primary) !important; }
+    }
+    details { min-width: 0; border-top: 1px solid var(--ion-color-step-150, var(--ion-color-light-shade)); padding-top: 8px; }
+    summary { padding: 12px 4px; min-height: 44px; color: var(--ion-color-primary); font-size: 0.8125rem; font-weight: 600; cursor: pointer; border-radius: 6px; }
+    .analytics-table {
+      width: 100%; table-layout: fixed; border-collapse: collapse; margin: 12px 0 0; font-size: 0.8125rem;
+      caption { padding: 8px; text-align: start; color: var(--ion-color-medium); font-size: 0.75rem; }
+      th, td { padding: 12px 8px; border-bottom: 1px solid var(--ion-color-step-150, var(--ion-color-light-shade)); text-align: start; overflow-wrap: anywhere; }
+      thead { background: var(--ion-color-light); color: var(--ion-color-medium); }
+      td { font-variant-numeric: tabular-nums; }
+    }
+  }
+
+  .doctor-workspace .today-agenda {
+    .agenda-empty { margin: 0; padding: 20px 0; color: var(--ion-color-medium); font-size: 0.8125rem; }
+    .agenda-list { display: flex; flex-direction: column; gap: 4px; }
+    .agenda-row {
+      appearance: none;
+      display: grid;
+      grid-template-columns: minmax(48px, auto) minmax(0, 1fr) auto;
+      align-items: center; gap: 12px;
+      width: 100%; min-width: 0; min-height: 72px;
+      margin: 0; padding: 12px 6px;
+      border: 0; border-bottom: 1px solid var(--ion-color-step-150, var(--ion-color-light-shade)); border-radius: 6px;
+      background: transparent; color: var(--ion-text-color);
+      font: inherit; text-align: start; cursor: pointer;
+      transition: background-color 160ms ease;
+      &:last-child { border-bottom: 0; }
+      .agenda-time { min-width: 0; max-width: 75px; font-size: 0.75rem; font-weight: 700; color: var(--ion-color-primary); font-variant-numeric: tabular-nums; }
+      .agenda-main { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+      .agenda-main .agenda-patient { font-size: 0.8125rem; font-weight: 650; color: var(--ion-text-color); }
+      .agenda-main .agenda-service { font-size: 0.75rem; color: var(--ion-color-medium); white-space: normal; overflow-wrap: anywhere; }
+      ion-chip { margin: 0; min-height: 26px; height: auto; max-width: 90px; font-size: 0.625rem; }
+    }
+  }
+
+  .doctor-workspace .availability-panel {
+    .workspace-panel-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+
+      h2 {
+        margin: 0 0 4px;
+        color: var(--ion-text-color);
+        font-size: 1.0625rem;
+        font-weight: 700;
+      }
+
+      p {
+        margin: 0;
+        color: var(--ion-color-medium);
+        font-size: 0.8125rem;
+        line-height: 1.45;
+      }
+
+      ion-button {
+        flex-shrink: 0;
+        --padding-start: 12px;
+        --padding-end: 12px;
+      }
+    }
+
+    .availability-chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+
+      ion-chip {
+        margin: 0;
+        min-height: 30px;
+        font-size: 0.75rem;
+        font-variant-numeric: tabular-nums;
+      }
+    }
+
+    .availability-empty {
+      margin: 0;
+      padding: 18px 0 4px;
+      color: var(--ion-color-medium);
+      font-size: 0.8125rem;
+    }
+  }
+
+  .availability-modal {
+    --background: var(--ion-background-color);
+
+    .availability-editor {
+      max-width: 680px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .availability-editor-head {
+      h2 {
+        margin: 0 0 6px;
+        color: var(--ion-text-color);
+        font-size: 1.25rem;
+        font-weight: 750;
+      }
+
+      p {
+        margin: 0;
+        color: var(--ion-color-medium);
+        line-height: 1.55;
+      }
+    }
+
+    .slot-input-item {
+      --background: var(--ion-card-background, var(--ion-background-color));
+      --border-color: var(--ion-color-step-150, var(--ion-color-light-shade));
+      --border-radius: 12px;
+      --padding-start: 14px;
+      --inner-padding-end: 8px;
+      border: 1px solid var(--ion-color-step-150, var(--ion-color-light-shade));
+      border-radius: 12px;
+
+      ion-button[slot="end"] {
+        align-self: end;
+        margin-bottom: 8px;
+      }
+    }
+
+    .slot-editor-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .slot-editor-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 52px;
+      padding: 10px 12px 10px 16px;
+      border: 1px solid var(--ion-color-step-150, var(--ion-color-light-shade));
+      border-radius: 12px;
+      background: var(--ion-card-background, var(--ion-background-color));
+
+      span {
+        color: var(--ion-text-color);
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+      }
+    }
+
+    .slot-empty-state {
+      display: grid;
+      place-items: center;
+      gap: 8px;
+      min-height: 140px;
+      border: 1px dashed var(--ion-color-step-150, var(--ion-color-light-shade));
+      border-radius: 12px;
+      color: var(--ion-color-medium);
+
+      ion-icon {
+        font-size: 1.75rem;
+        color: var(--ion-color-primary);
+      }
+
+      p {
+        margin: 0;
+        font-size: 0.875rem;
+      }
+    }
+
+    .availability-editor-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding-top: 6px;
+    }
+  }
+
+  /* ── Availability Modal Bottom Sheet Styles ────────────────────────────── */
+  .availability-modal-sheet {
+    --width: 100%;
+    --max-width: 500px;
+    --height: 40vh;
+    --max-height: 40vh;
+    --border-radius: 24px 24px 0 0;
+    --backdrop-opacity: 0.45;
+    --background: var(--ion-card-background);
+    align-items: flex-end;
+    overflow: hidden;
+  }
+
+  .availability-sheet {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-height: 40vh;
+    padding: 12px 20px calc(16px + env(safe-area-inset-bottom, 0px));
+    overflow: hidden;
+  }
+
+  /* Drag Handle */
+  .drag-handle {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 6px 0 14px;
+    cursor: grab;
+  }
+
+  .drag-handle:active {
+    cursor: grabbing;
+  }
+
+  .drag-indicator {
+    width: 40px;
+    height: 4px;
+    border-radius: 2px;
+    background-color: var(--ion-color-step-300);
+  }
+
+  .availability-sheet-content {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .slot-add-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  /* Use profile-d-item styling from Doc_Profile for slot input */
+  .availability-sheet .profile-d-item {
+    --border-radius: 12px;
+    --padding-start: 14px;
+    --inner-padding-end: 14px;
+    --padding-top: 8px;
+    --padding-bottom: 8px;
+    --min-height: 62px;
+    --background: var(--ion-item-background);
+    --highlight-color-focused: var(--ion-color-primary);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 12px;
+
+    ion-label {
+      h3 {
+        font-size: 0.78rem;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        color: var(--ion-color-medium);
+        margin-bottom: 2px;
+      }
+
+      p {
+        font-size: 0.93rem;
+        color: var(--ion-text-color);
+        margin-top: 0;
+        line-height: 1.4;
+      }
+    }
+  }
+
+  .profile-edit-input {
+    --padding-start: 0;
+    --padding-end: 0;
+    font-size: 0.93rem;
+    color: var(--ion-text-color);
+    border-bottom: 1px solid var(--ion-color-light-shade);
+    margin: 6px 0;
+    width: 100%;
+  }
+
+  .slots-edit {
+    width: 100%;
+  }
+
+  .slot-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .slot-chips .ion-chip {
+    --background: var(--ion-color-primary);
+    --color: var(--ion-color-primary-contrast);
+    font-weight: 600;
+    font-size: 0.8125rem;
+    height: 32px;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+  }
+
+  .slot-chips .ion-chip:active {
+    transform: scale(0.95);
+  }
+
+  .slot-chips ion-icon[slot="end"] {
+    font-size: 16px;
+    margin-inline-start: 6px;
+    color: inherit;
+    opacity: 0.75;
+  }
+
+  .availability-sheet-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 12px;
+    border-top: 1px solid var(--ion-color-step-150, var(--ion-color-light-shade));
+    margin-top: auto;
+  }
+
+  /* Dark mode for availability modal */
+  body.dark .availability-modal-sheet {
+    --background: var(--ion-item-background);
+  }
+
+  body.dark .drag-indicator {
+    background-color: var(--ion-color-step-400);
+  }
+
+  body.dark .availability-sheet-actions {
+    border-top-color: var(--ion-color-step-700);
+  }
+
+  body.dark .availability-sheet .profile-d-item {
+    --background: var(--ion-item-background);
+    --border-color: var(--ion-color-step-150, var(--ion-color-light-shade));
+  }
+
+  body.dark .profile-edit-input {
+    color: var(--ion-text-color);
+    border-bottom-color: var(--ion-color-step-150, var(--ion-color-light-shade));
+  }
+
+  .doctor-workspace .activity-card {
+    --background: var(--ion-card-background, var(--ion-background-color));
+    ion-card-header { padding: 0 0 20px; }
+    ion-card-title { color: var(--ion-text-color); font-size: 1.0625rem; font-weight: 700; }
+    ion-card-subtitle { color: var(--ion-color-medium); font-size: 0.8125rem; margin-top: 5px; letter-spacing: 0; text-transform: none; }
+    ion-card-content { padding: 0; }
+    .patient-list { padding: 0; margin: 0; background: transparent; }
+    .patient-item {
+      --background: var(--ion-card-background, var(--ion-background-color)); --background-hover: var(--ion-color-light); --color: var(--ion-text-color);
+      --padding-start: 0; --inner-padding-end: 0; --border-color: var(--ion-color-step-150, var(--ion-color-light-shade)); --min-height: 80px;
+      ion-avatar { width: 42px; height: 42px; margin-inline-end: 14px; }
+      ion-label { white-space: normal; }
+      h2 { color: var(--ion-text-color); font-size: 0.9375rem; font-weight: 650; }
+      p { color: var(--ion-color-medium); font-size: 0.75rem; }
+      .patient-status { min-width: 0; max-width: 40%; text-align: end; margin-inline-start: 10px; }
+      ion-chip { margin: 0 0 4px; font-size: 0.6895rem; }
+      .last-checkup { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 4px; margin: 0; font-size: 0.6875rem; }
+    }
+  }
+  // Feedback and accessibility.
+  .workspace-error {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
+    margin: 0; padding: 14px 18px;
+    border: 1px solid var(--ion-color-danger); border-radius: 12px;
+    background: rgba(var(--ion-color-danger-rgb), 0.12); color: var(--ion-color-danger); font-size: 0.875rem;
+    p { flex: 1; min-width: 0; margin: 0; }
+  }
+  .workspace-loading {
+    display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); gap: 24px;
+    > div, > ion-skeleton-text, .skeleton-block {
+      display: block; min-width: 0; min-height: 260px; margin: 0;
+      border: 1px solid var(--ion-color-step-150, var(--ion-color-light-shade)); border-radius: 18px;
+      background: var(--ion-color-light);
+      background-image: linear-gradient(110deg, transparent 20%, var(--ion-card-background, var(--ion-background-color)) 45%, transparent 70%);
+    }
+    > :first-child { grid-column: 1 / -1; min-height: 146px; }
+    ion-skeleton-text { --background: var(--ion-color-light); --background-rgb: var(--ion-color-medium-rgb); }
+  }
+  .doctor-workspace {
+    :is(a, button, input, summary, [tabindex]):focus-visible {
+      outline: 3px solid var(--ion-color-primary); outline-offset: 3px;
+    }
+    ion-button::part(native):focus-visible,
+    ion-item::part(native):focus-visible,
+    ion-segment-button::part(native):focus-visible {
+      outline: 3px solid var(--ion-color-primary); outline-offset: -3px;
+    }
+    ion-button.ion-focused, ion-item.ion-focused, ion-segment-button.ion-focused {
+      outline: 3px solid var(--ion-color-primary); outline-offset: 2px; border-radius: 10px;
+    }
+    ion-searchbar:focus-within { outline: 3px solid var(--ion-color-primary); outline-offset: 2px; border-radius: 10px; }
+    @media (hover: hover) and (pointer: fine) {
+      .workspace-metrics ion-button.metric-card:hover { --border-color: var(--metric-color); box-shadow: var(--ion-card-box-shadow, none); transform: none; }
+      .today-agenda .agenda-row:not(:disabled):hover { background: var(--ion-color-light); }
+      .workspace-actions a:hover, summary:hover { text-decoration: underline; text-underline-offset: 3px; }
+    }
+    button:disabled { cursor: not-allowed; opacity: 0.55; }
+  }
+
+  @media (max-width: 1100px) {
+    .workspace-actions .quick-actions { flex-wrap: wrap; }
+    .workspace-grid { grid-template-columns: minmax(0, 1fr); }
+    .workspace-sidebar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+    .workspace-metrics ion-button.metric-card {
+      --padding-start: 16px; --padding-end: 16px;
+    }
+  }
+  @media (max-width: 767px) {
+    .doctor-workspace {
+      padding: 24px max(16px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+      gap: 20px;
+      .workspace-panel, .appointments-section.workspace-panel,
+      .doc-dashboard-analytics.workspace-panel, .today-agenda, .activity-card { padding: 18px; border-radius: 14px; }
+      .workspace-panel-heading, .appointments-section .section-header, .today-agenda .agenda-head { margin-bottom: 16px; }
+    }
+    .workspace-welcome { align-items: flex-start; flex-direction: column; gap: 20px; padding: 22px 18px; border-radius: 16px; }
+    .workspace-date { width: 100%; padding: 14px 0 0; border: 0; border-top: 1px solid var(--ion-color-step-150, var(--ion-color-light-shade)); border-radius: 0; background: transparent; flex-shrink: 1; }
+    .workspace-profile-nudge {
+      display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px 10px; padding: 12px;
+      > ion-button:first-of-type { grid-column: 2; justify-self: start; }
+      > ion-button:last-of-type { grid-column: 3; grid-row: 1; }
+    }
+    .workspace-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .workspace-metrics ion-button.metric-card { --padding-top: 16px; --padding-bottom: 16px; }
+    .workspace-sidebar { display: flex; flex-direction: column; gap: 20px; }
+    .workspace-grid { gap: 20px; }
+    .workspace-actions { gap: 12px; }
+    .workspace-actions h2 { margin: 0; }
+    .appointments-section.workspace-panel {
+      .controls-container { flex-basis: 100%; width: 100%; }
+    }
+    .doc-dashboard-analytics.workspace-panel {
+      .earnings-cards { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+      .earnings-card { padding: 14px 16px; }
+      .earnings-chart { height: 240px; }
+    }
+    .workspace-loading { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  }
+  @media (max-width: 480px) {
+    .workspace-actions .quick-actions { flex-wrap: wrap; gap: 8px; }
+    .workspace-actions ion-button.quick-action { flex: 1 1 calc(50% - 4px); }
+  }
+  @media (max-width: 400px) {
+    .doctor-workspace {
+      .workspace-panel, .appointments-section.workspace-panel,
+      .doc-dashboard-analytics.workspace-panel, .today-agenda, .activity-card { padding: 14px; }
+      .today-agenda .agenda-row { grid-template-columns: 52px minmax(0, 1fr); gap: 6px 10px; }
+      .today-agenda .agenda-row ion-chip { grid-column: 2; justify-self: start; }
+    }
+    .workspace-metrics ion-button.metric-card { --padding-start: 12px; --padding-end: 12px; }
+    .appointments-section.workspace-panel .appointment-list .appointment-item {
+      --padding-start: 8px; --inner-padding-end: 8px;
+      ion-avatar { width: 32px; height: 32px; margin-inline-end: 8px; }
+      ion-chip { max-width: 32%; margin-inline-start: 6px; padding-inline: 6px; }
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .doctor-workspace {
+      &, *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+      // Framer Motion and legacy entry animations may set inline styles.
+      .animated-card, .animated-list, .animated-item, .patient-list > div,
+      > div[style], .workspace-loading { opacity: 1 !important; transform: none !important; }
+      ion-button::part(native), ion-item::part(native), ion-segment-button::part(indicator) { animation: none !important; transition: none !important; }
+      ion-skeleton-text { --animation: none; }
+      .workspace-loading > * { background-image: none; }
+      ion-ripple-effect { display: none; }
+    }
+  }
 }

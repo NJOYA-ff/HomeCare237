@@ -14,12 +14,14 @@ import {
   IonButtons,
   IonBackButton,
   IonNote,
-  IonAlert,
 } from "@ionic/react";
+import { MessageBox } from "../../components/ui/MessageBox";
+import { EmptyState } from "../../components/ui";
 import {
   trashOutline,
   checkmarkDoneOutline,
   closeOutline,
+  notificationsOutline,
 } from "ionicons/icons";
 import { useNotifications } from "../../context/NotificationContext";
 import "../Patient/NotificationPage.scss";
@@ -149,12 +151,11 @@ const DoctorNotifications: React.FC = () => {
       <IonContent className="dashboard-patient notifications-content ion-padding">
         <IonList className="notification-list patient-surface-list">
           {notifications.length === 0 ? (
-            <IonItem lines="none" className="empty-notification-state">
-              <IonLabel className="ion-text-center">
-                <h2>No notifications yet</h2>
-                <p>Notifications will appear here</p>
-              </IonLabel>
-            </IonItem>
+            <EmptyState
+              icon={notificationsOutline}
+              title="No notifications yet"
+              description="Appointment requests, referrals, and patient updates will appear here."
+            />
           ) : (
             notifications.map((notification, index) => (
               <IonItem
@@ -184,21 +185,29 @@ const DoctorNotifications: React.FC = () => {
         </IonList>
       </IonContent>
 
-      <IonAlert
+      <MessageBox
         isOpen={showClearAlert}
-        onDidDismiss={() => setShowClearAlert(false)}
-        header="Clear All Notifications"
+        title="Clear All Notifications"
         message="Are you sure you want to clear all notifications?"
-        buttons={[
+        tone="danger"
+        actions={[
           {
-            text: "Cancel",
-            role: "cancel",
+            label: "Cancel",
+            color: "medium",
+            onClick: () => setShowClearAlert(false),
           },
           {
-            text: "Clear",
-            handler: clearAll,
+            /* Clearing wipes every notification for good, so the confirm action
+               carries the danger colour. */
+            label: "Clear",
+            color: "danger",
+            onClick: () => {
+              setShowClearAlert(false)
+              clearAll();
+            },
           },
         ]}
+        onDismiss={() => setShowClearAlert(false)}
       />
     </IonPage>
   );

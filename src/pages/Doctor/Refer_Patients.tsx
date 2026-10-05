@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { db, auth, storage } from "../../firebaseconfig";
+import { DEFAULT_AVATAR, handleImageError } from "../../utils/profileImageStorage";
 import {
   collection,
   addDoc,
@@ -42,7 +43,6 @@ import {
   IonBadge,
   IonSearchbar,
   IonChip,
-  IonAlert,
   IonSegment,
   IonSegmentButton,
   IonList,
@@ -58,8 +58,10 @@ import {
   IonTabButton,
   IonTabs,
 } from "@ionic/react";
+import { MessageBox } from "../../components/ui/MessageBox";
+import LoadingHelix from "../../components/LoadingHelix";
+import { EmptyState } from "../../components/ui";
 import {
-  calendar,
   location,
   time,
   people,
@@ -70,7 +72,6 @@ import {
   checkmarkCircle,
   medical,
   wallet,
-  informationCircle,
   map,
   filter,
   search,
@@ -86,7 +87,6 @@ import {
   bodyOutline,
   fitnessOutline,
   bandageOutline,
-  person,
   shareOutline,
   documentTextOutline,
   clipboardOutline,
@@ -96,7 +96,6 @@ import {
 } from "ionicons/icons";
 import brainOutline from "@material-design-icons/svg/two-tone/healing.svg";
 import "./Refer_patients.scss";
-import { motion } from "framer-motion";
 
 import {
   FaStethoscope,
@@ -354,7 +353,7 @@ const Refer_patient: React.FC = () => {
           specialization: doctorData.specialization || "General Practitioner",
           avatar:
             doctorData.avatar ||
-            "https://ionicframework.com/docs/img/demos/avatar.svg",
+            DEFAULT_AVATAR,
           rating: doctorData.rating || 4.0,
           reviews: doctorData.reviews || 0,
           region: doctorData.region || "Centre",
@@ -446,7 +445,7 @@ const Refer_patient: React.FC = () => {
           specialization: doctorData.specialization || "General Practitioner",
           avatar:
             doctorData.avatar ||
-            "https://ionicframework.com/docs/img/demos/avatar.svg",
+            DEFAULT_AVATAR,
           rating: doctorData.rating || 4.0,
           reviews: doctorData.reviews || 0,
           region: doctorData.region || "Centre",
@@ -966,78 +965,99 @@ const Refer_patient: React.FC = () => {
       </IonHeader>
       <IonContent className="referral-content">
         {isLoading && (
-          <div className="loading-container">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              className="loading-spinner"
-            />
-            <IonText className="ion-text-center ion-padding">
-              <p>Processing...</p>
-            </IonText>
+          <div className="referral-loading-overlay">
+            <div className="referral-loading-card">
+              <LoadingHelix />
+              <p className="referral-loading-text">Processing...</p>
+            </div>
           </div>
         )}
 
-        <IonAlert
+        <MessageBox
           isOpen={showCancelAlert}
-          onDidDismiss={() => setShowCancelAlert(false)}
-          header={"Cancel Referral"}
-          message={"Are you sure you want to cancel this referral?"}
-          buttons={[
+          title="Cancel Referral"
+          message="Are you sure you want to cancel this referral?"
+          tone="info"
+          actions={[
             {
-              text: "No",
-              role: "cancel",
-              cssClass: "secondary",
+              label: "No",
+              color: "medium",
+              onClick: () => setShowCancelAlert(false),
             },
             {
-              text: "Yes",
-              handler: confirmCancelReferral,
+              /* Cancelling withdraws the referral and sends it back as rejected, so the confirm action carries the danger colour. */
+              label: "Yes",
+              color: "danger",
+              onClick: () => {
+                setShowCancelAlert(false)
+                confirmCancelReferral();
+              },
             },
           ]}
+          onDismiss={() => setShowCancelAlert(false)}
         />
 
-        <IonAlert
+        <MessageBox
           isOpen={showAcceptAlert}
-          onDidDismiss={() => setShowAcceptAlert(false)}
-          header={"Accept Referral"}
-          message={"Are you sure you want to accept this referral?"}
-          buttons={[
+          title="Accept Referral"
+          message="Are you sure you want to accept this referral?"
+          tone="info"
+          actions={[
             {
-              text: "No",
-              role: "cancel",
-              cssClass: "secondary",
+              label: "No",
+              color: "medium",
+              onClick: () => setShowAcceptAlert(false),
             },
             {
-              text: "Yes",
-              handler: confirmAcceptReferral,
+              /* Accepting is the constructive path, so the confirm action stays primary. */
+              label: "Yes",
+              color: "primary",
+              onClick: () => {
+                setShowAcceptAlert(false)
+                confirmAcceptReferral();
+              },
             },
           ]}
+          onDismiss={() => setShowAcceptAlert(false)}
         />
 
-        <IonAlert
+        <MessageBox
           isOpen={showRejectAlert}
-          onDidDismiss={() => setShowRejectAlert(false)}
-          header={"Reject Referral"}
-          message={"Are you sure you want to reject this referral?"}
-          buttons={[
+          title="Reject Referral"
+          message="Are you sure you want to reject this referral?"
+          tone="info"
+          actions={[
             {
-              text: "No",
-              role: "cancel",
-              cssClass: "secondary",
+              label: "No",
+              color: "medium",
+              onClick: () => setShowRejectAlert(false),
             },
             {
-              text: "Yes",
-              handler: confirmRejectReferral,
+              /* Rejecting withdraws the referral from the doctor's list, so the confirm action carries the danger colour. */
+              label: "Yes",
+              color: "danger",
+              onClick: () => {
+                setShowRejectAlert(false);
+                confirmRejectReferral();
+              },
             },
           ]}
+          onDismiss={() => setShowRejectAlert(false)}
         />
 
-        <IonAlert
+        <MessageBox
           isOpen={showConfirmation}
-          onDidDismiss={() => setShowConfirmation(false)}
-          header={"Success!"}
-          message={"Patient referral has been successfully sent."}
-          buttons={["OK"]}
+          title="Success!"
+          message="Patient referral has been successfully sent."
+          tone="success"
+          actions={[
+            {
+              label: "OK",
+              color: "primary",
+              onClick: () => setShowConfirmation(false),
+            },
+          ]}
+          onDismiss={() => setShowConfirmation(false)}
         />
 
         {!currentUser ? (
@@ -1054,6 +1074,7 @@ const Refer_patient: React.FC = () => {
         ) : viewMode === "list" ? (
           <>
             <IonSegment
+              color="primary"
               value={activeSegment}
               onIonChange={(e) => setActiveSegment(e.detail.value as any)}
             >
@@ -1115,14 +1136,15 @@ const Refer_patient: React.FC = () => {
                               onClick={() => {
                                 setSelectedPatient(patient);
                                 setReferralStep("doctor");
-                              }}
-                            >
+                              }
+                          }  >
                               <IonCardContent>
                                 <div className="patient-header">
                                   <IonAvatar className="patient-avatar">
                                     <img
-                                      src="https://ionicframework.com/docs/img/demos/avatar.svg"
+                                      src={DEFAULT_AVATAR}
                                       alt={patient.name}
+                                      onError={handleImageError}
                                     />
                                   </IonAvatar>
                                   <div className="patient-info-r">
@@ -1221,22 +1243,18 @@ const Refer_patient: React.FC = () => {
                             Available Specialists ({filteredDoctors.length})
                           </h4>
 
-                          {filteredDoctors.length === 0 ? (
-                            <IonText color="medium" className="no-results">
-                              <p>
-                                No specialists found matching your criteria.
-                              </p>
-                              <IonButton
-                                fill="clear"
-                                onClick={() => {
-                                  setSelectedRegion("");
-                                  setSelectedSpecialty("");
-                                  setSearchQuery("");
-                                }}
-                              >
-                                Clear Filters
-                              </IonButton>
-                            </IonText>
+{filteredDoctors.length === 0 ? (
+                            <EmptyState
+                              icon={personCircle}
+                              title="No specialists found"
+                              description="No specialists match the filters you've selected. Try widening your search."
+                              actionLabel="Clear filters"
+                              onAction={() => {
+                                setSelectedRegion("");
+                                setSelectedSpecialty("");
+                                setSearchQuery("");
+                              }}
+                            />
                           ) : (
                             <div className="doctors-grid-r">
                               {filteredDoctors.map((doctor) => (
@@ -1250,8 +1268,8 @@ const Refer_patient: React.FC = () => {
                                   onClick={() => {
                                     setSelectedDoctor(doctor);
                                     setReferralStep("review");
-                                  }}
-                                >
+                                  }
+                              }  >
                                   <IonCardContent>
                                     <div className="doctor-header-r">
                                       <IonAvatar className="doctor-avatar-r">
@@ -1342,12 +1360,13 @@ const Refer_patient: React.FC = () => {
                   </IonCardHeader>
                   <IonCardContent>
                     {sentReferrals.length === 0 ? (
-                      <IonText color="medium" className="no-referrals">
-                        <p>You haven't sent any referrals yet.</p>
-                        <IonButton onClick={() => setActiveSegment("refer")}>
-                          Make Your First Referral
-                        </IonButton>
-                      </IonText>
+                      <EmptyState
+                        icon={medical}
+                        title="No referrals sent yet"
+                        description="Refer patients to another specialist and track every handoff you make from here."
+                        actionLabel="Make your first referral"
+                        onAction={() => setActiveSegment("refer")}
+                      />
                     ) : (
                       <div className="referrals-list">
                         {sentReferrals.map((referral) => (
@@ -1358,9 +1377,10 @@ const Refer_patient: React.FC = () => {
                                   <img
                                     src={
                                       referral.receivingDoctor?.avatar ||
-                                      "https://ionicframework.com/docs/img/demos/avatar.svg"
+                                      DEFAULT_AVATAR
                                     }
                                     alt={referral.receivingDoctorName}
+                                    onError={handleImageError}
                                   />
                                 </IonAvatar>
                                 <div className="referral-info">
@@ -1370,10 +1390,7 @@ const Refer_patient: React.FC = () => {
                                       onClick={() =>
                                         handleViewReferral(referral)
                                       }
-                                      style={{
-                                        cursor: "pointer",
-                                        textDecoration: "underline",
-                                      }}
+                                      style={{ cursor: "pointer" }}
                                     >
                                       {referral.receivingDoctorName}
                                     </h3>
@@ -1385,9 +1402,7 @@ const Refer_patient: React.FC = () => {
                                       )}
                                       {referral.receivingDoctorSpecialization}
                                     </p>
-                                    <p className="referral-direction">
-                                      <IonIcon icon={arrowUpOutline} /> Sent to
-                                    </p>
+                                    <p className="referral-direction">Sent to</p>
                                   </IonText>
                                   <div className="referral-meta">
                                     <IonChip
@@ -1409,25 +1424,22 @@ const Refer_patient: React.FC = () => {
 
                               <div className="referral-details">
                                 <div className="detail-item-r">
-                                  <IonIcon icon={person} />
                                   <span>Patient: {referral.patientName}</span>
                                 </div>
                                 <div className="detail-item-r">
-                                  <IonIcon icon={calendar} />
                                   <span>
                                     Referral Date:{" "}
                                     {formatDate(referral.referralDate)}
                                   </span>
                                 </div>
                                 <div className="detail-item-r">
-                                  <IonIcon icon={informationCircle} />
                                   <span>Reason: {referral.reason}</span>
                                 </div>
                               </div>
 
                               <div className="referral-actions">
                                 <IonButton
-                                  fill="outline"
+                                  expand="block"
                                   color="primary"
                                   size="small"
                                   onClick={() => handleViewReferral(referral)}
@@ -1438,7 +1450,7 @@ const Refer_patient: React.FC = () => {
 
                                 {referral.status === "pending" && (
                                   <IonButton
-                                    fill="outline"
+                                    expand="block"
                                     color="danger"
                                     size="small"
                                     onClick={() =>
@@ -1469,9 +1481,11 @@ const Refer_patient: React.FC = () => {
                   </IonCardHeader>
                   <IonCardContent>
                     {receivedReferrals.length === 0 ? (
-                      <IonText color="medium" className="no-referrals">
-                        <p>You haven't received any referrals yet.</p>
-                      </IonText>
+                      <EmptyState
+                        icon={personCircle}
+                        title="No referrals received yet"
+                        description="When another doctor refers a patient to you, the request will appear here."
+                      />
                     ) : (
                       <div className="referrals-list">
                         {receivedReferrals.map((referral) => (
@@ -1482,9 +1496,10 @@ const Refer_patient: React.FC = () => {
                                   <img
                                     src={
                                       referral.referringDoctor?.avatar ||
-                                      "https://ionicframework.com/docs/img/demos/avatar.svg"
+                                      DEFAULT_AVATAR
                                     }
                                     alt={referral.referringDoctorName}
+                                    onError={handleImageError}
                                   />
                                 </IonAvatar>
                                 <div className="referral-info">
@@ -1494,10 +1509,7 @@ const Refer_patient: React.FC = () => {
                                       onClick={() =>
                                         handleViewReferral(referral)
                                       }
-                                      style={{
-                                        cursor: "pointer",
-                                        textDecoration: "underline",
-                                      }}
+                                      style={{ cursor: "pointer" }}
                                     >
                                       {referral.referringDoctorName}
                                     </h3>
@@ -1510,7 +1522,6 @@ const Refer_patient: React.FC = () => {
                                       {referral.receivingDoctorSpecialization}
                                     </p>
                                     <p className="referral-direction">
-                                      <IonIcon icon={arrowDownOutline} />{" "}
                                       Received from
                                     </p>
                                   </IonText>
@@ -1534,25 +1545,22 @@ const Refer_patient: React.FC = () => {
 
                               <div className="referral-details">
                                 <div className="detail-item-r">
-                                  <IonIcon icon={person} />
                                   <span>Patient: {referral.patientName}</span>
                                 </div>
                                 <div className="detail-item-r">
-                                  <IonIcon icon={calendar} />
                                   <span>
                                     Referral Date:{" "}
                                     {formatDate(referral.referralDate)}
                                   </span>
                                 </div>
                                 <div className="detail-item-r">
-                                  <IonIcon icon={informationCircle} />
                                   <span>Reason: {referral.reason}</span>
                                 </div>
                               </div>
 
                               <div className="referral-actions">
                                 <IonButton
-                                  fill="outline"
+                                  expand="block"
                                   color="primary"
                                   size="small"
                                   onClick={() => handleViewReferral(referral)}
@@ -1564,7 +1572,7 @@ const Refer_patient: React.FC = () => {
                                 {referral.status === "pending" && (
                                   <>
                                     <IonButton
-                                      fill="outline"
+                                      expand="block"
                                       color="success"
                                       size="small"
                                       onClick={() =>
@@ -1578,7 +1586,7 @@ const Refer_patient: React.FC = () => {
                                       Accept
                                     </IonButton>
                                     <IonButton
-                                      fill="outline"
+                                      expand="block"
                                       color="danger"
                                       size="small"
                                       onClick={() =>
@@ -1610,12 +1618,13 @@ const Refer_patient: React.FC = () => {
               <IonCardHeader>
                 <div className="detail-header-r">
                   <IonButton
+                    expand="block"
                     fill="clear"
                     onClick={() => {
                       setViewMode("list");
                       setSelectedReferral(null);
-                    }}
-                  >
+                    }
+                }  >
                     <IonIcon icon={arrowBack} />
                     Back to Referrals
                   </IonButton>
@@ -1887,11 +1896,12 @@ const Refer_patient: React.FC = () => {
               <IonCardHeader>
                 <div className="detail-header-r">
                   <IonButton
+                    expand="block"
                     fill="clear"
                     onClick={() => {
                       setViewMode("list");
-                    }}
-                  >
+                    }
+                }  >
                     <IonIcon icon={arrowBack} />
                     Back to Selection
                   </IonButton>

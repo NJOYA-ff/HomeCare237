@@ -1,0 +1,229 @@
+// Vitals.scss — Vitals & Health Tracking
+
+.vitals-page {
+  ion-toolbar {
+    border-bottom: 1px solid var(--ion-background-color-step-150, #e3e8f2);
+  }
+}
+
+.vitals-segment {
+  margin: 12px 12px 4px;
+  --background: var(--ion-item-background, #fff);
+  border-radius: 12px;
+}
+
+.vitals-log-shell {
+  padding: 8px 12px 24px;
+}
+
+.vitals-history-shell {
+  padding: 8px 12px 24px;
+}
+
+.vitals-form-card,
+.chart-card,
+.recent-card {
+  border: none;
+  box-shadow: none;
+  border-radius: 14px;
+  background: var(--ion-card-background, #ffffff);
+  margin-bottom: 14px;
+}
+
+.vitals-type-item {
+  --padding-start: 0;
+  --inner-padding-end: 0;
+  margin-bottom: 6px;
+
+  ion-select {
+    font-size: 0.95rem;
+    color: var(--ion-text-color);
+  }
+}
+
+.form-item {
+  --border-radius: 12px;
+  --padding-start: 14px;
+  --padding-end: 14px;
+  --background: var(--ion-item-background, #ffffff);
+  --border-color: #dde1f5;
+  --border-width: 1px;
+  --border-style: solid;
+  --inner-border-width: 0;
+  border-radius: 12px;
+  margin-bottom: 12px;
+
+  ion-label {
+    font-size: 0.78rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--ion-color-medium) !important;
+  }
+
+  ion-input,
+  ion-textarea {
+    font-size: 0.95rem;
+    color: var(--ion-text-color);
+  }
+}
+
+body.dark {
+  .form-item {
+    --background: var(--ion-item-background, #1a1d27);
+    --border-color: var(--ion-color-step-150, #252839);
+  }
+}
+
+body.dark .form-item {
+  --background: var(--ion-item-background, #1a1d27);
+  --border-color: var(--ion-color-step-150, #252839);
+}
+
+.bp-input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+
+  .form-item {
+    flex: 1;
+  }
+
+  .bp-slash {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--ion-color-medium);
+    padding-bottom: 14px;
+  }
+}
+
+.unit-text {
+  font-size: 0.85rem;
+  color: var(--ion-color-medium);
+  padding-left: 8px;
+}
+
+.classify-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  line-height: 1.45;
+
+  ion-icon {
+    font-size: 1.3rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  &.class-normal {
+    background: rgba(45, 211, 111, 0.12);
+    color: var(--ion-text-color);
+    ion-icon { color: var(--ion-color-success); }
+  }
+
+  &.class-warning {
+    background: rgba(255, 196, 9, 0.14);
+    color: var(--ion-text-color);
+    ion-icon { color: #ca8a04; }
+  }
+
+  &.class-critical {
+    background: rgba(235, 68, 90, 0.13);
+    color: var(--ion-text-color);
+    ion-icon { color: var(--ion-color-danger); }
+  }
+
+  &.class-info {
+    background: rgba(59, 125, 216, 0.1);
+    color: var(--ion-text-color);
+    ion-icon { color: var(--ion-color-primary); }
+  }
+}
+
+.vitals-save-btn {
+  --border-radius: 12px;
+  height: 48px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.chart-section-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+
+  h3 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+
+  ion-icon {
+    color: var(--ion-color-primary);
+  }
+}
+
+.chart-container {
+  width: 100%;
+  margin-top: 6px;
+
+  .recharts-cartesian-grid line {
+    stroke: var(--ion-color-step-200, #e3e8f2);
+  }
+
+  .recharts-text {
+    fill: var(--ion-color-medium);
+  }
+}
+
+.empty-state-text {
+  text-align: center;
+  color: var(--ion-color-medium);
+  font-size: 0.88rem;
+  padding: 18px 8px;
+}
+
+.vital-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 2px;
+  border-bottom: 1px solid var(--ion-background-color-step-150, #eef0f6);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  .vital-row-main {
+    flex: 1;
+    min-width: 0;
+
+    .vital-row-value {
+      margin: 0 0 2px;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .vital-row-meta {
+      margin: 0;
+      font-size: 0.78rem;
+      color: var(--ion-color-medium);
+    }
+
+    .vital-row-notes {
+      margin: 4px 0 0;
+      font-size: 0.8rem;
+      color: var(--ion-text-color);
+      opacity: 0.75;
+    }
+  }
+
+  ion-chip {
+    font-size: 0.72rem;
+    height: 24px;
+  }
+}

@@ -2,20 +2,23 @@ import React, { useEffect } from "react";
 import {
   IonContent,
   IonPage,
-  IonButton,
   IonImg,
   IonText,
   IonGrid,
   IonRow,
   IonCol,
-  IonIcon,
 } from "@ionic/react";
 import { motion, useAnimation } from "framer-motion";
 import { useHistory } from "react-router-dom";
-import { arrowForward } from "ionicons/icons";
 import icon from "./images/icon.png";
+import RoleTabs from "./RoleTabs";
+import { useSettings } from "../context/SettingsContext";
+import { ROLE_PICKER, LANGUAGE_GATE_ROUTE } from "../utils/authFlow";
+import "./Onboarding.css";
+import "./WelcomePage.css";
 const Landingpage: React.FC = () => {
   const history = useHistory();
+  const { t } = useSettings();
   const controls = useAnimation();
   const textControls = useAnimation();
   const buttonControls = useAnimation();
@@ -43,25 +46,32 @@ const Landingpage: React.FC = () => {
 
   return (
     <IonPage>
-      <IonContent fullscreen className="welcome-content">
-        <div className="background-gradient">
-          {/* Animated circles in background */}
+      <IonContent fullscreen className="ob-content">
+        {/* <div className="ob-bg" aria-hidden="true">
+      
           <motion.div
-            className="circle circle-1"
+            className="ob-orb ob-orb-1"
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ duration: 1.5, delay: 0.2 }}
           />
 
           <motion.div
-            className="circle circle-3"
+            className="ob-orb ob-orb-2"
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ duration: 1.5, delay: 0.6 }}
           />
-        </div>
 
-        <IonGrid className="welcome-grid">
+          <motion.div
+            className="ob-orb ob-orb-3"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 1.5, delay: 0.4 }}
+          />
+        </div> */}
+
+        <IonGrid className="ob-grid">
           <IonRow className="ion-justify-content-center">
             <IonCol size="12" className="ion-text-center">
               {/* Logo with animation */}
@@ -80,11 +90,12 @@ const Landingpage: React.FC = () => {
               >
                 <IonText className="welcome-title">
                   <h1>
-                    Welcome to <span>HomeCare237</span>
+                    {t("funnel_welcome_prefix")}{" "}
+                    <span>HomeCare237</span>
                   </h1>
                 </IonText>
                 <IonText className="welcome-subtitle">
-                  <p>Your personalized health companion at home</p>
+                  <p>{t("funnel_tagline")}</p>
                 </IonText>
               </motion.div>
 
@@ -98,29 +109,26 @@ const Landingpage: React.FC = () => {
                 }}
               ></motion.div>
 
-              {/* Buttons with animation */}
+              {/* Buttons with animation: frosted bottom sheet with side-by-side tabs */}
               <motion.div
                 initial={{ opacity: 0, y: 50 }}
                 animate={buttonControls}
-                className="button-group"
+                className="ob-spread"
               >
-                <IonButton
-                  expand="block"
-                  className="signin-button"
-                  onClick={() => history.push("/roleselect")}
-                  shape="round"
-                >
-                  Sign in
-                </IonButton>
-                <IonButton
-                  expand="block"
-                  className="signup-button"
-                  onClick={() => history.push("/roleselect2")}
-                  shape="round"
-                  fill="outline"
-                >
-                  Get started
-                </IonButton>
+                <RoleTabs
+                  leftLabel={t("funnel_sign_in")}
+                  rightLabel={t("funnel_get_started")}
+                  onLeft={() =>
+                    history.push(
+                      `${LANGUAGE_GATE_ROUTE}?next=${ROLE_PICKER.signin}`,
+                    )
+                  }
+                  onRight={() =>
+                    history.push(
+                      `${LANGUAGE_GATE_ROUTE}?next=${ROLE_PICKER.signup}`,
+                    )
+                  }
+                />
               </motion.div>
             </IonCol>
           </IonRow>

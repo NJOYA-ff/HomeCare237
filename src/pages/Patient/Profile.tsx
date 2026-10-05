@@ -15,7 +15,6 @@ import {
   IonBackButton,
   IonBadge,
   IonText,
-  IonAlert,
   IonLoading,
   IonSelect,
   IonSelectOption,
@@ -28,13 +27,13 @@ import {
   IonCard,
   IonCardContent,
 } from "@ionic/react";
+import { MessageBox } from "../../components/ui/MessageBox";
 import {
   mailOutline,
   callOutline,
   locationOutline,
   pencilOutline,
   cameraOutline,
-  lockClosedOutline,
   heartOutline,
   medkitOutline,
   bandageOutline,
@@ -48,24 +47,33 @@ import {
   closeCircleOutline,
   logOutOutline,
 } from "ionicons/icons";
+import LoadingHelix from "../../components/LoadingHelix";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   doc,
   getDoc,
-  updateDoc,
+  setDoc,
   collection,
   onSnapshot,
   query,
   where,
   orderBy,
-  Timestamp,
 } from "firebase/firestore";
 
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { signOut } from "firebase/auth";
 import { db, storage, auth } from "../../firebaseconfig";
+import { authService } from "../../App";
+import {
+  DEFAULT_AVATAR,
+  getDocumentImageUrl,
+  handleImageError,
+} from "../../utils/profileImageStorage";
+import {
+  appointmentMillis,
+  formatAppointmentWhen,
+} from "../../utils/appointmentDate";
+import { useSettings } from "../../context/SettingsContext";
 import "./Profile.scss";
-import { authService, UserRole } from "../../App";
 import { useHistory } from "react-router";
 
 interface PatientData {
@@ -133,6 +141,7 @@ const defaultPatientData: Omit<PatientData, "id"> = {
 };
 
 const Profile: React.FC = () => {
+  const { language } = useSettings();
   const [patient, setPatient] = useState<PatientData | null>(null);
   const [appointments, setAppointments] = useState<any[]>([]);
   const [tempData, setTempData] = useState<PatientData | null>(null);
@@ -141,13 +150,27 @@ const Profile: React.FC = () => {
   const [showAlert, setShowAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
   const [initialLoad, setInitialLoad] = useState(true);
+  /* Resolved avatar `<img src>`. Kept separate from `patient.avatar` because the
+     Firestore document writes the picture under several historical names
+     (`profilePhoto` at signup, `photoURL` for Google sign-in, …) and may hold a
+     bare Storage path rather than a download URL. `avatarUrl` holds the value
+     that is actually safe to hand to `<img src>`. */
+  const [avatarUrl, setAvatarUrl] = useState<string>(DEFAULT_AVATAR);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const allergyInputRef = useRef<any>(null);
   const conditionInputRef = useRef<any>(null);
   const medicationInputRef = useRef<any>(null);
   const [showLogOutAlert, setShowLogOutAlert] = React.useState(false);
-  // Get current user ID
-  const currentUser = auth.currentUser;
+
+  // Reactively track auth state — auth.currentUser is null on first render
+  // if Firebase hasn't restored the session yet, which would leave the page
+  // stuck on the loading screen permanently.
+  const [currentUser, setCurrentUser] = useState(auth.currentUser);
+  useEffect(() => {
+    const unsub = auth.onAuthStateChanged((user) => setCurrentUser(user));
+    return unsub;
+  }, []);
+
   const patientId = currentUser?.uid;
 
   // Helper function to safely merge Firestore data with defaults - memoized
@@ -181,6 +204,23 @@ const Profile: React.FC = () => {
     [],
   );
 
+  /* Resolve the avatar from a Firestore patient document.
+     `getDocumentImageUrl` checks every historical field name in priority order
+     and accepts both a download URL and a bare Storage path. Reading
+     `firestoreData.avatar` alone — as this page used to — never matched what
+     signup writes (`profilePhoto`) or what Google sign-in writes (`profilePhoto`
+     from `photoURL`), so a real uploaded photo was never shown and the avatar
+     silently fell back to the placeholder. */
+  const resolveAvatar = useCallback(async (source: unknown) => {
+    try {
+      const resolved = await getDocumentImageUrl(source);
+      setAvatarUrl(resolved || DEFAULT_AVATAR);
+    } catch (error) {
+      console.error("Error resolving patient avatar:", error);
+      setAvatarUrl(DEFAULT_AVATAR);
+    }
+  }, []);
+
   // Load initial data once
   const loadInitialData = useCallback(async () => {
     if (!patientId) return;
@@ -194,6 +234,7 @@ const Profile: React.FC = () => {
         const mergedData = mergePatientData(firestoreData, docSnapshot.id);
         setPatient(mergedData);
         setTempData(mergedData);
+        void resolveAvatar(firestoreData);
       } else {
         console.log("No patient data found - creating default structure");
         // Create a default patient data structure
@@ -205,6 +246,7 @@ const Profile: React.FC = () => {
         };
         setPatient(defaultData);
         setTempData(defaultData);
+        void resolveAvatar(defaultData);
       }
     } catch (error) {
       console.error("Error fetching patient data:", error);
@@ -213,7 +255,7 @@ const Profile: React.FC = () => {
     } finally {
       setInitialLoad(false);
     }
-  }, [patientId, currentUser, mergePatientData]);
+  }, [patientId, currentUser, mergePatientData, resolveAvatar]);
 
   // Set up real-time listener only after initial load
   useEffect(() => {
@@ -251,6 +293,13 @@ const Profile: React.FC = () => {
                 return mergedData;
               });
             }
+
+            // Keep the avatar in sync with edits made on another device. Skipped
+            // while editing so a remote change cannot discard in-progress input;
+            // the local upload path already updates it optimistically.
+            if (!isEditing) {
+              void resolveAvatar(firestoreData);
+            }
           }
         }, 100);
       },
@@ -263,7 +312,7 @@ const Profile: React.FC = () => {
       clearTimeout(timeoutId);
       unsubscribe();
     };
-  }, [patientId, initialLoad, isEditing, mergePatientData]);
+  }, [patientId, initialLoad, isEditing, mergePatientData, resolveAvatar]);
 
   // Load initial data on mount
   useEffect(() => {
@@ -307,7 +356,13 @@ const Profile: React.FC = () => {
       // Remove the id field before saving to Firestore
       const { id, ...updateData } = tempData;
 
-      await updateDoc(patientDocRef, updateData);
+      // `setDoc(..., { merge: true })` rather than `updateDoc`: a patient whose
+      // document does not exist yet (the "no patient data found" branch above
+      // builds an in-memory default and never writes it) made every save throw
+      // `NOT_FOUND`, so editing the profile silently did nothing. Merge keeps
+      // fields this page does not manage — `profilePhoto`, `role`, `createdAt`,
+      // the `medications` subcollection — intact instead of replacing the doc.
+      await setDoc(patientDocRef, updateData, { merge: true });
 
       setPatient(tempData);
       setIsEditing(false);
@@ -335,7 +390,9 @@ const Profile: React.FC = () => {
       const payload: any = { [field]: value };
 
       console.log("Saving to Firebase:", field, "Value:", payload[field]);
-      await updateDoc(patientDocRef, payload);
+      // Same reason as `saveChanges`: merge-write so this succeeds even when the
+      // patient document has not been created yet.
+      await setDoc(patientDocRef, payload, { merge: true });
 
       // Update local state
       setPatient((prev) => (prev ? { ...prev, [field]: value } : null));
@@ -372,8 +429,12 @@ const Profile: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Create a reference to the storage location
-      const storageRef = ref(storage, `patients/${patientId}/avatar`);
+      // Create a reference to the storage location.
+      // `profile_photos/{uid}/…` is the path the Storage rules explicitly
+      // authorise for the user's own picture; `patients/{uid}/avatar` only fell
+      // through to the catch-all `allow write: if isAuthenticated()`, which let
+      // *any* signed-in user overwrite *any* other user's avatar.
+      const storageRef = ref(storage, `profile_photos/${patientId}/avatar`);
 
       // Upload the file
       const snapshot = await uploadBytes(storageRef, file);
@@ -389,11 +450,22 @@ const Profile: React.FC = () => {
         });
       }
 
-      // Also update in Firestore
+      // Show the new picture immediately instead of waiting for the round trip.
+      setAvatarUrl(downloadURL);
+
+      // Also update in Firestore.
+      // Write `profilePhoto` — the field both signup flows and `App.tsx` use —
+      // *and* `avatar`, so every reader of this document finds it. Writing only
+      // `avatar` left the picture invisible to the dashboard, the doctor's patient
+      // list and the admin views.
+      // Merge-write, for the same reason as `saveChanges`: the patient document
+      // may not exist yet.
       const patientDocRef = doc(db, "patients", patientId);
-      await updateDoc(patientDocRef, {
-        avatar: downloadURL,
-      });
+      await setDoc(
+        patientDocRef,
+        { profilePhoto: downloadURL, avatar: downloadURL },
+        { merge: true },
+      );
     } catch (error) {
       console.error("Error uploading image:", error);
       setAlertMessage("Error uploading image. Please try again.");
@@ -535,13 +607,26 @@ const Profile: React.FC = () => {
   };
   const history = useHistory();
   const handleLogout = async () => {
+    // Close the dialog before awaiting: logout() notifies App's auth-state
+    // listeners with `null`, which re-renders App onto the public routes and
+    // unmounts this page. Anything after that point may never run, so the
+    // navigation has to be queued before it, not after.
+    setShowLogOutAlert(false);
     try {
+      // Must be authService.logout(), not a bare signOut(auth). logout() is the
+      // only path that calls clearCredentials(), and an explicit logout is
+      // exactly the "forget me on this device" action — leaving the saved
+      // PIN/biometric credential behind would let the next person at this
+      // device one-tap into the previous patient's account.
       await authService.logout();
-      // Redirect to login page or handle logout
+      // App's listener flips currentUser → null, which swaps the router to the
+      // public routes. /patient/profile does not exist there, so without this
+      // push the user lands on a blank screen instead of the sign-in page.
       history.push("/Patient_signin");
-      console.log("User signed out successfully");
     } catch (error) {
       console.error("Error signing out:", error);
+      setAlertMessage("Error signing out. Please try again.");
+      setShowAlert(true);
     }
   };
 
@@ -596,59 +681,37 @@ const Profile: React.FC = () => {
     try {
       const now = new Date();
 
-      const mapped = appointments.map((a) => ({
-        ...a,
-        _dateObj:
-          a.date && typeof (a.date as any).toDate === "function"
-            ? (a.date as any).toDate()
-            : new Date(a.date as any),
-      }));
+      // Build `_dateObj` from the booked slot (`time`) together with `date`.
+      // Booking stores the doctor's picked slot in `time` ("09:00") while `date`
+      // is a Timestamp whose clock time is an artefact of the date-only picker,
+      // so reading the clock from `date` displayed the wrong time and could pick
+      // the wrong row as "next".
+      const mapped = appointments
+        .map((a) => {
+          const ms = appointmentMillis(a.date, a.time);
+          return ms === null ? null : { ...a, _dateObj: new Date(ms) };
+        })
+        .filter((a): a is NonNullable<typeof a> => a !== null);
 
+      // Only return a future appointment — if none exist, return null
       const future = mapped
         .filter((a) => a._dateObj.getTime() >= now.getTime())
         .sort((x, y) => x._dateObj.getTime() - y._dateObj.getTime());
 
-      if (future.length > 0) return future[0];
-
-      const allSorted = mapped.sort(
-        (x, y) => x._dateObj.getTime() - y._dateObj.getTime(),
-      );
-      return allSorted[0];
+      return future.length > 0 ? future[0] : null;
     } catch (error) {
       console.error("Error computing next appointment in Profile:", error);
-      return appointments[0] || null;
+      return null;
     }
   }, [appointments]);
 
-  const formatAppointmentDate = (dateObj?: Date | null) => {
-    if (!dateObj) return "No date";
-    try {
-      const date = dateObj;
-      const now = new Date();
-      const tomorrow = new Date(now);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-
-      if (date.toDateString() === now.toDateString()) {
-        return `Today, ${date.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        })}`;
-      } else if (date.toDateString() === tomorrow.toDateString()) {
-        return `Tomorrow, ${date.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        })}`;
-      } else {
-        return `${date.toLocaleDateString()}, ${date.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        })}`;
-      }
-    } catch (error) {
-      console.error("Error formatting appointment date:", error);
-      return "Invalid date";
-    }
-  };
+  // Renders the *computed* instant, so the clock time shown is the doctor slot
+  // the patient picked rather than the date-only picker's arbitrary time.
+  const formatAppointmentDate = (dateObj?: Date | null) =>
+    formatAppointmentWhen(
+      dateObj ? dateObj.getTime() : null,
+      language,
+    );
 
   // Show loading while data is being fetched initially
   if (initialLoad) {
@@ -656,11 +719,7 @@ const Profile: React.FC = () => {
       <IonPage>
         <IonContent className="ion-padding">
           <div className="loading-container">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              className="loading-spinner"
-            />
+            <LoadingHelix />
             <IonText className="ion-text-center ion-padding">
               <p>Loading your Profile...</p>
             </IonText>
@@ -733,12 +792,21 @@ const Profile: React.FC = () => {
             spinner="circles"
           />
 
-          <IonAlert
+          <MessageBox
             isOpen={showAlert}
-            onDidDismiss={() => setShowAlert(false)}
-            header={alertMessage.includes("Error") ? "Error" : "Success"}
+            title={alertMessage.includes("Error") ? "Error" : "Success"}
             message={alertMessage}
-            buttons={["OK"]}
+            /* Mirrors the title's conditional so the icon and accent agree with
+               the copy instead of contradicting it. */
+            tone={alertMessage.includes("Error") ? "danger" : "success"}
+            actions={[
+              {
+                label: "OK",
+                color: "primary",
+                onClick: () => setShowAlert(false),
+              },
+            ]}
+            onDismiss={() => setShowAlert(false)}
           />
 
           <motion.div
@@ -754,12 +822,15 @@ const Profile: React.FC = () => {
                 onClick={isEditing ? selectFromGallery : undefined}
               >
                 <IonAvatar className="profile-avatar">
+                  {/* `avatarUrl` is the resolved value (any historical field name,
+                      Storage paths resolved to a real download URL) rather than
+                      `tempData.avatar`, which no write path used to populate.
+                      `handleImageError` swaps in the bundled placeholder exactly
+                      once if the URL is stale or the device is offline. */}
                   <img
-                    src={
-                      tempData.avatar ||
-                      "https://ionicframework.com/docs/img/demos/avatar.svg"
-                    }
+                    src={avatarUrl}
                     alt="Patient Avatar"
+                    onError={handleImageError}
                   />
                 </IonAvatar>
                 {isEditing && (
@@ -1322,21 +1393,24 @@ const Profile: React.FC = () => {
           </motion.div>
         </div>
       </IonContent>
-      <IonAlert
+      <MessageBox
         isOpen={showLogOutAlert}
-        onDidDismiss={() => setShowLogOutAlert(false)}
-        header="Log Out"
+        title="Log Out"
         message="Are you sure you want to Log out?"
-        buttons={[
+        tone="info"
+        actions={[
           {
-            text: "Cancel",
-            role: "cancel",
+            label: "Cancel",
+            color: "medium",
+            onClick: () => setShowLogOutAlert(false),
           },
           {
-            text: "Yes, Log out",
-            handler: handleLogout,
+            label: "Yes, Log out",
+            color: "danger",
+            onClick: handleLogout,
           },
         ]}
+        onDismiss={() => setShowLogOutAlert(false)}
       />
     </IonPage>
   );

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { DEFAULT_AVATAR, isUsableImageValue, handleImageError } from "../../utils/profileImageStorage";
 import {
   IonPage,
   IonHeader,
@@ -14,13 +15,13 @@ import {
   IonButtons,
   IonBackButton,
   IonText,
-  IonAlert,
-  IonLoading,
   IonTextarea,
   IonInput,
   IonChip,
   IonToggle,
 } from "@ionic/react";
+import { MessageBox } from "../../components/ui/MessageBox";
+import { EmptyState } from "../../components/ui";
 import {
   mailOutline,
   callOutline,
@@ -46,6 +47,7 @@ import { onAuthStateChanged, User } from "firebase/auth";
 import { db, auth, storage } from "../../firebaseconfig";
 import { authService } from "../../App";
 import "./Doctor.scss";
+import LoadingHelix, { LoadingHelixOverlay } from "../../components/LoadingHelix";
 import { useHistory } from "react-router";
 
 interface DoctorData {
@@ -82,7 +84,7 @@ const defaultDoctorData: DoctorData = {
   }),
   notifications: 0,
   specialization: "",
-  avatar: "https://ionicframework.com/docs/img/demos/avatar.svg",
+  avatar: DEFAULT_AVATAR,
   bio: "",
   experience: 0,
   rating: 0,
@@ -421,11 +423,7 @@ const Doc_profile: React.FC = () => {
       <IonPage>
         <IonContent>
           <div className="loading-container">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              className="loading-spinner"
-            />
+            <LoadingHelix size={40} />
             <IonText className="ion-text-center ion-padding">
               <p>Loading profile...</p>
             </IonText>
@@ -468,18 +466,24 @@ const Doc_profile: React.FC = () => {
         />
 
         {/* Loading Indicator */}
-        <IonLoading
+        <LoadingHelixOverlay
           isOpen={isLoading}
           message={isEditing ? "Saving changes..." : "Uploading image..."}
-          spinner="circles"
         />
 
-        <IonAlert
+        <MessageBox
           isOpen={showAlert}
-          onDidDismiss={() => setShowAlert(false)}
-          header={"Profile Updated"}
-          message={"Your profile has been successfully updated."}
-          buttons={["OK"]}
+          title="Profile Updated"
+          message="Your profile has been successfully updated."
+          tone="success"
+          actions={[
+            {
+              label: "OK",
+              color: "primary",
+              onClick: () => setShowAlert(false),
+            },
+          ]}
+          onDismiss={() => setShowAlert(false)}
         />
 
         <motion.div
@@ -496,8 +500,9 @@ const Doc_profile: React.FC = () => {
             >
               <IonAvatar className="profile-avatar">
                 <img
-                  src={tempData.avatar || defaultDoctorData.avatar}
+                  src={isUsableImageValue(tempData.avatar) ? tempData.avatar : DEFAULT_AVATAR}
                   alt="Doctor Avatar"
+                  onError={handleImageError}
                 />
               </IonAvatar>
               {isEditing && (
@@ -743,17 +748,26 @@ const Doc_profile: React.FC = () => {
                           onIonBlur={addSlot}
                         />
 
-                        <div className="slot-chips">
-                          {tempData.availableSlots.map((s, i) => (
-                            <IonChip key={i} color="primary">
-                              <IonLabel>{s}</IonLabel>
-                              <IonIcon
-                                icon={closeCircleOutline}
-                                onClick={() => removeSlot(i)}
-                              />
-                            </IonChip>
-                          ))}
-                        </div>
+                        {tempData.availableSlots.length === 0 ? (
+                          <EmptyState
+                            className="hc-empty-state--inline"
+                            icon={timeOutline}
+                            title="No slots added yet"
+                            description="Type a time such as 09:00 and press enter to add your first slot."
+                          />
+                        ) : (
+                          <div className="slot-chips">
+                            {tempData.availableSlots.map((s, i) => (
+                              <IonChip key={i} color="primary">
+                                <IonLabel>{s}</IonLabel>
+                                <IonIcon
+                                  icon={closeCircleOutline}
+                                  onClick={() => removeSlot(i)}
+                                />
+                              </IonChip>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </IonLabel>
                   ) : (
@@ -786,17 +800,26 @@ const Doc_profile: React.FC = () => {
                           onIonBlur={addLanguage}
                         />
 
-                        <div className="language-chips">
-                          {tempData.languages.map((lang, index) => (
-                            <IonChip key={index} color="primary">
-                              <IonLabel>{lang}</IonLabel>
-                              <IonIcon
-                                icon={closeCircleOutline}
-                                onClick={() => removeLanguage(index)}
-                              />
-                            </IonChip>
-                          ))}
-                        </div>
+                        {tempData.languages.length === 0 ? (
+                          <EmptyState
+                            className="hc-empty-state--inline"
+                            icon={languageOutline}
+                            title="No languages added yet"
+                            description="Add the languages you consult in so patients can be matched correctly."
+                          />
+                        ) : (
+                          <div className="language-chips">
+                            {tempData.languages.map((lang, index) => (
+                              <IonChip key={index} color="primary">
+                                <IonLabel>{lang}</IonLabel>
+                                <IonIcon
+                                  icon={closeCircleOutline}
+                                  onClick={() => removeLanguage(index)}
+                                />
+                              </IonChip>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <p>
@@ -919,21 +942,27 @@ const Doc_profile: React.FC = () => {
           </IonButton>
         </motion.div>
       </IonContent>
-      <IonAlert
+      <MessageBox
         isOpen={showLogOutAlert}
-        onDidDismiss={() => setShowLogOutAlert(false)}
-        header="Log Out"
+        title="Log Out"
         message="Are you sure you want to Log out?"
-        buttons={[
+        tone="info"
+        actions={[
           {
-            text: "Cancel",
-            role: "cancel",
+            label: "Cancel",
+            color: "medium",
+            onClick: () => setShowLogOutAlert(false),
           },
           {
-            text: "Yes, Log out",
-            handler: handleLogout,
+            /* Ending the session signs the doctor out, so the confirm action
+               carries the danger colour; Cancel stays quiet because staying
+               signed in is the safe default. */
+            label: "Yes, Log out",
+            color: "danger",
+            onClick: () => handleLogout(),
           },
         ]}
+        onDismiss={() => setShowLogOutAlert(false)}
       />
     </IonPage>
   );

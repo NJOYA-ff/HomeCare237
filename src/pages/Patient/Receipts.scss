@@ -1,0 +1,168 @@
+// Receipts.scss — Insurance & e-Receipts
+
+.receipts-page {
+  ion-toolbar {
+    border-bottom: 1px solid var(--ion-background-color-step-150, #e3e8f2);
+  }
+}
+
+.insurance-card {
+  border: none;
+  box-shadow: none;
+  border-radius: 14px;
+  margin: 8px 14px 6px;
+  background: linear-gradient(
+    135deg,
+    rgba(59, 125, 216, 0.14),
+    rgba(59, 125, 216, 0.04)
+  );
+ 
+
+  .insurance-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+
+    ion-icon {
+      font-size: 1.5rem;
+      color: var(--ion-color-primary);
+    }
+
+    h3 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    p {
+      margin: 2px 0 0;
+      font-size: 0.76rem;
+      color: var(--ion-color-medium);
+    }
+  }
+
+  .insurance-body {
+    .insurance-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 9px 4px;
+      border-bottom: 1px solid var(--ion-background-color-step-150, #eef0f6);
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      span {
+        font-size: 0.82rem;
+        color: var(--ion-text-color);
+      }
+
+      strong {
+        font-size: 0.88rem;
+      }
+    }
+  }
+
+  .insurance-empty {
+    margin: 8px 0 0;
+    font-size: 0.82rem;
+    color: var(--ion-color-medium);
+    line-height: 1.5;
+  }
+}
+
+.receipts-head {
+  padding: 8px 14px 2px;
+
+  h3 {
+    margin: 0 0 2px;
+    font-size: 0.98rem;
+    font-weight: 600;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.78rem;
+    color: var(--ion-color-medium);
+  }
+}
+
+.receipts-empty {
+  text-align: center;
+  padding: 32px 20px;
+  color: var(--ion-color-medium);
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.receipt-card {
+  border: none;
+  box-shadow: none;
+  border-radius: 13px;
+  background: var(--ion-card-background, #ffffff);
+  margin: 8px 14px 10px;
+
+  .receipt-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+
+    .receipt-main {
+      flex: 1;
+      min-width: 0;
+
+      .receipt-type {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.74rem;
+        font-weight: 600;
+        color: var(--ion-color-primary);
+        margin-bottom: 2px;
+
+        ion-icon {
+          font-size: 0.9rem;
+        }
+      }
+
+      h3 {
+        margin: 2px 0 2px;
+        font-size: 0.95rem;
+      }
+
+      p {
+        margin: 0;
+        font-size: 0.76rem;
+        color: var(--ion-color-medium);
+      }
+    }
+
+    .receipt-amount {
+      text-align: right;
+
+      strong {
+        display: block;
+        font-size: 0.92rem;
+        font-weight: 700;
+      }
+
+      ion-badge {
+        font-size: 0.66rem;
+        padding: 4px 8px;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+      }
+    }
+  }
+
+  .receipt-dl-btn {
+    --border-radius: 10px;
+    height: 38px;
+    font-size: 0.82rem;
+    margin-top: 2px;
+  }
+}

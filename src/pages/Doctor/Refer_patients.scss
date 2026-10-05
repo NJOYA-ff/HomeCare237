@@ -1,4 +1,3 @@
-@use '../../theme/hc-form.scss';
 
 .auth-required {
   text-align: center;
@@ -173,7 +172,7 @@
   --border-width: 1px;
   --border-style: solid;
   --inner-border-width: 0;
-  --highlight-color-focused: var(--ion-color-primary, #3b7dd8);
+  --highlight-color-focused: var(--ion-color-primary);
   border-radius: 12px;
   margin-bottom: 12px;
 
@@ -195,7 +194,7 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
+body.dark {
   .filter-item {
     --background: var(--ion-item-background, #1a1d27);
     --border-color: var(--ion-color-step-150, #252839);
@@ -261,7 +260,7 @@ body.dark .filter-item {
 
 .referral-details {
   margin: 1rem 0;
-
+color: var(--ion-text-color);
   .detail-item-r {
     display: flex;
     align-items: center;
@@ -269,17 +268,14 @@ body.dark .filter-item {
     margin-bottom: 0.5rem;
     font-size: 0.9rem;
 
-    ion-icon {
-      font-size: 1.1rem;
-      color: var(--ion-color-medium);
-    }
+   
   }
 }
 
 .referral-actions {
   display: flex;
+  flex-direction: column;
   gap: 0.5rem;
-  flex-wrap: wrap;
 }
 
 // Detail Views
@@ -360,7 +356,7 @@ body.dark .filter-item {
     --border-width: 1px;
     --border-style: solid;
     --inner-border-width: 0;
-    --highlight-color-focused: var(--ion-color-primary, #3b7dd8);
+    --highlight-color-focused: var(--ion-color-primary);
     border-radius: 12px;
     margin-bottom: 14px;
 
@@ -384,7 +380,7 @@ body.dark .filter-item {
   }
 }
 
-@media (prefers-color-scheme: dark) {
+body.dark {
   .referral-form .form-item {
     --background: var(--ion-item-background, #1a1d27);
     --border-color: var(--ion-color-step-150, #252839);
@@ -401,9 +397,7 @@ body.dark .referral-form .form-item {
 }
 
 // Empty States
-.no-results,
-.no-referrals,
-.no-appointments {
+.no-referrals {
   text-align: center;
   padding: 2rem;
 
@@ -433,13 +427,7 @@ body.dark .referral-form .form-item {
     }
   }
 
-  .referral-actions {
-    flex-direction: column;
-
-    ion-button {
-      width: 100%;
-    }
-  }
+ 
 }
 // Refer_patients.scss
 
@@ -478,26 +466,13 @@ ion-segment {
   margin-top: 4px;
   color: var(--ion-color-medium);
 
-  ion-icon {
-    margin-right: 4px;
-    font-size: 10px;
-  }
-
   // Specific colors for directions
   .sent & {
     color: var(--ion-color-success);
-
-    ion-icon {
-      color: var(--ion-color-success);
-    }
   }
 
   .received & {
     color: var(--ion-color-primary);
-
-    ion-icon {
-      color: var(--ion-color-primary);
-    }
   }
 }
 
@@ -609,7 +584,6 @@ ion-chip {
   .referral-details {
     margin: 12px 0;
     padding: 12px;
-    background: var(--ion-color-light);
     border-radius: 8px;
 
     .detail-item-r {
@@ -622,41 +596,26 @@ ion-chip {
       &:last-child {
         margin-bottom: 0;
       }
-
-      ion-icon {
-        margin-right: 8px;
-        min-width: 16px;
-        color: var(--ion-color-primary);
-      }
     }
   }
 
   .referral-actions {
     display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
     gap: 8px;
     margin-top: 12px;
 
+    // Action buttons sit side by side, splitting the row evenly
+    // (expand="block" keeps each button full-width of its share)
     ion-button {
       flex: 1;
-      --border-width: 1px;
+      min-width: 96px;
+      margin: 0;
+      --padding-start: 6px;
+      --padding-end: 6px;
       font-size: 12px;
       height: 32px;
-
-      // Specific button colors
-      &[color="primary"] {
-        --border-color: var(--ion-color-primary);
-        --color: var(--ion-color-primary);
-      }
-
-      &[color="success"] {
-        --border-color: var(--ion-color-success);
-        --color: var(--ion-color-success);
-      }
-
-      &[color="danger"] {
-        --border-color: var(--ion-color-danger);
-        --color: var(--ion-color-danger);
-      }
 
       ion-icon {
         font-size: 14px;
@@ -742,11 +701,10 @@ ion-chip {
 
     .received-actions {
       display: flex;
+      flex-direction: column;
       gap: 12px;
 
       ion-button {
-        flex: 1;
-
         &[color="success"] {
           --background: var(--ion-color-success);
           --color: var(--ion-color-success-contrast);
@@ -862,14 +820,6 @@ ion-badge {
 
   .referral-card {
     margin: 8px 12px;
-
-    .referral-actions {
-      flex-direction: column;
-
-      ion-button {
-        width: 100%;
-      }
-    }
   }
 
   .referral-detail-section .detail-actions .received-actions {
@@ -902,27 +852,43 @@ ion-badge {
 //   font-size: 1.2rem;
 // }
 
-// ── Loading ──────────────────────────────────────────────────
-.loading-container {
+// ── Overlaid loading card ────────────────────────────────────
+.referral-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+.referral-loading-card {
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  height: 50vh;
-  padding: 20px;
+  justify-content: center;
+  gap: 14px;
+  background: var(--ion-card-background, #ffffff);
+  border-radius: 20px;
+  padding: 32px 40px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.22);
+  min-width: 180px;
+}
 
-  .loading-spinner {
-    width: 48px;
-    height: 48px;
-    border: 4px solid rgba(var(--ion-color-primary-rgb), 0.2);
-    border-top-color: var(--ion-color-primary);
-    border-radius: 50%;
-    margin-bottom: 16px;
-  }
+.referral-loading-text {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--ion-color-medium);
+  text-align: center;
+}
 
-  p {
-    margin: 0;
-    color: var(--ion-color-medium);
-    text-align: center;
+body.dark {
+  .referral-loading-card {
+    background: var(--ion-item-background);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
   }
 }

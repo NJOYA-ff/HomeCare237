@@ -1,0 +1,398 @@
+.triage-modal {
+  --width: 92%;
+  --max-width: 460px;
+  --height: auto;
+  --max-height: 85vh;
+  --border-radius: 16px;
+  --backdrop-opacity: 0.6;
+  --background: var(--ion-background-color, #f8fafc);
+}
+
+/*
+ * An <ion-content> collapses to 0px inside a `--height: auto` modal, which hid
+ * every triage step. The body is a plain scrollable element so the modal can
+ * size itself to its content and still scroll on small screens.
+ */
+.triage-modal-body {
+  padding: 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  max-height: calc(85vh - 80px);
+  background: var(--ion-background-color, #f8fafc);
+}
+
+.triage-header-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.triage-step-container h3 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ion-text-color, #1e293b);
+}
+
+.triage-sub {
+  margin: 0 0 16px 0;
+  font-size: 12px;
+  color: var(--ion-color-step-600, #64748b);
+}
+
+.symptom-chips-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.symptom-btn {
+  background: var(--ion-card-background, #ffffff);
+  border: 1.5px solid var(--ion-color-step-200, #cbd5e1);
+  border-radius: 10px;
+  padding: 10px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ion-text-color, #334155);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.symptom-btn.selected {
+  border-color: #4f46e5;
+  background: rgba(79, 70, 229, 0.08);
+  color: #4f46e5;
+}
+
+.custom-input-box {
+  margin-bottom: 20px;
+}
+
+/* Ionic field wrapper: single themed surface for the free-text symptoms
+   input — matches the booking form-item fields. */
+.triage-ion-item {
+  --background: var(--ion-item-background, #ffffff);
+  --border-radius: 12px;
+  --padding-start: 14px;
+  --inner-padding-end: 14px;
+  --padding-top: 8px;
+  --padding-bottom: 8px;
+  --min-height: 62px;
+  --border-color: #dde1f5;
+  --border-width: 1px;
+  --border-style: solid;
+  --inner-border-width: 0;
+  --highlight-color-focused: var(--ion-color-primary);
+  border-radius: 12px;
+  margin: 0;
+}
+
+.triage-ion-item ion-label[position="stacked"] {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ion-color-medium);
+  margin-bottom: 4px;
+}
+
+.triage-ion-item ion-input {
+  font-size: 0.93rem;
+  color: var(--ion-text-color);
+  --placeholder-color: var(--ion-color-medium);
+  --placeholder-opacity: 1;
+}
+
+body.dark .triage-ion-item {
+  --background: var(--ion-item-background, #1a1d27);
+  --border-color: var(--ion-color-step-150, #252839);
+}
+
+/* ── Step pager ──
+ * Back chevron, centred "n / 5" counter, forward control.
+ *
+ * The counter is the reason this row exists at all: the two chevrons are
+ * deliberately unlabelled, so without it there is no visible cue for where the
+ * user is in the wizard or how much is left. `1fr` on the middle cell centres it
+ * between the two controls and absorbs the width change as the digits go from
+ * one character to two, which stops the pair from looking lopsided. */
+.triage-nav-buttons {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--ion-color-step-150, #e2e8f0);
+}
+
+.triage-step-counter {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ion-color-step-600, #64748b);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Icon-only pager button: transparent, so it recedes until hovered or focused.
+ *
+ * Ionic's `fill="clear"` still tints on hover/press via --background-hover /
+ * --background-activated. Those are overridden to a faint wash rather than left
+ * at the default, which would drop a solid brand block onto the step content.
+ * Ionic also dims disabled clear-buttons to 0.6 opacity; the pager reads better
+ * with a deliberately faint disabled state, matching the showcase's chevrons. */
+ion-button.triage-nav-btn {
+  --background: transparent;
+  --background-hover: rgba(79, 70, 229, 0.1);
+  --background-activated: rgba(79, 70, 229, 0.16);
+  --background-focused: rgba(79, 70, 229, 0.1);
+  --color: #4f46e5;
+  --border-radius: 50%;
+  /* Keeps the tap target at the 44px WCAG 2.5.5 minimum even though the glyph is
+     22px. The negative margin reclaims the surrounding space so the larger
+     target does not push the row apart. */
+  --min-width: 44px;
+  --min-height: 44px;
+  --padding-start: 10px;
+  --padding-end: 10px;
+  --padding-top: 10px;
+  --padding-bottom: 10px;
+  margin: -10px;
+  font-size: 22px;
+}
+
+ion-button.triage-nav-btn ion-icon {
+  font-size: 22px;
+}
+
+ion-button.triage-nav-btn:disabled {
+  --color: var(--ion-color-step-400, #94a3b8);
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* Keyboard focus still has to be obvious on a transparent control, so the ring
+   is drawn explicitly — a transparent button has no fill to indicate focus. */
+ion-button.triage-nav-btn:focus-visible {
+  outline: 2px solid #4f46e5;
+  outline-offset: 2px;
+}
+
+@media (prefers-contrast: more) {
+  /* The faint hover wash disappears at high contrast, so the chevron needs a
+     border to keep reading as a control. */
+  ion-button.triage-nav-btn {
+    --background-hover: transparent;
+    --background-activated: transparent;
+    --background-focused: transparent;
+    border: 1px solid var(--ion-color-step-500, #64748b);
+  }
+}
+
+/* Step 2 */
+.duration-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.duration-btn {
+  background: var(--ion-card-background, #ffffff);
+  border: 1.5px solid var(--ion-color-step-200, #cbd5e1);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  color: var(--ion-text-color, #1e293b);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.duration-btn.selected {
+  border-color: #2563eb;
+  background: rgba(37, 99, 235, 0.08);
+  color: #2563eb;
+}
+
+.severity-box {
+  background: var(--ion-card-background, #ffffff);
+  border: 1px solid var(--ion-color-step-200, #cbd5e1);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 20px;
+}
+
+.severity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.severity-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--ion-color-step-600, #64748b);
+}
+
+/* Step 3: Red flags */
+.redflags-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.redflag-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--ion-card-background, #ffffff);
+  border: 1.5px solid var(--ion-color-step-200, #cbd5e1);
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 13px;
+  color: var(--ion-text-color, #334155);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.redflag-item.active {
+  border-color: #ef4444;
+  background: #fef2f2;
+  color: #991b1b;
+  font-weight: 600;
+}
+
+.rf-icon {
+  font-size: 18px;
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.redflag-item.active .rf-icon {
+  color: #ef4444;
+}
+
+.urgent-warning-banner {
+  display: flex;
+  gap: 10px;
+  background: #fee2e2;
+  border: 1px solid #f87171;
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: #991b1b;
+  font-size: 12px;
+  margin-bottom: 16px;
+}
+
+.urgent-warning-banner ion-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.urgent-warning-banner strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+
+/* Step 4: AI Analysis */
+.ai-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  gap: 16px;
+}
+
+.ai-loading ion-spinner {
+  --color: #4f46e5;
+  width: 48px;
+  height: 48px;
+}
+
+.ai-loading p {
+  font-size: 13px;
+  color: var(--ion-color-step-600, #64748b);
+  margin: 0;
+}
+
+.ai-recommendation-card {
+  margin: 16px 0;
+  border: 1px solid var(--ion-color-step-200, #cbd5e1);
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+}
+
+.ai-recommendation-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: #0369a1;
+}
+
+.ai-recommendation-header ion-icon {
+  font-size: 20px;
+}
+
+.ai-recommendations-list {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--ion-text-color, #1e293b);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.ai-recommendations-list li {
+  margin-bottom: 8px;
+}
+
+.ai-disclaimer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--ion-color-step-600, #64748b);
+  margin: 16px 0;
+  padding: 8px 12px;
+  background: var(--ion-color-step-50, #f1f5f9);
+  border-radius: 8px;
+}
+
+.ai-disclaimer ion-icon {
+  font-size: 14px;
+}
+
+/* Dark mode for AI recommendations */
+body.dark .ai-recommendation-card {
+  border-color: var(--ion-color-step-700, #475569);
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+}
+
+body.dark .ai-recommendation-header {
+  color: var(--ion-color-primary-light, #7dd3fc);
+}
+
+body.dark .ai-disclaimer {
+  background: var(--ion-color-step-800, #334155);
+  color: var(--ion-color-step-300, #cbd5e1);
+}

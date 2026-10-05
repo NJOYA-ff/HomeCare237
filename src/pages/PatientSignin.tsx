@@ -1,27 +1,16 @@
+import LoadingHelix from "../components/LoadingHelix";
+import QuickSignIn from "../components/QuickSignIn";
+import { getGoogleSignInErrorMessageT, getQuickSignInErrorMessageT } from "../utils/authErrors";
+import AuthShell from "../components/AuthShell";
+import { useSettings } from "../context/SettingsContext";
 import React, { useState } from "react";
-import {
-  IonPage,
-  IonContent,
-  IonButton,
-  IonInput,
-  IonItem,
-  IonText,
-  IonGrid,
-  IonRow,
-  IonCol,
-  IonSpinner,
-  IonButtons,
-  IonIcon,
-  IonHeader,
-  IonToolbar,
-} from "@ionic/react";
+import { IonButton, IonInput, IonItem, IonText, IonGrid, IonRow, IonCol } from "@ionic/react";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
-import { FiMail, FiLock, FiLogIn } from "react-icons/fi";
-import { chevronBackOutline } from "ionicons/icons";
+import { FiMail, FiLock } from "react-icons/fi";
 import { useHistory } from "react-router";
-import { authService, UserRole } from "../App"; // Import from App.tsx
-import QuickSignIn from "../components/QuickSignIn";
+import { authService, UserRole } from "../App";
+import { authBackLabel, authBackTarget, roleLabel } from "../utils/authFlow";
 import "./Page.scss";
 
 type FormData = {
@@ -39,13 +28,16 @@ const PatientSignin: React.FC = () => {
   const [loginError, setLoginError] = useState("");
   const [isPinOpen, setIsPinOpen] = useState(false);
   const history = useHistory();
+  // Declared before the handlers below: they close over `t` to render Firebase
+  // failures and validation messages in the chosen language.
+  const { t } = useSettings();
 
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
     setLoginError("");
 
     try {
-      const user = await authService.login(data.email, data.password);
+      const user = await authService.login(data.email, data.password, UserRole.Patient);
 
       if (user) {
         console.log("Login successful, redirecting...", user);
@@ -56,34 +48,32 @@ const PatientSignin: React.FC = () => {
             history.push("/patient/dashboard");
             break;
 
-          default:
-            history.push("/patient/dashboard");
+        default:
+            setLoginError(t("err_account_not_patient"));
         }
       } else {
-        setLoginError("Login failed. Please try again.");
+        setLoginError(t("err_login_failed"));
       }
     } catch (error: any) {
       // Handle specific Firebase error codes
       switch (error.code) {
         case "auth/user-not-found":
-          setLoginError("No account found with this email address");
+          setLoginError(t("err_no_account_email"));
           break;
         case "auth/invalid-email":
-          setLoginError("Invalid email address format");
+          setLoginError(t("err_email_format"));
           break;
         case "auth/invalid-password":
-          setLoginError("Invalid password");
+          setLoginError(t("err_password_invalid"));
           break;
         case "auth/too-many-requests":
-          setLoginError("Too many attempts. Please try again later.");
+          setLoginError(t("err_too_many_attempts"));
           break;
         case "auth/network-request-failed":
-          setLoginError(
-            "Network error. Please check your connection and try again.",
-          );
+          setLoginError(t("err_network"));
           break;
         default:
-          setLoginError("Failed to log in. Please try again.");
+          setLoginError(error?.message || t("err_failed_to_login"));
       }
     } finally {
       setIsLoading(false);
@@ -95,254 +85,225 @@ const PatientSignin: React.FC = () => {
     setIsLoading(true);
     setLoginError("");
     try {
-      const user = await authService.login(creds.email, creds.password);
+      const user = await authService.login(
+        creds.email,
+        creds.password,
+        UserRole.Patient
+      );
       if (user) {
         history.push("/patient/dashboard");
       } else {
-        setLoginError("Quick sign-in failed. Please sign in manually.");
+        setLoginError(t("err_quick_signin_failed"));
       }
-    } catch {
-      setLoginError("Quick sign-in failed. Please sign in manually.");
+    } catch (error: unknown) {
+      // Maps raw Firebase codes to actionable copy, and special-cases stale
+      // saved credentials (password changed / account disabled) which can never
+      // succeed on retry.
+      setLoginError(getQuickSignInErrorMessageT(error, t));
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <IonPage>
-      <IonHeader class="ion-no-border">
-        <IonToolbar className="signintoolbar">
-          <IonButtons>
-            <IonButton routerLink="/roleselect" className="signupback">
-              <IonIcon icon={chevronBackOutline} />
-              Back
-            </IonButton>
-          </IonButtons>
-        </IonToolbar>
-      </IonHeader>
-      <IonContent fullscreen className="signin-content">
-        {/* Background elements */}
-        <div className="background-elements">
-          {[...Array(12)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="bg-bubble"
-              initial={{ opacity: 0, y: 100 }}
-              animate={{
-                opacity: [0.1, 0.3, 0.1],
-                y: [100, -100, 100],
-                x: Math.random() * 100 - 50,
-              }}
-              transition={{
-                duration: 15 + Math.random() * 10,
-                repeat: Infinity,
-                ease: "linear",
-              }}
-              style={{
-                background: `rgba(${Math.random() * 100}, ${
-                  Math.random() * 100 + 155
-                }, 255, 0.2)`,
-                left: `${Math.random() * 100}%`,
-                width: `${Math.random() * 150 + 50}px`,
-                height: `${Math.random() * 150 + 50}px`,
-                borderRadius: `${Math.random() * 50 + 25}%`,
-              }}
-            />
-          ))}
-        </div>
+    <AuthShell
+      backHref={authBackTarget("patient", "signin")}
+      backLabel={authBackLabel("patient", "signin", t)}
+      eyebrow={roleLabel("patient", t)}
+      title={t("funnel_welcome_back")}
+      subtitle={t("funnel_signin_patient_sub")}
+    >
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <IonGrid>
+          <IonRow className="ion-justify-content-center">
+            <IonCol size="12" sizeMd="8" sizeLg="6">
+              {/* Hide email/password form while PIN modal is open */}
+              {!isPinOpen && (
+                <>
+                  {/* Email */}
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.1 }}
+                  >
+                    <IonItem className="form-item">
+                      <FiMail className="input-icon" />
+                      <IonInput
+                        type="email"
+                        placeholder={t("field_email")}
+                        {...register("email", {
+                          required: t("err_email_required"),
+                          pattern: {
+                            value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                            message: t("err_email_invalid"),
+                          },
+                        })}
+                      />
+                    </IonItem>
+                    {errors.email && (
+                      <span className="error-message">
+                        {errors.email.message}
+                      </span>
+                    )}
+                  </motion.div>
 
-        <motion.div
-          className="form-container"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <IonGrid>
-              <IonRow className="ion-justify-content-center">
-                <IonCol size="12" sizeMd="8" sizeLg="6">
-                  {/* Hide email/password form while PIN modal is open */}
-                  {!isPinOpen && (
-                    <>
-                      {/* Email */}
-                      <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.3 }}
-                      >
-                        <IonItem className="form-item">
-                          <FiMail className="input-icon" />
-                          <IonInput
-                            type="email"
-                            placeholder="Email"
-                            {...register("email", {
-                              required: "Email is required",
-                              pattern: {
-                                value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                                message: "Invalid email address",
-                              },
-                            })}
-                          />
-                        </IonItem>
-                        {errors.email && (
-                          <span className="error-message">
-                            {errors.email.message}
-                          </span>
-                        )}
-                      </motion.div>
+                  {/* Password */}
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.16 }}
+                  >
+                    <IonItem className="form-item">
+                      <FiLock className="input-icon" />
+                      <IonInput
+                        type="password"
+                        placeholder={t("field_password")}
+                        {...register("password", {
+                          required: t("err_password_required"),
+                          minLength: {
+                            value: 6,
+                            message: t("err_password_too_short"),
+                          },
+                        })}
+                      />
+                    </IonItem>
+                    {errors.password && (
+                      <span className="error-message">
+                        {errors.password.message}
+                      </span>
+                    )}
+                  </motion.div>
 
-                      {/* Password */}
-                      <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.4 }}
-                      >
-                        <IonItem className="form-item">
-                          <FiLock className="input-icon" />
-                          <IonInput
-                            type="password"
-                            placeholder="Password"
-                            {...register("password", {
-                              required: "Password is required",
-                              minLength: {
-                                value: 6,
-                                message: "Password must be at least 6 characters",
-                              },
-                            })}
-                          />
-                        </IonItem>
-                        {errors.password && (
-                          <span className="error-message">
-                            {errors.password.message}
-                          </span>
-                        )}
-                      </motion.div>
-
-                      {/* Forgot Password */}
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.5 }}
-                        className="forgot-password"
-                      >
-                        <IonButton
-                          fill="clear"
-                          size="small"
-                          routerLink="/Patient_password_recovery"
-                        >
-                          Forgot Password?
-                        </IonButton>
-                      </motion.div>
-
-                      {/* Error Message */}
-                      {loginError && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          className="error-container"
-                        >
-                          <IonText color="danger">{loginError}</IonText>
-                        </motion.div>
-                      )}
-
-                      {/* Submit Button */}
-                      <motion.div
-                        className="submit-container"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.6 }}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        <IonButton
-                          type="submit"
-                          expand="block"
-                          className="submit-button"
-                          disabled={isLoading}
-                        >
-                          {isLoading ? (
-                            <>
-                              <IonSpinner name="crescent" className="spinner" />
-                              Signing In...
-                            </>
-                          ) : (
-                            "Sign In"
-                          )}
-                        </IonButton>
-                      </motion.div>
-
-                      {/* Sign Up Link */}
-                      <motion.div
-                        className="signup-link"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.7 }}
-                      >
-                        <IonText>Don't have an account?</IonText>
-                        <IonButton
-                          fill="clear"
-                          routerLink="/Patient_signup"
-                          className="signup-button2"
-                        >
-                          Sign Up
-                        </IonButton>
-                      </motion.div>
-
-                      {/* Google Sign-In */}
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.75 }}
-                      >
-                        <div className="or-divider"><span>or continue with</span></div>
-                        <IonButton
-                          expand="block"
-                          fill="outline"
-                          className="google-signin-btn"
-                          disabled={isLoading}
-                          onClick={async () => {
-                            setIsLoading(true);
-                            setLoginError("");
-                            try {
-                              const user = await authService.loginWithGoogle(UserRole.Patient);
-                              if (user) history.push("/patient/dashboard");
-                            } catch (err: any) {
-                              setLoginError(err?.message || "Google sign-in failed.");
-                            } finally {
-                              setIsLoading(false);
-                            }
-                          }}
-                        >
-                          <svg className="google-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                          </svg>
-                          Sign in with Google
-                        </IonButton>
-                      </motion.div>
-                    </>
-                  )}
-
-                  {/* Quick Sign-In: PIN / Biometric (always rendered — button stays visible) */}
+                  {/* Forgot Password */}
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 0.8 }}
+                    transition={{ delay: 0.22 }}
+                    className="forgot-password"
                   >
-                    <QuickSignIn
-                      onCredentials={handleQuickSignIn}
-                      onViewChange={setIsPinOpen}
-                    />
+                    <IonButton
+                      fill="clear"
+                      size="small"
+                      routerLink="/Patient_password_recovery"
+                    >
+                      {t("funnel_forgot_password")}
+                    </IonButton>
                   </motion.div>
-                </IonCol>
-              </IonRow>
-            </IonGrid>
-          </form>
-        </motion.div>
-      </IonContent>
-    </IonPage>
+
+                  {/* Error Message */}
+                  {loginError && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      className="error-container"
+                    >
+                      <IonText color="danger">{loginError}</IonText>
+                    </motion.div>
+                  )}
+
+                  {/* Submit Button */}
+                  <motion.div
+                    className="submit-container"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.28 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <IonButton
+                      type="submit"
+                      expand="block"
+                      className="submit-button"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? (
+                        <>
+                          <LoadingHelix className="spinner" size={18} color="white" />
+                          {t("funnel_signing_in")}
+                        </>
+                      ) : (
+                        t("funnel_sign_in_action")
+                      )}
+                    </IonButton>
+                  </motion.div>
+
+                  {/* Sign Up Link */}
+                  <motion.div
+                    className="signup-link"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.34 }}
+                  >
+                    <IonText>{t("funnel_dont_have_account")}</IonText>
+                    <IonButton
+                      fill="clear"
+                      routerLink="/Patient_signup"
+                      className="signup-button2"
+                    >
+                      {t("funnel_sign_up")}
+                    </IonButton>
+                  </motion.div>
+
+                  {/* Google Sign-In */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                  >
+                    <div className="or-divider"><span>{t("funnel_or_continue_with")}</span></div>
+                    <IonButton
+                      expand="block"
+                      fill="outline"
+                      className="google-signin-btn"
+                      disabled={isLoading}
+                      onClick={async () => {
+                        setIsLoading(true);
+                        setLoginError("");
+                        try {
+                          // Web → popup resolves immediately, returns user → navigate.
+                          // Mobile → redirect flow, page navigates away, returns null.
+                          const user = await authService.loginWithGoogle(UserRole.Patient);
+                          if (user) {
+                            history.push("/patient/dashboard");
+                          }
+                        } catch (err: unknown) {
+                          // Closing the Google popup is a normal user action, not
+                          // a failure — `getGoogleSignInErrorMessage` returns ""
+                          // for cancellations so we stay silent instead of
+                          // showing "Firebase: Error (auth/popup-closed-by-user)".
+                          setLoginError(getGoogleSignInErrorMessageT(err, t));
+                          setIsLoading(false);
+                        }
+                      }}
+                    >
+                      <svg className="google-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                      </svg>
+                      {t("funnel_sign_in_google")}
+                    </IonButton>
+                  </motion.div>
+                </>
+              )}
+
+              {/* Quick Sign-In: PIN / Biometric (always rendered — button stays visible) */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.45 }}
+              >
+                <QuickSignIn
+                  onCredentials={handleQuickSignIn}
+                  onViewChange={setIsPinOpen}
+                />
+              </motion.div>
+            </IonCol>
+          </IonRow>
+        </IonGrid>
+      </form>
+    </AuthShell>
   );
 };
 

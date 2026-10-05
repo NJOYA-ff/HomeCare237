@@ -32,12 +32,13 @@ import {
   IonText,
   IonSkeletonText,
   IonImg,
-  IonAlert,
   IonToast,
   IonPopover,
   IonList,
   IonItem as IonListItem,
 } from "@ionic/react";
+import { MessageBox } from "../../components/ui/MessageBox";
+import { DEFAULT_AVATAR, handleImageError } from "../../utils/profileImageStorage";
 import {
   collection,
   doc,
@@ -138,13 +139,16 @@ import {
   heartOutline,
   searchOutline,
   star,
-  timeOutline,
   callOutline,
   chevronForward,
   fitness,
   ellipsisHorizontal,
 } from "ionicons/icons";
 import { medicalIcons, ioniconsMedical } from "../../utils/MedicalIcons";
+import {
+  appointmentMillis,
+  formatAppointmentWhen,
+} from "../../utils/appointmentDate";
 import monitor_heart from "@material-design-icons/svg/outlined/heart_broken.svg";
 import {
   medical,
@@ -158,13 +162,54 @@ import {
 import "./Dashboard.scss";
 
 import VoiceflowChat from "./Chat-interface";
+import AudioCallModal from "./AudioCallModal";
+import { useHistory } from "react-router-dom";
+import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+/** Forces Leaflet to recalculate its size once the container is in the DOM.
+ *  Without this the tiles render grey/blank inside Ionic's shadow DOM. */
+const InvalidateSize: React.FC = () => {
+  const map = useMap();
+  useEffect(() => {
+    setTimeout(() => map.invalidateSize(), 0);
+  }, [map]);
+  return null;
+};
+
+// Fix leaflet default marker icons (same fix as Health_units_p)
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
+  iconUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+});
+
+// Explicit icon instance — Vite breaks the default icon's asset URL
+// resolution, so we always pass this directly to <Marker icon={...} />.
+const dashMapMarkerIcon = new L.Icon({
+  iconUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
+  iconRetinaUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
+import LoadingHelix from "../../components/LoadingHelix";
 import { motion } from "framer-motion";
 declare global {
   interface Window {
     voiceflow?: any;
   }
 }
-import { FiMenu } from "react-icons/fi";
+import { FiMenu, FiPhone, FiMessageSquare } from "react-icons/fi";
 import Menu from "@material-design-icons/svg/round/menu_open.svg";
 import { useNotifications } from "../../context/NotificationContext";
 import { useSettings } from "../../context/SettingsContext";
@@ -184,6 +229,8 @@ interface Appointment {
   doctorName: string;
   doctorSpecialization: string;
   date: Timestamp;
+  /** The slot the patient picked from the doctor's `availableSlots`, e.g. "09:00". */
+  time?: string;
   status: string;
   notes?: string;
 }
@@ -202,7 +249,7 @@ interface Doctor {
   id: string;
   userName: string;
   name: string;
-  specialty: string;
+  specialization: string;
   rating: number;
   experience: string;
   image: string;
@@ -218,7 +265,7 @@ interface CategoryColor {
 }
 
 const PatientDashboard: React.FC = () => {
-  const { t } = useSettings();
+  const { t, language } = useSettings();
   const [currentState, setCurrentState] = useState<string>("healthy");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -262,6 +309,11 @@ const PatientDashboard: React.FC = () => {
     appointment: Appointment | null;
   }>({ show: false, event: undefined, appointment: null });
 
+  // Doctor card call/message state
+  const [isCallModalOpen, setIsCallModalOpen] = useState(false);
+  const [callDoctorId, setCallDoctorId] = useState("");
+  const history = useHistory();
+
   // Firebase initialization and auth state
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -298,7 +350,7 @@ const PatientDashboard: React.FC = () => {
     const appointmentsQuery = query(
       collection(db, "appointments"),
       where("patientId", "==", userData.id),
-      where("status", "in", ["pending", "confirmed"]),
+      where("status", "in", ["pending", "confirmed", "accepted"]),
       orderBy("date", "asc"),
     );
 
@@ -399,15 +451,15 @@ const PatientDashboard: React.FC = () => {
     try {
       setLoading(true);
 
-      // Load available doctors
-      await loadAvailableDoctors();
+      // Load available doctors (only those the patient has appointments with)
+      await loadAvailableDoctors(userId);
 
       // Load initial appointments if real-time listener hasn't populated yet
       const appointmentsSnapshot = await getDocs(
         query(
           collection(db, "appointments"),
           where("patientId", "==", userId),
-          where("status", "in", ["pending", "accepted"]),
+          where("status", "in", ["pending", "confirmed", "accepted"]),
           orderBy("date", "desc"),
         ),
       );
@@ -447,40 +499,73 @@ const PatientDashboard: React.FC = () => {
     }
   };
 
-  // Load available doctors from Firestore
-  const loadAvailableDoctors = async () => {
+  // Load only doctors this patient has booked an appointment with
+  const loadAvailableDoctors = async (patientId?: string) => {
+    // Resolve the patient ID — prefer the explicit arg, fall back to state
+    const uid = patientId || userData.id;
+    if (!uid) return;
+
     try {
-      const doctorsSnapshot = await getDocs(query(collection(db, "doctors")));
+      // 1. Get all appointments for this patient (any status)
+      const appointmentsSnap = await getDocs(
+        query(collection(db, "appointments"), where("patientId", "==", uid)),
+      );
 
-      const doctors: Doctor[] = [];
-      for (const doc of doctorsSnapshot.docs) {
-        const doctorData = doc.data();
-        let imageUrl = "https://ionicframework.com/docs/img/demos/avatar.svg";
+      // 2. Collect unique doctorIds
+      const doctorIds = [
+        ...new Set(
+          appointmentsSnap.docs.map((d) => d.data().doctorId as string),
+        ),
+      ];
 
-        // Try to get doctor's profile image
-        if (doctorData.profileImage) {
-          try {
-            imageUrl = await getDownloadURL(
-              ref(storage, doctorData.profileImage),
-            );
-          } catch (error) {
-            console.log("Using default avatar for doctor:", doctorData.name);
-          }
-        }
-
-        doctors.push({
-          id: doc.id,
-          userName: doctorData.userName || "doctor",
-          name: doctorData.name,
-          specialty: doctorData.specialization,
-          rating: doctorData.rating || 4.5,
-          experience: doctorData.experience || "5 years",
-          image: imageUrl,
-          available: doctorData.available || true,
-          nextAvailable: doctorData.nextAvailable || "Not available",
-          email: doctorData.email || "No email",
-        });
+      if (doctorIds.length === 0) {
+        setAvailableDoctors([]);
+        return;
       }
+
+      // 3. Fetch each doctor document and resolve their profile image
+      const doctors: Doctor[] = [];
+      await Promise.all(
+        doctorIds.map(async (did) => {
+          try {
+            const doctorDoc = await getDoc(doc(db, "doctors", did));
+            if (!doctorDoc.exists()) return;
+
+            const doctorData = doctorDoc.data();
+            // Local bundled SVG, not the old remote Ionic placeholder — the
+            // remote URL is a network dependency and is explicitly treated as
+            // "no picture" by PLACEHOLDER_URLS in utils/profileImage.ts, so
+            // reusing it here would render a dead image on a doctor with no
+            // profile photo.
+            let imageUrl = DEFAULT_AVATAR;
+
+            if (doctorData.profileImage) {
+              try {
+                imageUrl = await getDownloadURL(
+                  ref(storage, doctorData.profileImage),
+                );
+              } catch {
+                console.log("Using default avatar for doctor:", doctorData.name);
+              }
+            }
+
+            doctors.push({
+              id: doctorDoc.id,
+              userName: doctorData.userName || "doctor",
+              name: doctorData.name,
+              specialization: doctorData.specialization,
+              rating: doctorData.rating || 4.5,
+              experience: doctorData.experience || "5 years",
+              image: imageUrl,
+              available: doctorData.available ?? true,
+              nextAvailable: doctorData.nextAvailable || "Not available",
+              email: doctorData.email || "No email",
+            });
+          } catch (err) {
+            console.error("Error fetching doctor:", did, err);
+          }
+        }),
+      );
 
       setAvailableDoctors(doctors);
     } catch (error) {
@@ -526,7 +611,7 @@ const PatientDashboard: React.FC = () => {
     try {
       if (firebaseUser) {
         await loadDashboardData(firebaseUser.uid);
-        await loadAvailableDoctors();
+        await loadAvailableDoctors(firebaseUser.uid);
       }
       showSuccess("Dashboard refreshed");
     } catch (error) {
@@ -549,38 +634,11 @@ const PatientDashboard: React.FC = () => {
     setShowToast(true);
   };
 
-  // Format date for display
-  const formatAppointmentDate = (timestamp: Timestamp | null) => {
-    if (!timestamp) return "No date";
-
-    try {
-      const date = timestamp.toDate();
-      const now = new Date();
-      const tomorrow = new Date(now);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-
-      if (date.toDateString() === now.toDateString()) {
-        return `Today, ${date.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        })}`;
-      } else if (date.toDateString() === tomorrow.toDateString()) {
-        return `Tomorrow, ${date.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        })}`;
-      } else {
-        return (
-          date.toLocaleDateString() +
-          ", " +
-          date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-        );
-      }
-    } catch (error) {
-      console.error("Error formatting date:", error);
-      return "Invalid date";
-    }
-  };
+  // Format date for display. Takes the *computed* instant (`_dateObj`), which
+  // `nextAppointment` builds from the booked doctor slot via `appointmentMillis`,
+  // so the clock time shown is the one the patient actually picked.
+  const formatAppointmentDate = (ms: number | null) =>
+    formatAppointmentWhen(ms, language);
 
   // Get icon for health metric
   const getMetricIcon = (metricName: string) => {
@@ -653,31 +711,29 @@ const PatientDashboard: React.FC = () => {
     try {
       const now = new Date();
 
-      // Normalize appointment dates to JS Date objects
-      const mapped = upcomingAppointments.map((a) => ({
-        ...a,
-        _dateObj:
-          a.date && typeof (a.date as any).toDate === "function"
-            ? (a.date as any).toDate()
-            : new Date(a.date as any),
-      }));
+      // `_dateObj` must be built from the *booked slot* (`time`), not just the
+      // stored `date`. Booking writes the picked doctor slot into `time`
+      // ("09:00") while `date` is a Timestamp whose clock time comes from the
+      // date-only picker, so using `date` alone both displayed the wrong time
+      // and sorted/picked the wrong row as "next".
+      const mapped = upcomingAppointments
+        .map((a) => {
+          const ms = appointmentMillis(a.date, (a as any).time);
+          return ms === null ? null : { ...a, _dateObj: new Date(ms) };
+        })
+        .filter((a): a is Appointment & { _dateObj: Date } => a !== null);
 
-      // Filter future appointments (including today) and sort ascending (soonest first)
+      // Only return a future appointment — if none exist, return null
       const future = mapped
         .filter((a) => a._dateObj.getTime() >= now.getTime())
         .sort((x, y) => x._dateObj.getTime() - y._dateObj.getTime());
 
-      if (future.length > 0)
-        return future[0] as Appointment & { _dateObj: Date };
-
-      // Fallback: return the soonest appointment by date even if it's in the past
-      const allSorted = mapped.sort(
-        (x, y) => x._dateObj.getTime() - y._dateObj.getTime(),
-      );
-      return allSorted[0] as Appointment & { _dateObj: Date };
+      return future.length > 0
+        ? (future[0] as Appointment & { _dateObj: Date })
+        : null;
     } catch (error) {
       console.error("Error computing next appointment:", error);
-      return upcomingAppointments[0] || null;
+      return null;
     }
   }, [upcomingAppointments]);
 
@@ -698,7 +754,7 @@ const PatientDashboard: React.FC = () => {
     const queryText = doctorQuery.trim().toLowerCase();
     return availableDoctors
       .filter((doctor) => {
-        const specialtyText = (doctor.specialty || "").toLowerCase();
+        const specialtyText = (doctor.specialization || "").toLowerCase();
         const matchesQuery = !queryText || specialtyText.includes(queryText);
         const matchesSelectedCategory =
           !selectedCategory ||
@@ -707,6 +763,20 @@ const PatientDashboard: React.FC = () => {
       })
       .slice(0, 4);
   }, [availableDoctors, doctorQuery, selectedCategory]);
+
+  /**
+   * Same filter used in Consult.tsx's filteredDoctors:
+   * match on doctor name OR specialization against the search query.
+   * Shows all matched doctors (no slice) so the card list is complete.
+   */
+  const consultFilteredDoctors = useMemo(() => {
+    const queryText = doctorQuery.trim().toLowerCase();
+    return availableDoctors.filter(
+      (doctor) =>
+        doctor.name.toLowerCase().includes(queryText) ||
+        (doctor.specialization || "").toLowerCase().includes(queryText),
+    );
+  }, [availableDoctors, doctorQuery]);
 
   // Animation effects
   useEffect(() => {
@@ -763,12 +833,19 @@ const PatientDashboard: React.FC = () => {
         </IonRefresher>
 
         {/* Alerts and Toasts */}
-        <IonAlert
+        <MessageBox
           isOpen={showAlert}
-          onDidDismiss={() => setShowAlert(false)}
-          header={t("error")}
+          title={t("error")}
           message={alertMessage}
-          buttons={[t("ok")]}
+          tone="danger"
+          actions={[
+            {
+              label: t("ok"),
+              color: "primary",
+              onClick: () => setShowAlert(false),
+            },
+          ]}
+          onDismiss={() => setShowAlert(false)}
         />
 
         <IonToast
@@ -782,11 +859,7 @@ const PatientDashboard: React.FC = () => {
         {/* Loading State */}
         {loading ? (
           <div className="loading-container">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              className="loading-spinner"
-            />
+            <LoadingHelix />
             <IonText className="ion-text-center ion-padding">
               <p>{t("loadingDashboard")}</p>
             </IonText>
@@ -892,16 +965,20 @@ const PatientDashboard: React.FC = () => {
 
                   {nextAppointment ? (
                     <div className="upcoming-highlight">
+                      {/* The appointment document stores no doctor picture, so
+                          fall back to the bundled SVG placeholder. */}
                       <IonAvatar>
                         <img
-                          src="https://ionicframework.com/docs/img/demos/avatar.svg"
+                          src={DEFAULT_AVATAR}
                           alt={nextAppointment.doctorName}
+                          onError={handleImageError}
                         />
                       </IonAvatar>
                       <div className="upcoming-meta">
                         <p className="appointment-time">
-                          <IonIcon icon={timeOutline} />
-                          {formatAppointmentDate(nextAppointment.date)}
+                          {formatAppointmentDate(
+                            nextAppointment._dateObj.getTime(),
+                          )}
                         </p>
                         <h4>{nextAppointment.doctorName}</h4>
                         <p>{nextAppointment.doctorSpecialization}</p>
@@ -936,8 +1013,8 @@ const PatientDashboard: React.FC = () => {
                     <IonList>
                       <IonListItem
                         button
+                        lines="none"
                         onClick={() => {
-                          // For now, just log it. A modal would be better.
                           console.log(
                             "View Details for",
                             upcomingAppointmentPopover.appointment,
@@ -951,37 +1028,138 @@ const PatientDashboard: React.FC = () => {
                       >
                         <IonLabel>{t("viewDetails")}</IonLabel>
                       </IonListItem>
-                      <IonListItem
-                        button
-                        routerLink={`/patient/book_appointment?appointmentId=${upcomingAppointmentPopover.appointment?.id}`}
-                        onClick={() =>
-                          setUpcomingAppointmentPopover({
-                            show: false,
-                            event: undefined,
-                            appointment: null,
-                          })
-                        }
-                      >
-                        <IonLabel>{t("reschedule")}</IonLabel>
-                      </IonListItem>
-                      <IonListItem
-                        button
-                        lines="none"
-                        onClick={() => {
-                          console.log("Cancel appointment");
-                          setUpcomingAppointmentPopover({
-                            show: false,
-                            event: undefined,
-                            appointment: null,
-                          });
-                        }}
-                      >
-                        <IonLabel color="danger">{t("cancelAppointment")}</IonLabel>
-                      </IonListItem>
                     </IonList>
                   </IonPopover>
                 </IonCardContent>
               </IonCard>
+
+              {/* ── Doctor Cards Section — below upcoming appointment ─── */}
+              <IonCard className="dash-doctor-cards-section">
+                <IonCardContent>
+                  <div className="home-section-head dash-doctor-section-head">
+                    <h3 className="dash-doctor-section-title">Available Doctors</h3>
+                    <IonButton
+                      fill="clear"
+                      size="small"
+                      className="dash-doctor-see-all"
+                      routerLink="/patient/consult"
+                    >
+                      {t("seeAll")}
+                    </IonButton>
+                  </div>
+
+                  {consultFilteredDoctors.length === 0 ? (
+                    <p className="dash-doctor-empty">{t("noDoctorsMatch")}</p>
+                  ) : (
+                    <div className="dash-doctor-scroll-row">
+                      {consultFilteredDoctors.map((doctor) => (
+                        <IonCard
+                          key={doctor.id}
+                          className="dash-doctor-card"
+                          button={false}
+                        >
+                          {/* Profile image */}
+                          <div className="dash-doctor-card-img-wrap">
+                            <img
+                              src={doctor.image || DEFAULT_AVATAR}
+                              alt={`Dr. ${doctor.name}`}
+                              className="dash-doctor-card-img"
+                              onError={handleImageError}
+                            />
+                          </div>
+
+                          {/* Info */}
+                          <div className="dash-doctor-card-body">
+                            <p className="dash-doctor-specialty">
+                              {doctor.specialization || "Specialist"}
+                            </p>
+                            <h4 className="dash-doctor-name">
+                              Dr. {doctor.name || doctor.userName}
+                            </h4>
+                            <p className="dash-doctor-rating">
+                              <IonIcon icon={star} className="dash-star-icon" />
+                              {doctor.rating} &middot; {doctor.experience}
+                            </p>
+                          </div>
+
+                          {/* Action buttons */}
+                          <div className="dash-doctor-card-actions">
+                            <button
+                              className="dash-doc-btn dash-doc-btn--call"
+                              aria-label={`Call Dr. ${doctor.name}`}
+                              onClick={() => {
+                                setCallDoctorId(doctor.id);
+                                setIsCallModalOpen(true);
+                              }}
+                            >
+                              <FiPhone size={15} />
+                              <span>Call</span>
+                            </button>
+                            <button
+                              className="dash-doc-btn dash-doc-btn--msg"
+                              aria-label={`Message Dr. ${doctor.name}`}
+                              onClick={() =>
+                                history.push(`/patient/consult?doctorId=${doctor.id}`)
+                              }
+                            >
+                              <FiMessageSquare size={15} />
+                              <span>Message</span>
+                            </button>
+                          </div>
+                        </IonCard>
+                      ))}
+                    </div>
+                  )}
+                </IonCardContent>
+              </IonCard>
+              {/* ── End Doctor Cards Section ─────────────────────────────── */}
+
+              {/* ── Map Preview Section ──────────────────────────────────── */}
+              <IonCard className="dash-map-preview-card">
+                <IonCardContent className="dash-map-preview-content">
+                  <div className="home-section-head dash-map-section-head">
+                    <h3>Health Units Near You</h3>
+                  </div>
+
+                  {/* Non-interactive leaflet map preview */}
+                  <div className="dash-map-wrap">
+                    <MapContainer
+                      center={[4.1527, 9.2403]}
+                      zoom={13}
+                      zoomControl={false}
+                      dragging={false}
+                      scrollWheelZoom={false}
+                      doubleClickZoom={false}
+                      touchZoom={false}
+                      keyboard={false}
+                      attributionControl={false}
+                      className="dash-map-leaflet"
+                    >
+                      <InvalidateSize />
+                      <TileLayer
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      />
+                      {/* Marker pointing at Buea */}
+                      <Marker position={[4.1527, 9.2403]} icon={dashMapMarkerIcon} />
+                    </MapContainer>
+
+                    {/* Gradient scrim */}
+                    <div className="dash-map-overlay" />
+
+                    {/* View Map button — bottom-right corner */}
+                    <IonButton
+                      className="dash-map-view-btn"
+                      fill="outline"
+                      routerLink="/patient/health_units_p"
+                      aria-label="View health units map"
+                    >
+                      <IonIcon icon={locationOutline} slot="start" />
+                      View Map
+                    </IonButton>
+                  </div>
+                </IonCardContent>
+              </IonCard>
+              {/* ── End Map Preview Section ───────────────────────────────── */}
 
               <IonCard className="home-top-doctors-card">
                 <IonCardContent>
@@ -1001,11 +1179,15 @@ const PatientDashboard: React.FC = () => {
                       featuredDoctors.map((doctor) => (
                         <div className="home-doctor-item" key={doctor.id}>
                           <IonAvatar>
-                            <img src={doctor.image} alt={doctor.name} />
+                            <img
+                              src={doctor.image || DEFAULT_AVATAR}
+                              alt={doctor.name}
+                              onError={handleImageError}
+                            />
                           </IonAvatar>
                           <div className="doctor-item-meta">
                             <p className="doctor-role">
-                              {doctor.specialty || "Specialist"}
+                              {doctor.specialization || "Specialist"}
                             </p>
                             <h4>Dr. {doctor.name || doctor.userName}</h4>
                             <p className="doctor-rating-line">
@@ -1035,7 +1217,19 @@ const PatientDashboard: React.FC = () => {
                   </div>
                 </IonCardContent>
               </IonCard>
+
+              {/* ── End Doctor Cards Section ─────────────────────────────── */}
             </div>
+
+            {/* Audio Call Modal — opened from doctor cards */}
+            <AudioCallModal
+              isOpen={isCallModalOpen}
+              onClose={() => {
+                setIsCallModalOpen(false);
+                setCallDoctorId("");
+              }}
+              doctorId={callDoctorId}
+            />
 
             {/* Chatbot */}
             <VoiceflowChat />

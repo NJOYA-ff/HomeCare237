@@ -14,8 +14,8 @@ import {
   IonButtons,
   IonBackButton,
   IonNote,
-  IonAlert,
 } from "@ionic/react";
+import { MessageBox } from "../../components/ui/MessageBox";
 import {
   trashOutline,
   checkmarkDoneOutline,
@@ -187,21 +187,29 @@ const NotificationsPage: React.FC = () => {
         </IonList>
       </IonContent>
 
-      <IonAlert
+      <MessageBox
         isOpen={showClearAlert}
-        onDidDismiss={() => setShowClearAlert(false)}
-        header="Clear All Notifications"
+        title="Clear All Notifications"
         message="Are you sure you want to clear all notifications?"
-        buttons={[
+        tone="danger"
+        actions={[
           {
-            text: "Cancel",
-            role: "cancel",
+            label: "Cancel",
+            color: "medium",
+            onClick: () => setShowClearAlert(false),
           },
           {
-            text: "Clear",
-            handler: clearAll,
+            /* Clearing wipes every notification for good, so the confirm action
+               carries the danger colour. */
+            label: "Clear",
+            color: "danger",
+            onClick: () => {
+              setShowClearAlert(false)
+              clearAll();
+            },
           },
         ]}
+        onDismiss={() => setShowClearAlert(false)}
       />
     </IonPage>
   );

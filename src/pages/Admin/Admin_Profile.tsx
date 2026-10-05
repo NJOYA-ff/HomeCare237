@@ -1,3 +1,5 @@
+import LoadingHelix, { LoadingHelixOverlay } from "../../components/LoadingHelix";
+import { MessageBox } from "../../components/ui/MessageBox";
 import React, { useState, useRef, useEffect } from "react";
 import {
   IonPage,
@@ -15,8 +17,6 @@ import {
   IonBackButton,
   IonBadge,
   IonText,
-  IonAlert,
-  IonLoading,
   IonToast,
   IonInput,
   IonModal,
@@ -42,7 +42,7 @@ import {
   timeOutline,
   closeOutline,
 } from "ionicons/icons";
-import { motion, AnimatePresence } from "framer-motion";
+
 import {
   doc,
   getDoc,
@@ -70,6 +70,7 @@ import {
 } from "firebase/storage";
 import { db, auth, storage } from "../../firebaseconfig";
 import "./Admin.scss";
+import { DEFAULT_AVATAR, handleImageError } from "../../utils/profileImageStorage";
 import { authService, UserRole } from "../../App";
 import { useHistory } from "react-router";
 interface AdminData {
@@ -110,6 +111,7 @@ const Admin_Profile: React.FC = () => {
   const [editingStat, setEditingStat] = useState<string | null>(null);
   const [tempStatValue, setTempStatValue] = useState<string>("");
   const [showStatModal, setShowStatModal] = useState(false);
+  const [showLogOutAlert, setShowLogOutAlert] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Format Firebase Timestamp to readable date
@@ -537,7 +539,10 @@ const Admin_Profile: React.FC = () => {
     return (
       <IonPage>
         <IonContent>
-          <IonLoading isOpen={true} message="Loading profile..." />
+          <div className="loading-container">
+            <LoadingHelix />
+            <p>Loading profile...</p>
+          </div>
         </IonContent>
       </IonPage>
     );
@@ -565,7 +570,7 @@ const Admin_Profile: React.FC = () => {
 
       <IonContent className="profile-content">
         <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" style={{ display: "none" }} />
-        <IonLoading isOpen={isLoading} message="Saving..." />
+        <LoadingHelixOverlay isOpen={isLoading} message="Saving..." />
 
         {/* Modals */}
         <IonModal isOpen={showReauthModal} onDidDismiss={closeReauthModal}>
@@ -611,17 +616,21 @@ const Admin_Profile: React.FC = () => {
           message={toast.message} duration={3000} color={toast.color as any} position="top" />
 
         {/* Hero Banner */}
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+        <div>
           <div className="profile-hero">
-            <motion.div className="avatar-container" whileHover={{ scale: isEditing ? 1.05 : 1 }}
-              whileTap={{ scale: isEditing ? 0.95 : 1 }} onClick={isEditing ? triggerFileInput : undefined}>
+            <div className="avatar-container" onClick={isEditing ? triggerFileInput : undefined}
+              style={{ cursor: isEditing ? "pointer" : "default" }}>
               <IonAvatar className="profile-avatar">
-                <img src={admin.avatar || "https://ionicframework.com/docs/img/demos/avatar.svg"} alt="Avatar" />
+                <img
+                  src={admin.avatar || DEFAULT_AVATAR}
+                  onError={handleImageError}
+                  alt="Avatar"
+                />
               </IonAvatar>
               {isEditing && (
                 <div className="avatar-overlay"><IonIcon icon={cameraOutline} color="light" size="large" /></div>
               )}
-            </motion.div>
+            </div>
 
             {isEditing ? (
               <IonInput value={tempData.name || ""} placeholder="Full Name"
@@ -642,18 +651,17 @@ const Admin_Profile: React.FC = () => {
                 { key: "patientCount", label: "Patients", value: admin.patientCount, icon: medicalOutline },
                 { key: "experienceYears", label: "Exp. (yrs)", value: admin.experienceYears, icon: timeOutline },
               ].map((s) => (
-                <motion.div key={s.key} className="stat-item"
-                  whileHover={{ scale: isEditing ? 1.05 : 1 }}
+                <div key={s.key} className="stat-item"
                   onClick={isEditing ? () => startEditingStat(s.key, s.value) : undefined}
                   style={{ cursor: isEditing ? "pointer" : "default" }}>
                   <span className="stat-value">{s.value}{s.key === "experienceYears" ? "y" : ""}</span>
                   <span className="stat-label">{s.label}</span>
                   {isEditing && <IonIcon icon={pencilOutline} className="stat-edit-icon" />}
-                </motion.div>
+                </div>
               ))}
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Details */}
         <div className="profile-details-section">
@@ -677,7 +685,7 @@ const Admin_Profile: React.FC = () => {
                 </IonItem>
               ))}
 
-              <IonItem button onClick={() => { setFieldToUpdate("password"); setShowReauthModal(true); }}>
+              <IonItem button onClick={() => { setFieldToUpdate("password"); setShowReauthModal(true);} }>
                 <IonIcon slot="start" icon={lockClosedOutline} color="primary" />
                 <IonLabel><h3>Password</h3><p>••••••••</p></IonLabel>
                 <IonIcon slot="end" icon={pencilOutline} color="medium" />
@@ -690,24 +698,41 @@ const Admin_Profile: React.FC = () => {
             </IonList>
           </div>
 
-          <AnimatePresence>
-            {isEditing && (
-              <motion.div className="edit-actions" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-                <IonButton expand="block" color="primary" onClick={saveChanges} disabled={isLoading}>
-                  {isLoading ? "Saving..." : "Save Changes"}
-                </IonButton>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {isEditing && (
+            <div className="edit-actions">
+              <IonButton expand="block" color="primary" onClick={saveChanges} disabled={isLoading}>
+                {isLoading ? "Saving..." : "Save Changes"}
+              </IonButton>
+            </div>
+          )}
 
           <div className="profile-actions">
-            <IonButton expand="block" color="danger" fill="outline" onClick={handleLogout} disabled={isLoading}>
+            <IonButton expand="block" color="danger" fill="outline" onClick={() => setShowLogOutAlert(true)} disabled={isLoading}>
               <IonIcon slot="start" icon={logOutOutline} />
               Log Out
             </IonButton>
           </div>
         </div>
       </IonContent>
+      <MessageBox
+        isOpen={showLogOutAlert}
+        title="Log Out"
+        message="Are you sure you want to Log out?"
+        tone="info"
+        actions={[
+          {
+            label: "Cancel",
+            color: "medium",
+            onClick: () => setShowLogOutAlert(false),
+          },
+          {
+            label: "Yes, Log out",
+            color: "danger",
+            onClick: () => handleLogout(),
+          },
+        ]}
+        onDismiss={() => setShowLogOutAlert(false)}
+      />
     </IonPage>
   );
 };

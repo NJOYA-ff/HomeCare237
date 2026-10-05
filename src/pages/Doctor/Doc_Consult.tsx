@@ -24,13 +24,15 @@ import {
   IonThumbnail,
   useIonViewWillEnter,
   useIonViewWillLeave,
-  IonAlert,
-  IonProgressBar, IonSpinner,
+  IonProgressBar,
   IonImg,
   useIonActionSheet,
   IonBackButton,
   IonFooter,
 } from "@ionic/react";
+import { MessageBox } from "../../components/ui/MessageBox";
+import LoadingHelix from "../../components/LoadingHelix";
+import { EmptyState } from "../../components/ui";
 import { useNotifications } from "../../context/NotificationContext";
 import {
   attach,
@@ -52,6 +54,8 @@ import {
   trashOutline,
   documentText,
   timeOutline,
+  peopleOutline,
+  chatbubblesOutline,
 } from "ionicons/icons";
 import { useIonToast } from "@ionic/react";
 import "./Consult.scss";
@@ -74,7 +78,6 @@ import { onAuthStateChanged } from "firebase/auth";
 import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
 import VideoChatModal from "./VideoChat";
 import AudioCallModal from "./AudioCallModal";
-import { motion } from "framer-motion";
 
 
 // Updated interfaces to match Consult component
@@ -1171,8 +1174,8 @@ const Doc_Consult: React.FC = () => {
                           onClick={() => {
                             setSelectedImage(attachment.url);
                             setShowImageModal(true);
-                          }}
-                        >
+                          }
+                      }  >
                           <IonThumbnail>
                             <IonImg
                               src={attachment.url}
@@ -1188,8 +1191,8 @@ const Doc_Consult: React.FC = () => {
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   downloadFile(attachment);
-                                }}
-                              >
+                                }
+                            }  >
                                 <IonIcon icon={downloadOutline} />
                               </IonButton>
                             )}
@@ -1203,8 +1206,8 @@ const Doc_Consult: React.FC = () => {
                           onClick={() => {
                             setSelectedDocument(attachment);
                             setShowDocumentModal(true);
-                          }}
-                        >
+                          }
+                      }  >
                           <IonIcon icon={document} size="large" />
                           <div className="attachment-details">
                             <IonLabel>{attachment.name}</IonLabel>
@@ -1215,8 +1218,8 @@ const Doc_Consult: React.FC = () => {
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   downloadFile(attachment);
-                                }}
-                              >
+                                }
+                            }  >
                                 <IonIcon icon={downloadOutline} />
                               </IonButton>
                             )}
@@ -1235,8 +1238,8 @@ const Doc_Consult: React.FC = () => {
                                 } else {
                                   playAudio(attachment);
                                 }
-                              }}
-                              className="play-pause-btn"
+                              }
+                            }  className="play-pause-btn"
                             >
                               <IonIcon
                                 icon={attachment.isPlaying ? pause : play}
@@ -1304,7 +1307,7 @@ const Doc_Consult: React.FC = () => {
       <IonPage>
         <IonContent>
           <div className="loading-container">
-            <IonSpinner name="crescent" />
+            <LoadingHelix size={40} />
             <IonText className="ion-text-center ion-padding"><p>Loading...</p></IonText>
           </div>
         </IonContent>
@@ -1374,9 +1377,26 @@ const Doc_Consult: React.FC = () => {
           <>
             {loading ? (
               <div className="loading-container">
-                <IonSpinner name="crescent" />
+                <LoadingHelix size={40} />
                 <IonText><p>Loading patients...</p></IonText>
               </div>
+            ) : filteredPatients.length === 0 ? (
+              <EmptyState
+                className="ion-margin"
+                icon={peopleOutline}
+                title={
+                  searchText.trim()
+                    ? "No patients match your search"
+                    : "No patients assigned yet"
+                }
+                description={
+                  searchText.trim()
+                    ? `We couldn't find anyone matching "${searchText.trim()}". Try a different name or condition.`
+                    : "Once a patient is referred to you, they'll appear here so you can start a consultation."
+                }
+                actionLabel={searchText.trim() ? "Clear search" : undefined}
+                onAction={searchText.trim() ? () => setSearchText("") : undefined}
+              />
             ) : (
               <div className="wa-patient-list">
                 {filteredPatients.map((patient) => {
@@ -1449,6 +1469,15 @@ const Doc_Consult: React.FC = () => {
 
             <div className="chat-container">
               <div className="messages">
+                {messages.length === 0 && (
+                  <EmptyState
+                    className="ion-margin"
+                    icon={chatbubblesOutline}
+                    title="No messages yet"
+                    description={`Start the conversation with ${selectedPatient.name}. Messages and attachments are shared securely.`}
+                  />
+                )}
+
                 {messages.map((msg) => renderMessage(msg))}
 
                 {isTyping && (
@@ -1579,15 +1608,22 @@ const Doc_Consult: React.FC = () => {
           onSwitchToVideo={async () => {
             setIsCallModalOpen(false);
             await startVideoCall();
-          }}
-        />
+          }
+      }  />
 
-        <IonAlert
+<MessageBox
           isOpen={showAlert}
-          onDidDismiss={() => setShowAlert(false)}
-          header={"Microphone Access"}
+          title="Microphone Access"
           message={alertMessage}
-          buttons={["OK"]}
+          tone="danger"
+          actions={[
+            {
+              label: "OK",
+              color: "primary",
+              onClick: () => setShowAlert(false),
+            },
+          ]}
+          onDismiss={() => setShowAlert(false)}
         />
       </IonContent>
       {selectedPatient && (
@@ -1730,7 +1766,7 @@ const Doc_Consult: React.FC = () => {
                           className="send-btn"
                         >
                           {isSending ? (
-                            <IonSpinner name="crescent" />
+                            <LoadingHelix size={18} />
                           ) : (
                             <IonIcon icon={sendOutline} />
                           )}
@@ -1787,8 +1823,8 @@ const Doc_Consult: React.FC = () => {
                             className="recording-action-btn cancel"
                             onClick={() => {
                               stopRecordingWithoutSend();
-                            }}
-                          >
+                            }
+                        }  >
                             <IonIcon icon={trashOutline} />
                           </IonButton>
                           <IonButton

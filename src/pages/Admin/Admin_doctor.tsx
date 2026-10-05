@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import LoadingHelix from "../../components/LoadingHelix";
 import {
   IonContent,
   IonHeader,
@@ -12,8 +13,6 @@ import {
   IonButton,
   IonIcon,
   IonSearchbar,
-  IonAlert,
-  IonLoading,
   IonBadge,
   IonButtons,
   IonBackButton,
@@ -24,9 +23,6 @@ import {
   IonInput,
   IonDatetime,
   IonTextarea,
-  IonGrid,
-  IonRow,
-  IonCol,
   useIonToast,
   IonModal,
   IonImg,
@@ -34,8 +30,8 @@ import {
   IonSegmentButton,
   IonText,
 } from "@ionic/react";
+import { MessageBox } from "../../components/ui/MessageBox";
 
-import { motion, AnimatePresence } from "framer-motion";
 import "./Admin3.scss";
 import {
   checkmark,
@@ -118,9 +114,6 @@ const Admin_doctors: React.FC = () => {
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [filteredDoctors, setFilteredDoctors] = useState<Doctor[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<
-    "all" | "active" | "on leave" | "inactive"
-  >("all");
   const [showAlert, setShowAlert] = useState(false);
   const [doctorToDelete, setDoctorToDelete] = useState<string | null>(null);
   const [adminToDelete, setAdminToDelete] = useState<string | null>(null);
@@ -286,12 +279,8 @@ const Admin_doctors: React.FC = () => {
       );
     }
 
-    if (statusFilter !== "all") {
-      result = result.filter((doctor) => doctor.status === statusFilter);
-    }
-
     setFilteredDoctors(result);
-  }, [searchTerm, statusFilter, doctors]);
+  }, [searchTerm, doctors]);
 
   const handleDeleteClick = (id: string, type: "doctor" | "admin") => {
     if (type === "doctor") {
@@ -768,58 +757,50 @@ const Admin_doctors: React.FC = () => {
           </IonButtons>
         </IonToolbar>
 
+        {/* Search only — status filtering is intentionally removed */}
         <IonToolbar className="filter-toolbar">
-          <IonGrid className="filter-grid">
-            <IonRow>
-              <IonCol size="12" sizeMd="8">
-                <IonSearchbar
-                  placeholder="Search doctors..."
-                  value={searchTerm}
-                  onIonChange={(e) => setSearchTerm(e.detail.value || "")}
-                  animated
-                  debounce={300}
-                  className="search-bar"
-                />
-              </IonCol>
-              <IonCol size="12" sizeMd="4">
-                <IonSelect
-                  value={statusFilter}
-                  placeholder="Filter by status"
-                  onIonChange={(e) => setStatusFilter(e.detail.value)}
-                  interface="popover"
-                  className="status-filter"
-                >
-                  <IonSelectOption value="all">All Doctors</IonSelectOption>
-                  <IonSelectOption value="active">Active</IonSelectOption>
-                  <IonSelectOption value="on leave">On Leave</IonSelectOption>
-                  <IonSelectOption value="inactive">Inactive</IonSelectOption>
-                </IonSelect>
-              </IonCol>
-            </IonRow>
-          </IonGrid>
+          <IonSearchbar
+            placeholder="Search doctors..."
+            value={searchTerm}
+            onIonChange={(e) => setSearchTerm(e.detail.value || "")}
+            animated
+            debounce={300}
+            className="search-bar search-bar--full"
+          />
         </IonToolbar>
       </IonHeader>
 
       <IonContent fullscreen className="content">
-        <IonLoading isOpen={loading} message="Loading doctors..." />
+        {loading && (
+          <div className="loading-container">
+            <LoadingHelix />
+            <p>Loading doctors...</p>
+          </div>
+        )}
 
-        <IonAlert
+        <MessageBox
           isOpen={showAlert}
-          onDidDismiss={() => setShowAlert(false)}
-          header={"Confirm Deletion"}
-          message={"Are you sure you want to delete this item?"}
-          buttons={[
+          title="Confirm Deletion"
+          message="Are you sure you want to delete this item?"
+          tone="danger"
+          actions={[
             {
-              text: "Cancel",
-              role: "cancel",
-              cssClass: "alert-button-cancel",
+              label: "Cancel",
+              color: "medium",
+              onClick: () => setShowAlert(false),
             },
             {
-              text: "Delete",
-              cssClass: "alert-button-confirm",
-              handler: confirmDelete,
+              /* Deletion is unrecoverable, so the confirm action carries the danger
+                 colour and Cancel stays quiet. */
+              label: "Delete",
+              color: "danger",
+              onClick: () => {
+                setShowAlert(false)
+                confirmDelete();
+              },
             },
           ]}
+          onDismiss={() => setShowAlert(false)}
         />
 
         {/* Admins List Section */}
@@ -838,21 +819,8 @@ const Admin_doctors: React.FC = () => {
           </div>
           {admins.length > 0 ? (
             <IonList className="admin-list">
-              <AnimatePresence>
-                {admins.map((admin, index) => (
-                  <motion.div
-                    key={admin.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, x: -100 }}
-                    transition={{
-                      delay: index * 0.05,
-                      type: "spring",
-                      stiffness: 100,
-                      damping: 10,
-                    }}
-                    layout
-                  >
+                {admins.map((admin) => (
+                  <div key={admin.id}>
                     <IonItem className="admin-item" lines="none"
                     >
                       <div slot="start" className="p-avatar">
@@ -884,16 +852,12 @@ const Admin_doctors: React.FC = () => {
                         </IonButton>
                       </div>
                     </IonItem>
-                  </motion.div>
+                  </div>
                 ))}
-              </AnimatePresence>
             </IonList>
           ) : (
-            <motion.div
+            <div
               className="empty-state"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5 }}
             >
               <IonIcon icon={shield} className="empty-icon" />
               <h3>No admins found</h3>
@@ -902,7 +866,7 @@ const Admin_doctors: React.FC = () => {
                 <IonIcon slot="start" icon={shield} />
                 Add Admin
               </IonButton>
-            </motion.div>
+            </div>
           )}
         </div>
 
@@ -910,12 +874,7 @@ const Admin_doctors: React.FC = () => {
         <div className="doctors-section">
           <IonLabel className="section-title">Doctors ({filteredDoctors.length})</IonLabel>
           {filteredDoctors.length === 0 && !loading ? (
-            <motion.div
-              className="empty-state"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5 }}
-            >
+            <div className="empty-state">
               <IonIcon icon={medical} className="empty-icon" />
               <h3>No doctors found</h3>
               <p>Try adjusting your search or add a new doctor</p>
@@ -923,24 +882,11 @@ const Admin_doctors: React.FC = () => {
                 <IonIcon slot="start" icon={add} />
                 Add Doctor
               </IonButton>
-            </motion.div>
+            </div>
           ) : (
             <IonList className="doctor-list">
-              <AnimatePresence>
-                {filteredDoctors.map((doctor, index) => (
-                  <motion.div
-                    key={doctor.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, x: -100 }}
-                    transition={{
-                      delay: index * 0.05,
-                      type: "spring",
-                      stiffness: 100,
-                      damping: 10,
-                    }}
-                    layout
-                  >
+                {filteredDoctors.map((doctor) => (
+                  <div key={doctor.id}>
                     <IonItem
                       className={`doctor-item ${doctor.status}`}
                       lines="none"
@@ -983,9 +929,8 @@ const Admin_doctors: React.FC = () => {
                         </IonButton>
                       </div>
                     </IonItem>
-                  </motion.div>
+                  </div>
                 ))}
-              </AnimatePresence>
             </IonList>
           )}
         </div>
@@ -1008,6 +953,7 @@ const Admin_doctors: React.FC = () => {
             </IonToolbar>
             <IonToolbar>
               <IonSegment
+                color="primary"
                 value={modalMode}
                 onIonChange={(e) =>
                   setModalMode(e.detail.value as "doctor" | "admin")

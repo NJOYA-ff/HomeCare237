@@ -23,16 +23,17 @@ import {
   IonGrid,
   IonRow,
   IonCol,
-  IonAlert,
   IonModal,
   IonButtons,
-  IonSpinner,
   IonSearchbar,
   IonAvatar,
   IonBackButton,
   IonAccordion,
   IonAccordionGroup,
 } from "@ionic/react";
+import { MessageBox } from "../../components/ui/MessageBox";
+import LoadingHelix from "../../components/LoadingHelix";
+import { EmptyState } from "../../components/ui";
 import { db, auth, storage } from "../../firebaseconfig";
 import {
   collection,
@@ -72,7 +73,6 @@ import {
 } from "@react-pdf/renderer";
 import logo from "../images/logo.jpg";
 import "./Doc_diagnoses.scss";
-import { motion } from "framer-motion";
 
 
 // TypeScript interfaces
@@ -878,11 +878,7 @@ const DoctorDiagnoses: React.FC = () => {
                 <IonCardContent className="diagnoses">
                   {loading ? (
                     <div className="loading-container">
-                      <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              className="loading-spinner"
-            />
+                      <LoadingHelix size={40} />
                       <IonText className="ion-text-center ion-padding"><p>Loading patients...</p></IonText>
                     </div>
                   ) : selectedPatient ? (
@@ -935,11 +931,7 @@ const DoctorDiagnoses: React.FC = () => {
                     <IonCardContent className="diagnoses">
                       {loadingHistory ? (
                         <div className="loading-container">
-                      <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              className="loading-spinner"
-            />
+                      <LoadingHelix size={40} />
                       <IonText className="ion-text-center ion-padding"><p>Loading patient history...</p></IonText>
                     </div>
                       ) : (
@@ -1017,11 +1009,7 @@ const DoctorDiagnoses: React.FC = () => {
                                             disabled={loading}
                                           >
                                             {loading ? (
-                                              <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              className="loading-spinner"
-            />
+                                              <LoadingHelix size={18} />
                                             ) : (
                                               <IonIcon icon={downloadOutline} />
                                             )}
@@ -1032,10 +1020,11 @@ const DoctorDiagnoses: React.FC = () => {
                                   ))}
                                 </IonList>
                               ) : (
-                                <div className="empty-state">
-                                  <IonIcon icon={medicalOutline} size="large" />
-                                  <p>No previous diagnoses found</p>
-                                </div>
+                                <EmptyState
+                                  icon={medicalOutline}
+                                  title="No previous diagnoses found"
+                                  description="Diagnoses you record for this patient will be listed here."
+                                />
                               )}
                             </div>
                           </IonAccordion>
@@ -1108,11 +1097,7 @@ const DoctorDiagnoses: React.FC = () => {
                                             disabled={loading}
                                           >
                                             {loading ? (
-                                              <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              className="loading-spinner"
-            />
+                                              <LoadingHelix size={18} />
                                             ) : (
                                               <IonIcon icon={downloadOutline} />
                                             )}
@@ -1123,10 +1108,11 @@ const DoctorDiagnoses: React.FC = () => {
                                   ))}
                                 </IonList>
                               ) : (
-                                <div className="empty-state">
-                                  <IonIcon icon={flaskOutline} size="large" />
-                                  <p>No lab results history found</p>
-                                </div>
+                                <EmptyState
+                                  icon={flaskOutline}
+                                  title="No lab results history found"
+                                  description="Lab results you attach to this patient will be listed here."
+                                />
                               )}
                             </div>
                           </IonAccordion>
@@ -1438,7 +1424,7 @@ const DoctorDiagnoses: React.FC = () => {
                         disabled={saving}
                       >
                         {saving ? (
-                          <IonSpinner name="crescent" />
+                          <LoadingHelix size={18} />
                         ) : (
                           "Save Diagnosis"
                         )}
@@ -1536,11 +1522,7 @@ const DoctorDiagnoses: React.FC = () => {
                                         disabled={loading}
                                       >
                                         {loading ? (
-                                          <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              className="loading-spinner"
-            />
+                                          <LoadingHelix size={18} />
                                         ) : (
                                           <>
                                             <IonIcon
@@ -1597,11 +1579,7 @@ const DoctorDiagnoses: React.FC = () => {
                                           disabled={loading}
                                         >
                                           {loading ? (
-                                            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              className="loading-spinner"
-            />
+                                            <LoadingHelix size={18} />
                                           ) : (
                                             <>
                                               <IonIcon
@@ -1637,11 +1615,7 @@ const DoctorDiagnoses: React.FC = () => {
                               {({ loading }) => (
                                 <IonButton expand="block" disabled={loading}>
                                   {loading ? (
-                                    <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              className="loading-spinner"
-            />
+                                    <LoadingHelix size={18} />
                                   ) : (
                                     <>
                                       <IonIcon
@@ -1657,13 +1631,11 @@ const DoctorDiagnoses: React.FC = () => {
                           </div>
                         </>
                       ) : (
-                        <div className="empty-preview">
-                          <IonIcon icon={documentTextOutline} size="large" />
-                          <p>
-                            Fill out the form and click "Preview Diagnosis" to
-                            see a preview of your diagnosis report.
-                          </p>
-                        </div>
+                        <EmptyState
+                          icon={documentTextOutline}
+                          title="Nothing to preview yet"
+                          description="Fill out the form and click &quot;Preview Diagnosis&quot; to see a preview of your diagnosis report."
+                        />
                       )}
                     </IonCardContent>
                   </IonCard>
@@ -1775,19 +1747,35 @@ const DoctorDiagnoses: React.FC = () => {
             </IonList>
 
             {filteredPatients.length === 0 && (
-              <div className="no-results">
-                <p>No patients found</p>
-              </div>
+              <EmptyState
+                className="ion-margin"
+                icon={peopleOutline}
+                title={searchText.trim() ? "No patients match your search" : "No patients found"}
+                description={
+                  searchText.trim()
+                    ? `We couldn't find anyone matching "${searchText.trim()}". Try a different name or MRN.`
+                    : "No patients are available to select right now."
+                }
+                actionLabel={searchText.trim() ? "Clear search" : undefined}
+                onAction={searchText.trim() ? () => setSearchText("") : undefined}
+              />
             )}
           </IonContent>
         </IonModal>
 
-        <IonAlert
+<MessageBox
           isOpen={showAlert}
-          onDidDismiss={() => setShowAlert(false)}
-          header="Notification"
+          title="Notification"
           message={alertMessage}
-          buttons={["OK"]}
+          tone="danger"
+          actions={[
+            {
+              label: "OK",
+              color: "primary",
+              onClick: () => setShowAlert(false),
+            },
+          ]}
+          onDismiss={() => setShowAlert(false)}
         />
       </IonContent>
     </IonPage>

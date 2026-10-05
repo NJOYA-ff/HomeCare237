@@ -1,33 +1,39 @@
-import React, { useState, useRef } from "react";
+import LoadingHelix from "../../components/LoadingHelix";
+import React, { useState } from "react";
 import {
-  IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
-  IonList, IonItem, IonLabel, IonBadge, IonButton, IonIcon,
-  IonButtons, IonBackButton, IonNote, IonAlert, IonModal,
-  IonInput, IonTextarea, IonSelect, IonSelectOption, IonSegment,
-  IonSegmentButton, IonChip, IonSpinner,
-} from "@ionic/react";
+  IonToolbar, IonList, IonItem, IonLabel, IonBadge, IonButton, IonIcon,
+  IonNote, IonInput, IonTextarea, IonToast, IonSegment,
+  IonSegmentButton, IonChip, } from "@ionic/react";
 import {
-  closeOutline, sendOutline, notificationsOutline, addOutline,
-  peopleOutline, medicalOutline,
+  closeOutline, sendOutline, notificationsOutline,
+  medicalOutline, peopleOutline, trashOutline,
 } from "ionicons/icons";
 import {
   collection, addDoc, getDocs, serverTimestamp, query, orderBy,
 } from "firebase/firestore";
 import { db } from "../../firebaseconfig";
 import { useNotifications } from "../../context/NotificationContext";
+import {
+  ConfirmDialog,
+  EmptyState,
+  FormField,
+  PageShell,
+} from "../../components/ui";
 import "../Patient/NotificationPage.scss";
-import "../../theme/hc-form.scss";
 
 const AdminNotifications: React.FC = () => {
   const { notifications, unreadCount, markAsRead, clearAll } = useNotifications();
   const [showClearAlert, setShowClearAlert] = useState(false);
-  const [showSendModal, setShowSendModal] = useState(false);
   const [tab, setTab] = useState<"inbox" | "send">("inbox");
   const [recipientType, setRecipientType] = useState<"all" | "doctors" | "patients">("all");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
-  const [sendAlert, setSendAlert] = useState({ show: false, msg: "" });
+  const [sendAlert, setSendAlert] = useState<{
+    show: boolean;
+    msg: string;
+    tone: "success" | "danger";
+  }>({ show: false, msg: "", tone: "success" });
 
   const formatDate = (timestamp?: any) => {
     if (!timestamp) return "Just now";
@@ -53,7 +59,7 @@ const AdminNotifications: React.FC = () => {
 
   const handleSend = async () => {
     if (!title.trim() || !body.trim()) {
-      setSendAlert({ show: true, msg: "Title and message are required." });
+      setSendAlert({ show: true, msg: "Title and message are required.", tone: "danger" });
       return;
     }
     setSending(true);
@@ -80,35 +86,43 @@ const AdminNotifications: React.FC = () => {
 
       setTitle("");
       setBody("");
-      setSendAlert({ show: true, msg: "Notification sent successfully!" });
+      setSendAlert({ show: true, msg: "Notification sent successfully!", tone: "success" });
     } catch (e) {
       console.error(e);
-      setSendAlert({ show: true, msg: "Failed to send notification." });
+      setSendAlert({ show: true, msg: "Failed to send notification.", tone: "danger" });
     } finally {
       setSending(false);
     }
   };
 
   return (
-    <IonPage className="notifications-page">
-      <IonHeader class="ion-no-border">
-        <IonToolbar className="patient-dashboard-toolbar notifications-toolbar">
-          <IonButtons slot="start">
-            <IonBackButton defaultHref="/admin/dashboard" icon={closeOutline} />
-          </IonButtons>
-          <IonTitle className="notifications-title">
-            Notifications
-            {unreadCount > 0 && (
-              <IonBadge color="danger" style={{ marginLeft: 8 }}>{unreadCount}</IonBadge>
-            )}
-          </IonTitle>
-          <IonButtons slot="end">
-            <IonButton onClick={() => markAsRead()}>Read all</IonButton>
-          </IonButtons>
-        </IonToolbar>
-
+    <PageShell
+      className="notifications-page"
+      title="Notifications"
+      titleExtra={
+        unreadCount > 0 ? (
+          <IonBadge color="danger" style={{ marginLeft: 8 }}>{unreadCount}</IonBadge>
+        ) : undefined
+      }
+      defaultHref="/admin/dashboard"
+      backIcon={closeOutline}
+      endActions={
+        <>
+          <IonButton onClick={() => markAsRead()}>Read all</IonButton>
+          <IonButton
+            fill="clear"
+            color="medium"
+            onClick={() => setShowClearAlert(true)}
+            aria-label="Clear all notifications"
+            title="Clear all notifications"
+          >
+            <IonIcon slot="icon-only" icon={trashOutline} />
+          </IonButton>
+        </>
+      }
+      toolbarExtra={
         <IonToolbar>
-          <IonSegment value={tab} onIonChange={(e) => setTab(e.detail.value as any)}>
+          <IonSegment color="primary" value={tab} onIonChange={(e) => setTab(e.detail.value as any)}>
             <IonSegmentButton value="inbox">
               <IonLabel>Inbox</IonLabel>
             </IonSegmentButton>
@@ -117,22 +131,47 @@ const AdminNotifications: React.FC = () => {
             </IonSegmentButton>
           </IonSegment>
         </IonToolbar>
-      </IonHeader>
-
-      <IonContent className="dashboard-patient notifications-content ion-padding">
+      }
+      toolbarClassName="patient-dashboard-toolbar notifications-toolbar"
+      titleClassName="notifications-title"
+      contentClassName="dashboard-patient notifications-content ion-padding"
+      layout="flush"
+      contentExtras={
+        <>
+          <ConfirmDialog
+            isOpen={showClearAlert}
+            header="Clear all notifications?"
+            message="This removes every notification from the inbox for this account."
+            confirmLabel="Clear"
+            destructive
+            onConfirm={clearAll}
+            onCancel={() => setShowClearAlert(false)}
+          />
+          <IonToast
+            isOpen={sendAlert.show}
+            onDidDismiss={() => setSendAlert({ show: false, msg: "", tone: "success" })}
+            message={sendAlert.msg}
+            color={sendAlert.tone}
+            duration={2600}
+            position="top"
+          />
+        </>
+      }
+    >
         {tab === "inbox" ? (
-          <IonList className="notification-list patient-surface-list">
-            {notifications.length === 0 ? (
-              <IonItem lines="none" className="empty-notification-state">
-                <IonLabel className="ion-text-center">
-                  <h2>No notifications yet</h2>
-                  <p>Notifications will appear here</p>
-                </IonLabel>
-              </IonItem>
-            ) : (
-              notifications.map((n, i) => (
+          notifications.length === 0 ? (
+            <EmptyState
+              icon={notificationsOutline}
+              title="No notifications yet"
+              description="Alerts about appointments, diagnoses and account activity will appear here."
+              actionLabel="Compose a notification"
+              onAction={() => setTab("send")}
+            />
+          ) : (
+            <IonList className="notification-list patient-surface-list">
+              {notifications.map((n, i) => (
                 <IonItem
-                  key={i}
+                  key={(n.data as any)?.docId ?? n.id ?? `notification-${i}`}
                   className={`notification-item ${!(n.data as any)?.read ? "unread" : "read"}`}
                   onClick={() => markAsRead((n.data as any)?.docId ?? n.id)}
                   detail={false}
@@ -146,17 +185,21 @@ const AdminNotifications: React.FC = () => {
                     {formatDate(n.data?.timestamp as number)}
                   </IonNote>
                 </IonItem>
-              ))
-            )}
-          </IonList>
+              ))}
+            </IonList>
+          )
         ) : (
           /* ---- Send Panel ---- */
-          <div style={{ maxWidth: 560, margin: "0 auto", paddingTop: 8 }}>
+          <div className="hc-form-panel">
             {/* Recipient selector */}
-            <p style={{ fontSize: "0.75rem", color: "var(--ion-color-medium)", marginBottom: 8, fontWeight: 600 }}>
-              SEND TO
-            </p>
-            <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
+            <span className="hc-label" id="notification-recipients-label">
+              Send to
+            </span>
+            <div
+              className="hc-chip-row"
+              role="group"
+              aria-labelledby="notification-recipients-label"
+            >
               {(["all", "doctors", "patients"] as const).map((r) => (
                 <IonChip
                   key={r}
@@ -171,13 +214,15 @@ const AdminNotifications: React.FC = () => {
               ))}
             </div>
 
-            <IonItem className="hc-form-item">
-              <IonLabel position="stacked">Title *</IonLabel>
-              <IonInput value={title} onIonInput={(e) => setTitle(e.detail.value!)} placeholder="Notification title" />
-            </IonItem>
+            <FormField label="Title" required helper="Shown as the notification heading.">
+              <IonInput
+                value={title}
+                onIonInput={(e) => setTitle(e.detail.value!)}
+                placeholder="Notification title"
+              />
+            </FormField>
 
-            <IonItem className="hc-form-item">
-              <IonLabel position="stacked">Message *</IonLabel>
+            <FormField label="Message" required helper="Keep it short — one or two sentences.">
               <IonTextarea
                 value={body}
                 onIonInput={(e) => setBody(e.detail.value!)}
@@ -185,33 +230,16 @@ const AdminNotifications: React.FC = () => {
                 autoGrow
                 placeholder="Write your message here…"
               />
-            </IonItem>
+            </FormField>
 
             <IonButton expand="block" onClick={handleSend} disabled={sending || !title.trim() || !body.trim()}>
-              {sending ? <IonSpinner name="crescent" /> : (
+              {sending ? <LoadingHelix color="white" /> : (
                 <><IonIcon slot="start" icon={sendOutline} />Send Notification</>
               )}
             </IonButton>
           </div>
         )}
-      </IonContent>
-
-      <IonAlert
-        isOpen={showClearAlert}
-        onDidDismiss={() => setShowClearAlert(false)}
-        header="Clear All"
-        message="Clear all notifications?"
-        buttons={[{ text: "Cancel", role: "cancel" }, { text: "Clear", handler: clearAll }]}
-      />
-
-      <IonAlert
-        isOpen={sendAlert.show}
-        onDidDismiss={() => setSendAlert({ show: false, msg: "" })}
-        header="Notice"
-        message={sendAlert.msg}
-        buttons={["OK"]}
-      />
-    </IonPage>
+    </PageShell>
   );
 };
 

@@ -1,0 +1,363 @@
+.momo-modal {
+  --width: 92%;
+  --max-width: 440px;
+  --height: auto;
+  --max-height: 90vh;
+  --border-radius: 16px;
+  --backdrop-opacity: 0.6;
+  --background: var(--ion-background-color, #f8fafc);
+}
+
+/*
+ * Ionic only sizes a modal to its content when the modal body is a plain
+ * scrollable element: an <ion-content> collapses to 0px inside a
+ * `--height: auto` modal which hid the whole payment form.
+ */
+.momo-modal-body {
+  padding: 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  max-height: calc(90vh - 80px);
+  background: var(--ion-background-color, #f8fafc);
+}
+
+.momo-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 20px;
+}
+
+.momo-summary-card {
+  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+  color: white;
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 4px 14px rgba(30, 58, 138, 0.2);
+}
+
+.momo-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  opacity: 0.85;
+}
+
+.momo-service-title {
+  margin: 4px 0 2px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.momo-doctor {
+  margin: 0 0 10px 0;
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+.momo-price-badge {
+  display: flex;
+  flex-direction: column;
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.momo-amount {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.momo-currency-sub {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+/* Provider selector */
+.momo-provider-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.provider-card {
+  border: 2px solid var(--ion-color-step-150, #e2e8f0);
+  background: var(--ion-card-background, #ffffff);
+  border-radius: 12px;
+  padding: 12px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.provider-card.selected.mtn-card {
+  border-color: #f59e0b;
+  background-color: rgba(245, 158, 11, 0.08);
+}
+
+.provider-card.selected.om-card {
+  border-color: #ea580c;
+  background-color: rgba(234, 88, 12, 0.08);
+}
+
+/* The operator's real mark, on its own brand ground. Replaces the text pills
+   this card used to show ("MTN" / "OM"), which read as placeholders next to
+   the operator's actual name. The fill is inline, not here — see the trademark
+   note on OPERATOR_MARKS in MobileMoneyModal.tsx. */
+.momo-operator-mark {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  /* Width is allowed to run: the two marks have very different aspect ratios
+     (MTN 296x118, Orange 175x47), so a fixed square would either clip MTN's
+     wordmark or shrink Orange's. Height alone sets their shared weight, and
+     `width: auto` means neither is stretched. */
+  width: auto;
+  padding: 0 10px;
+  border-radius: 10px;
+  box-shadow: 0 1px 4px -1px rgba(15, 23, 42, 0.3);
+}
+
+.momo-operator-logo {
+  height: 22px;
+  width: auto;
+  display: block;
+  object-fit: contain;
+}
+
+.provider-details strong {
+  display: block;
+  font-size: 13px;
+  color: var(--ion-text-color, #1e293b);
+}
+
+.provider-details small {
+  font-size: 11px;
+  color: var(--ion-color-step-600, #64748b);
+}
+
+/* Phone input */
+.momo-input-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.momo-field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ion-text-color, #334155);
+}
+
+/* Ionic field wrapper: themed surface for the MoMo number input, sharing the
+   same look as the booking/appointment .form-item fields. */
+.momo-ion-item {
+  --background: var(--ion-item-background, #ffffff);
+  --border-radius: 12px;
+  --padding-start: 14px;
+  --inner-padding-end: 14px;
+  --padding-top: 8px;
+  --padding-bottom: 8px;
+  --min-height: 62px;
+  --border-color: #dde1f5;
+  --border-width: 1px;
+  --border-style: solid;
+  --inner-border-width: 0;
+  --highlight-color-focused: var(--ion-color-primary);
+  border-radius: 12px;
+  margin: 0;
+}
+
+.momo-ion-item ion-label[position="stacked"] {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ion-color-medium);
+  margin-bottom: 4px;
+}
+
+/* Adornment row keeps the branded +237 prefix; IonInput fills the rest. */
+.momo-ion-item .phone-input-wrapper {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  height: auto;
+  padding: 4px 0;
+}
+
+.momo-field-input {
+  font-size: 0.93rem;
+  color: var(--ion-text-color);
+  --placeholder-color: var(--ion-color-medium);
+  --placeholder-opacity: 1;
+}
+
+body.dark .momo-ion-item {
+  --background: var(--ion-item-background, #1a1d27);
+  --border-color: var(--ion-color-step-150, #252839);
+}
+
+/* Legacy native-input styles: the MoMo number field is now an IonInput inside
+   .momo-ion-item (see override above). .country-code chip remains. */
+
+.country-code {
+  padding: 0 12px;
+  font-weight: 700;
+  font-size: 14px;
+  background: var(--ion-color-step-100, #f1f5f9);
+  color: var(--ion-text-color, #475569);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  border-right: 1px solid var(--ion-color-step-200, #cbd5e1);
+}
+
+.momo-hint {
+  font-size: 11px;
+  color: var(--ion-color-step-600, #64748b);
+}
+
+.momo-alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.momo-alert.error {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.momo-security-notice {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--ion-color-step-600, #64748b);
+}
+
+.momo-submit-btn {
+  margin-top: 6px;
+  --background: #10b981;
+  --background-hover: #059669;
+  --border-radius: 10px;
+  font-weight: 700;
+}
+
+/* Waiting / USSD state */
+.momo-waiting-state,
+.momo-success-state,
+.momo-error-state {
+  text-align: center;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.ussd-animation-box {
+  position: relative;
+  width: 90px;
+  height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.ussd-spinner {
+  width: 90px;
+  height: 90px;
+  color: #3b82f6;
+}
+
+.phone-ussd-icon {
+  position: absolute;
+  font-size: 38px;
+  color: #1e3a8a;
+}
+
+.ussd-phone-highlight {
+  font-size: 16px;
+  font-weight: 700;
+  color: #2563eb;
+  margin: 4px 0 10px 0;
+}
+
+.ussd-instructions {
+  font-size: 13px;
+  color: var(--ion-color-step-700, #475569);
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.ussd-tip {
+  background: var(--ion-color-step-100, #f1f5f9);
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--ion-color-step-700, #475569);
+  margin-bottom: 16px;
+}
+
+.ussd-tip code {
+  background: #e2e8f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+/* Success state */
+.success-icon-circle {
+  font-size: 64px;
+  color: #10b981;
+  margin-bottom: 8px;
+}
+
+.success-sub {
+  font-size: 13px;
+  color: var(--ion-color-step-600, #64748b);
+  margin-bottom: 16px;
+}
+
+.receipt-snippet {
+  width: 100%;
+  background: var(--ion-color-step-100, #f8fafc);
+  border: 1px dashed var(--ion-color-step-300, #cbd5e1);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.receipt-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  padding: 4px 0;
+  color: var(--ion-text-color, #334155);
+}
+
+.finish-btn {
+  width: 100%;
+  --border-radius: 10px;
+  font-weight: 700;
+}
+
+/* Error state */
+.error-icon-circle {
+  font-size: 64px;
+  color: #ef4444;
+  margin-bottom: 8px;
+}

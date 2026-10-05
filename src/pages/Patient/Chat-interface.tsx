@@ -18,26 +18,26 @@ declare global {
 // ---------------------------------------------------------------------------
 const LIGHT = {
   /** Brand accent – primary action colour */
-  primary: "#3b7dd8",
+  primary: "#2563eb",
   primaryShade: "#346ebe",
   /** Chat window surface */
   windowBg: "#ffffff",
   /** Bot message bubble background */
   botBubbleBg: "#f0f4fb",
-  botBubbleText: "#1a1a2e",
+  botBubbleText: "#0f172a",
   /** User message bubble */
-  userBubbleBg: "#3b7dd8",
+  userBubbleBg: "#2563eb",
   userBubbleText: "#ffffff",
   /** Input area */
   inputBg: "#f4f5f8",
   inputBorder: "#dde3ee",
-  inputText: "#1a1a2e",
+  inputText: "#0f172a",
   /** Footer / input row */
   footerBg: "#ffffff",
   /** System response buttons */
   systemBtnBg: "transparent",
-  systemBtnBorder: "#3b7dd8",
-  systemBtnText: "#3b7dd8",
+  systemBtnBorder: "#2563eb",
+  systemBtnText: "#2563eb",
   /** Timestamp / muted text */
   mutedText: "#7a8599",
   /** Window border */
@@ -52,7 +52,7 @@ const DARK = {
   windowBg: "#1a1d27",
   botBubbleBg: "#252839",
   botBubbleText: "#e8eaf0",
-  userBubbleBg: "#3b7dd8",
+  userBubbleBg: "#2563eb",
   userBubbleText: "#ffffff",
   inputBg: "#13151e",
   inputBorder: "#2b2e42",
@@ -338,11 +338,7 @@ const VoiceflowChat: React.FC<VoiceflowChatProps> = ({
     <div
       className={className}
       style={{
-        width: "100%",
-        height: "100%",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+  
         cursor: "pointer",
         ...style,
       }}

@@ -1,7 +1,8 @@
+import LoadingHelix from "../components/LoadingHelix";
+import AuthShell from "../components/AuthShell";
+import { useSettings } from "../context/SettingsContext";
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import {
-  IonPage,
-  IonContent,
   IonInput,
   IonItem,
   IonLabel,
@@ -11,14 +12,9 @@ import {
   IonGrid,
   IonRow,
   IonCol,
-  IonSpinner,
   IonButton,
-  IonIcon,
-  IonButtons,
   IonToast,
   IonText,
-  IonHeader,
-  IonToolbar,
 } from "@ionic/react";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
@@ -41,9 +37,10 @@ import {
 } from "react-icons/fi";
 import "./Page.scss";
 import { IoPersonCircleOutline } from "react-icons/io5";
-import { chevronBackOutline } from "ionicons/icons";
 import { useHistory } from "react-router";
 import { authService, UserRole } from "../App";
+import { getGoogleSignInErrorMessageT } from "../utils/authErrors";
+import { authBackLabel, authBackTarget, roleLabel } from "../utils/authFlow";
 
 type FormData = {
   profilePhoto: FileList | null;
@@ -100,6 +97,9 @@ const VALIDATION = {
 
 const PatientSignup: React.FC = () => {
   const history = useHistory();
+  // Declared near the top because the submit/validation handlers below close
+  // over `t` — validation messages and toasts must match the chosen language.
+  const { t } = useSettings();
 
   const {
     register,
@@ -143,14 +143,17 @@ const PatientSignup: React.FC = () => {
   const handleGoogleSignup = async () => {
     setIsGoogleLoading(true);
     try {
+      // Web → popup resolves immediately, returns user → navigate.
+      // Mobile → redirect flow, page navigates away, returns null.
       const user = await authService.loginWithGoogle(UserRole.Patient);
       if (user) {
-        showToast("Signed up with Google successfully!", "success");
-        setTimeout(() => history.push("/patient/dashboard"), 500);
+        history.push("/patient/dashboard");
       }
-    } catch (err: any) {
-      showToast(err?.message || "Google sign-up failed. Please try again.", "danger");
-    } finally {
+    } catch (err: unknown) {
+      // Same treatment as the signin pages: a cancelled popup is silent, and
+      // any other failure shows mapped copy instead of the raw SDK string.
+      const message = getGoogleSignInErrorMessageT(err, t);
+      if (message) showToast(message, "danger");
       setIsGoogleLoading(false);
     }
   };
@@ -172,7 +175,7 @@ const PatientSignup: React.FC = () => {
       return downloadURL;
     } catch (error) {
       console.error("Error uploading image:", error);
-      throw new Error("Failed to upload profile photo");
+      throw new Error(t("err_profile_photo_upload"));
     }
   };
 
@@ -205,7 +208,7 @@ const PatientSignup: React.FC = () => {
       return userDocRef;
     } catch (error) {
       console.error("Error creating user in Firestore:", error);
-      throw new Error("Failed to create user profile");
+      throw new Error(t("err_profile_create"));
     }
   };
 
@@ -215,7 +218,7 @@ const PatientSignup: React.FC = () => {
       // Validate file type
       if (!file.type.startsWith("image/")) {
         showToast(
-          "Please select a valid image file (JPEG, PNG, etc.).",
+          t("err_invalid_image_type"),
           "danger",
         );
         return;
@@ -223,7 +226,7 @@ const PatientSignup: React.FC = () => {
 
       // Validate file size
       if (file.size > VALIDATION.FILE.MAX_SIZE) {
-        showToast("Image size should be less than 5MB.", "danger");
+        showToast(t("err_image_too_large"), "danger");
         return;
       }
 
@@ -242,7 +245,7 @@ const PatientSignup: React.FC = () => {
         setValue("profilePhoto", dataTransfer.files);
         await trigger("profilePhoto");
       } catch (error) {
-        showToast("Error processing image. Please try another file.", "danger");
+        showToast(t("err_image_process_failed"), "danger");
       }
     } else {
       setValue("profilePhoto", null);
@@ -257,11 +260,11 @@ const PatientSignup: React.FC = () => {
 
   const onSubmit = async (data: FormData) => {
     if (data.password !== data.confirmPassword) {
-      showToast("Passwords do not match. Please try again.", "danger");
+      showToast(t("err_passwords_dont_match_try"), "danger");
       return;
     }
     if (!isValid) {
-      showToast("Please fix the form errors before submitting.", "warning");
+      showToast(t("err_fix_form_errors"), "warning");
       return;
     }
 
@@ -296,7 +299,7 @@ const PatientSignup: React.FC = () => {
       await createUserInFirestore(user.uid, data, profilePhotoURL);
 
       // 5. Show success message and reset form
-      showToast("Account created successfully! You can now sign in.");
+      showToast(t("err_account_created"));
       reset();
       setPreviewImage(null);
 
@@ -315,57 +318,40 @@ const PatientSignup: React.FC = () => {
         case "auth/email-already-in-use":
           setError("email", {
             type: "manual",
-            message:
-              "This email is already registered. Please use a different email.",
+            message: t("err_email_already_registered_long"),
           });
-          showToast("This email is already registered.", "danger");
+          showToast(t("err_email_already_registered"), "danger");
           break;
         case "auth/invalid-email":
           setError("email", {
             type: "manual",
-            message: "Invalid email address format.",
+            message: t("err_email_format"),
           });
-          showToast("Invalid email address format.", "danger");
+          showToast(t("err_invalid_email_format_period"), "danger");
           break;
         case "auth/weak-password":
           setError("password", {
             type: "manual",
-            message: "Password is too weak. Please use at least 8 characters.",
+            message: t("err_password_min_8"),
           });
-          showToast(
-            "Password is too weak. Please use a stronger password.",
-            "danger",
-          );
+          showToast(t("err_password_too_weak"), "danger");
           break;
         case "auth/network-request-failed":
-          showToast(
-            "Network error. Please check your internet connection.",
-            "danger",
-          );
+          showToast(t("err_network"), "danger");
           break;
         case "auth/operation-not-allowed":
-          showToast(
-            "Email/password accounts are not enabled. Please contact support.",
-            "danger",
-          );
+          showToast(t("err_accounts_disabled"), "danger");
           break;
         default:
           setError("root", {
             type: "manual",
-            message: "An unexpected error occurred. Please try again.",
+            message: t("err_unexpected"),
           });
-          showToast(
-            "An unexpected error occurred. Please try again.",
-            "danger",
-          );
+          showToast(t("err_unexpected"), "danger");
       }
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const goBack = () => {
-    history.push("/roleselect2");
   };
 
   // Animation variants for better performance
@@ -391,19 +377,13 @@ const PatientSignup: React.FC = () => {
   };
 
   return (
-    <IonPage>
-      <IonHeader class="ion-no-border">
-        <IonToolbar className="signuptoolbar">
-          {" "}
-          <IonButtons>
-            <IonButton onClick={goBack} className="signupback">
-              <IonIcon icon={chevronBackOutline} />
-              Back
-            </IonButton>
-          </IonButtons>
-        </IonToolbar>
-      </IonHeader>
-      <IonContent fullscreen className="signup-content">
+    <AuthShell
+      backHref={authBackTarget("patient", "signup")}
+      backLabel={authBackLabel("patient", "signup", t)}
+      eyebrow={roleLabel("patient", t)}
+      title={t("funnel_create_account")}
+      subtitle={t("funnel_signup_patient_sub")}
+      overlay={
         <IonToast
           isOpen={toast.isOpen}
           onDidDismiss={() => setToast((prev) => ({ ...prev, isOpen: false }))}
@@ -412,428 +392,418 @@ const PatientSignup: React.FC = () => {
           color={toast.color}
           position="top"
         />
+      }
+    >
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <IonGrid>
+          <IonRow className="ion-justify-content-center">
+            <IonCol size="12" sizeMd="8" sizeLg="6">
+              {/* Profile Photo */}
+              <motion.div className="photo-upload-container">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageChange}
+                  accept="image/*"
+                  style={{ display: "none" }}
+                />
 
-        {/* Background elements */}
-        <div className="background-elements">
-          {[...Array(8)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="bg-circle"
-              initial={{ opacity: 0, y: 100 }}
-              animate={{
-                opacity: [0.1, 0.25, 0.1],
-                y: [100, -80, 100],
-                x: Math.random() * 80 - 40,
-              }}
-              transition={{
-                duration: 18 + Math.random() * 12,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-              style={{
-                background: `rgba(${Math.random() * 80}, ${
-                  Math.random() * 80 + 175
-                }, 255, 0.15)`,
-                left: `${Math.random() * 100}%`,
-                width: `${Math.random() * 150 + 80}px`,
-                height: `${Math.random() * 150 + 80}px`,
-              }}
-            />
-          ))}
-        </div>
-
-        <motion.div
-          className="form-container"
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <IonGrid>
-              <IonRow className="ion-justify-content-center">
-                <IonCol size="12" sizeMd="8" sizeLg="6">
-                  {/* Profile Photo */}
-                  <motion.div className="photo-upload-container">
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleImageChange}
-                      accept="image/*"
-                      style={{ display: "none" }}
-                    />
-
-                    <IonAvatar
-                      className="profile-avatar"
-                      onClick={triggerFileInput}
-                    >
-                      {previewImage ? (
-                        <img src={previewImage} alt="Profile preview" />
-                      ) : (
-                        <div className="avatar-placeholder">
-                          <FiCamera size={32} />
-                        </div>
-                      )}
-                    </IonAvatar>
-                    <IonLabel className="photo-label">
-                      Tap to add photo
-                    </IonLabel>
-                    {errors.profilePhoto && (
-                      <IonText color="danger" className="error-text">
-                        <p>{errors.profilePhoto.message}</p>
-                      </IonText>
-                    )}
-                  </motion.div>
-
-                  {/* Username */}
-                  <motion.div custom={1} variants={itemVariants}>
-                    <IonItem className="form-item" lines="full">
-                      <IoPersonCircleOutline className="input-icon" />
-                      <IonInput
-                        type="text"
-                        placeholder="Username"
-                        {...register("userName", {
-                          required: "Username is required",
-                          minLength: {
-                            value: VALIDATION.USERNAME.MIN_LENGTH,
-                            message: `Username must be at least ${VALIDATION.USERNAME.MIN_LENGTH} characters`,
-                          },
-                          maxLength: {
-                            value: VALIDATION.USERNAME.MAX_LENGTH,
-                            message: `Username must be less than ${VALIDATION.USERNAME.MAX_LENGTH} characters`,
-                          },
-                          pattern: {
-                            value: /^[a-zA-Z0-9_]+$/,
-                            message:
-                              "Username can only contain letters, numbers, and underscores",
-                          },
-                        })}
-                      />
-                    </IonItem>
-                    {errors.userName && (
-                      <IonText color="danger" className="error-text">
-                        <p>{errors.userName.message}</p>
-                      </IonText>
-                    )}
-                  </motion.div>
-
-                  {/* Name */}
-                  <motion.div custom={2} variants={itemVariants}>
-                    <IonItem className="form-item" lines="full">
-                      <FiUser className="input-icon" />
-                      <IonInput
-                        type="text"
-                        placeholder="Full Name"
-                        {...register("name", {
-                          required: "Name is required",
-                          minLength: {
-                            value: VALIDATION.NAME.MIN_LENGTH,
-                            message: `Name must be at least ${VALIDATION.NAME.MIN_LENGTH} characters`,
-                          },
-                          maxLength: {
-                            value: VALIDATION.NAME.MAX_LENGTH,
-                            message: `Name must be less than ${VALIDATION.NAME.MAX_LENGTH} characters`,
-                          },
-                          pattern: {
-                            value: /^[a-zA-Z\s]+$/,
-                            message: "Name can only contain letters and spaces",
-                          },
-                        })}
-                      />
-                    </IonItem>
-                    {errors.name && (
-                      <IonText color="danger" className="error-text">
-                        <p>{errors.name.message}</p>
-                      </IonText>
-                    )}
-                  </motion.div>
-
-                  {/* Email */}
-                  <motion.div custom={3} variants={itemVariants}>
-                    <IonItem className="form-item" lines="full">
-                      <FiMail className="input-icon" />
-                      <IonInput
-                        type="email"
-                        placeholder="Email"
-                        {...register("email", {
-                          required: "Email is required",
-                          pattern: {
-                            value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                            message: "Invalid email address",
-                          },
-                        })}
-                      />
-                    </IonItem>
-                    {errors.email && (
-                      <IonText color="danger" className="error-text">
-                        <p>{errors.email.message}</p>
-                      </IonText>
-                    )}
-                  </motion.div>
-
-                  {/* Age and Sex */}
-                  <motion.div custom={4} variants={itemVariants}>
-                    <IonGrid className="compact-grid">
-                      <IonRow>
-                        <IonCol size="6">
-                          <IonItem className="form-item" lines="full">
-                            <IonInput
-                              type="number"
-                              placeholder="Age"
-                              {...register("age", {
-                                required: "Age is required",
-                                min: {
-                                  value: VALIDATION.AGE.MIN,
-                                  message: `Age must be at least ${VALIDATION.AGE.MIN}`,
-                                },
-                                max: {
-                                  value: VALIDATION.AGE.MAX,
-                                  message: `Age must be less than ${VALIDATION.AGE.MAX}`,
-                                },
-                                valueAsNumber: true,
-                              })}
-                            />
-                          </IonItem>
-                          {errors.age && (
-                            <IonText color="danger" className="error-text">
-                              <p>{errors.age.message}</p>
-                            </IonText>
-                          )}
-                        </IonCol>
-                        <IonCol size="6">
-                          <IonItem className="form-item" lines="full">
-                            <IonSelect
-                              placeholder="Sex"
-                              interface="popover"
-                              {...register("sex", {
-                                required: "Sex is required",
-                              })}
-                            >
-                              <IonSelectOption value="male">
-                                Male
-                              </IonSelectOption>
-                              <IonSelectOption value="female">
-                                Female
-                              </IonSelectOption>
-                              <IonSelectOption value="other">
-                                Other
-                              </IonSelectOption>
-                              <IonSelectOption value="prefer-not-to-say">
-                                Prefer not to say
-                              </IonSelectOption>
-                            </IonSelect>
-                          </IonItem>
-                          {errors.sex && (
-                            <IonText color="danger" className="error-text">
-                              <p>{errors.sex.message}</p>
-                            </IonText>
-                          )}
-                        </IonCol>
-                      </IonRow>
-                    </IonGrid>
-                  </motion.div>
-
-                  {/* Password */}
-                  <motion.div custom={5} variants={itemVariants}>
-                    <IonItem className="form-item" lines="full">
-                      <FiLock className="input-icon" />
-                      <IonInput
-                        type="password"
-                        placeholder="Password"
-                        {...register("password", {
-                          required: "Password is required",
-                          minLength: {
-                            value: VALIDATION.PASSWORD.MIN_LENGTH,
-                            message: `Password must be at least ${VALIDATION.PASSWORD.MIN_LENGTH} characters`,
-                          },
-                        })}
-                      />
-                    </IonItem>
-                    {errors.password && (
-                      <IonText color="danger" className="error-text">
-                        <p>{errors.password.message}</p>
-                      </IonText>
-                    )}
-                  </motion.div>
-
-                  {/* Confirm Password */}
-                  <motion.div custom={5} variants={itemVariants}>
-                    <IonItem className="form-item" lines="full">
-                      <FiLock className="input-icon" />
-                      <IonInput
-                        type="password"
-                        placeholder="Confirm Password"
-                        {...register("confirmPassword", {
-                          required: "Please confirm your password",
-                          validate: (value) =>
-                            value === watch("password") ||
-                            "Passwords do not match",
-                        })}
-                      />
-                    </IonItem>
-                    {errors.confirmPassword && (
-                      <IonText color="danger" className="error-text">
-                        <p>{errors.confirmPassword.message}</p>
-                      </IonText>
-                    )}
-                  </motion.div>
-
-                  {/* Contact */}
-                  <motion.div custom={6} variants={itemVariants}>
-                    <IonItem className="form-item" lines="full">
-                      <FiPhone className="input-icon" />
-                      <IonInput
-                        type="tel"
-                        placeholder="Phone Number"
-                        {...register("contact", {
-                          required: "Contact number is required",
-                          pattern: {
-                            value: /^[0-9+\-\s()]{9,15}$/,
-                            message: "Invalid phone number format",
-                          },
-                          minLength: {
-                            value: VALIDATION.CONTACT.MIN_LENGTH,
-                            message: `Phone number must be at least ${VALIDATION.CONTACT.MIN_LENGTH} digits`,
-                          },
-                          maxLength: {
-                            value: VALIDATION.CONTACT.MAX_LENGTH,
-                            message: `Phone number must be less than ${VALIDATION.CONTACT.MAX_LENGTH} digits`,
-                          },
-                        })}
-                      />
-                    </IonItem>
-                    {errors.contact && (
-                      <IonText color="danger" className="error-text">
-                        <p>{errors.contact.message}</p>
-                      </IonText>
-                    )}
-                  </motion.div>
-
-                  {/* Town */}
-                  <motion.div custom={7} variants={itemVariants}>
-                    <IonItem className="form-item" lines="full">
-                      <FiMapPin className="input-icon" />
-                      <IonInput
-                        type="text"
-                        placeholder="Town/City"
-                        {...register("town", {
-                          required: "Town is required",
-                          minLength: {
-                            value: VALIDATION.TOWN.MIN_LENGTH,
-                            message: `Town name must be at least ${VALIDATION.TOWN.MIN_LENGTH} characters`,
-                          },
-                          maxLength: {
-                            value: VALIDATION.TOWN.MAX_LENGTH,
-                            message: `Town name must be less than ${VALIDATION.TOWN.MAX_LENGTH} characters`,
-                          },
-                        })}
-                      />
-                    </IonItem>
-                    {errors.town && (
-                      <IonText color="danger" className="error-text">
-                        <p>{errors.town.message}</p>
-                      </IonText>
-                    )}
-                  </motion.div>
-
-                  {/* Street */}
-                  <motion.div custom={8} variants={itemVariants}>
-                    <IonItem className="form-item" lines="full">
-                      <FiHome className="input-icon" />
-                      <IonInput
-                        type="text"
-                        placeholder="Street Address"
-                        {...register("street", {
-                          required: "Street address is required",
-                          minLength: {
-                            value: VALIDATION.STREET.MIN_LENGTH,
-                            message: `Street address must be at least ${VALIDATION.STREET.MIN_LENGTH} characters`,
-                          },
-                          maxLength: {
-                            value: VALIDATION.STREET.MAX_LENGTH,
-                            message: `Street address must be less than ${VALIDATION.STREET.MAX_LENGTH} characters`,
-                          },
-                        })}
-                      />
-                    </IonItem>
-                    {errors.street && (
-                      <IonText color="danger" className="error-text">
-                        <p>{errors.street.message}</p>
-                      </IonText>
-                    )}
-                  </motion.div>
-
-                  {/* Root error */}
-                  {errors.root && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="error-message root-error"
-                    >
-                      <IonText color="danger">
-                        <p>{errors.root.message}</p>
-                      </IonText>
-                    </motion.div>
+                <IonAvatar
+                  className="profile-avatar"
+                  onClick={triggerFileInput}
+                >
+                  {previewImage ? (
+                    <img src={previewImage} alt={t("err_profile_photo_alt")} />
+                  ) : (
+                    <div className="avatar-placeholder">
+                      <FiCamera size={32} />
+                    </div>
                   )}
+                </IonAvatar>
+                <IonLabel className="photo-label">
+                  {t("signup_tap_photo")}
+                </IonLabel>
+                {errors.profilePhoto && (
+                  <IonText color="danger" className="error-text">
+                    <p>{errors.profilePhoto.message}</p>
+                  </IonText>
+                )}
+              </motion.div>
 
-                  {/* Submit Button */}
-                  <motion.div
-                    className="submit-container"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    custom={9}
-                    variants={itemVariants}
-                  >
-                    <IonButton
-                      type="submit"
-                      expand="block"
-                      className="submit-button"
-                      disabled={isLoading || !isValid}
-                    >
-                      {isLoading ? (
-                        <>
-                          <IonSpinner name="crescent" className="spinner" />
-                          Creating Account...
-                        </>
-                      ) : (
-                        "Create Account"
-                      )}
-                    </IonButton>
-                  </motion.div>
+              {/* Username */}
+              <motion.div custom={1} variants={itemVariants}>
+                <IonItem className="form-item" lines="full">
+                  <IoPersonCircleOutline className="input-icon" />
+                  <IonInput
+                    type="text"
+                    placeholder={t("field_username")}
+                    {...register("userName", {
+                      required: t("err_username_required"),
+                      minLength: {
+                        value: VALIDATION.USERNAME.MIN_LENGTH,
+                        message: t("err_min_chars", {
+                          min: VALIDATION.USERNAME.MIN_LENGTH,
+                        }),
+                      },
+                      maxLength: {
+                        value: VALIDATION.USERNAME.MAX_LENGTH,
+                        message: t("err_max_chars", {
+                          max: VALIDATION.USERNAME.MAX_LENGTH,
+                        }),
+                      },
+                      pattern: {
+                        value: /^[a-zA-Z0-9_]+$/,
+                        message: t("err_username_charset"),
+                      },
+                    })}
+                  />
+                </IonItem>
+                {errors.userName && (
+                  <IonText color="danger" className="error-text">
+                    <p>{errors.userName.message}</p>
+                  </IonText>
+                )}
+              </motion.div>
 
-                  {/* Google Sign-Up */}
-                  <motion.div
-                    custom={10}
-                    variants={itemVariants}
-                  >
-                    <div className="or-divider"><span>or sign up with</span></div>
-                    <IonButton
-                      expand="block"
-                      fill="outline"
-                      className="google-signin-btn"
-                      disabled={isGoogleLoading}
-                      onClick={handleGoogleSignup}
-                    >
-                      {isGoogleLoading ? (
-                        <IonSpinner name="crescent" />
-                      ) : (
-                        <>
-                          <img
-                            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-                            alt="Google"
-                            className="google-icon"
-                          />
-                          Continue with Google
-                        </>
+              {/* Name */}
+              <motion.div custom={2} variants={itemVariants}>
+                <IonItem className="form-item" lines="full">
+                  <FiUser className="input-icon" />
+                  <IonInput
+                    type="text"
+                    placeholder={t("field_full_name")}
+                    {...register("name", {
+                      required: t("err_name_required"),
+                      minLength: {
+                        value: VALIDATION.NAME.MIN_LENGTH,
+                        message: t("err_min_chars", {
+                          min: VALIDATION.NAME.MIN_LENGTH,
+                        }),
+                      },
+                      maxLength: {
+                        value: VALIDATION.NAME.MAX_LENGTH,
+                        message: t("err_max_chars", {
+                          max: VALIDATION.NAME.MAX_LENGTH,
+                        }),
+                      },
+                      pattern: {
+                        value: /^[a-zA-Z\s]+$/,
+                        message: t("err_name_charset"),
+                      },
+                    })}
+                  />
+                </IonItem>
+                {errors.name && (
+                  <IonText color="danger" className="error-text">
+                    <p>{errors.name.message}</p>
+                  </IonText>
+                )}
+              </motion.div>
+
+              {/* Email */}
+              <motion.div custom={3} variants={itemVariants}>
+                <IonItem className="form-item" lines="full">
+                  <FiMail className="input-icon" />
+                  <IonInput
+                    type="email"
+                    placeholder={t("field_email")}
+                    {...register("email", {
+                      required: t("err_email_required"),
+                      pattern: {
+                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                        message: t("err_email_invalid"),
+                      },
+                    })}
+                  />
+                </IonItem>
+                {errors.email && (
+                  <IonText color="danger" className="error-text">
+                    <p>{errors.email.message}</p>
+                  </IonText>
+                )}
+              </motion.div>
+
+              {/* Age and Sex */}
+              <motion.div custom={4} variants={itemVariants}>
+                <IonGrid className="compact-grid">
+                  <IonRow>
+                    <IonCol size="6">
+                      <IonItem className="form-item" lines="full">
+                        <IonInput
+                          type="number"
+                          placeholder={t("field_age")}
+                          {...register("age", {
+                            required: t("err_age_required"),
+                            min: {
+                              value: VALIDATION.AGE.MIN,
+                              message: t("err_age_min", {
+                                min: VALIDATION.AGE.MIN,
+                              }),
+                            },
+                            max: {
+                              value: VALIDATION.AGE.MAX,
+                              message: t("err_age_max_under", {
+                                max: VALIDATION.AGE.MAX,
+                              }),
+                            },
+                            valueAsNumber: true,
+                          })}
+                        />
+                      </IonItem>
+                      {errors.age && (
+                        <IonText color="danger" className="error-text">
+                          <p>{errors.age.message}</p>
+                        </IonText>
                       )}
-                    </IonButton>
-                  </motion.div>
-                </IonCol>
-              </IonRow>
-            </IonGrid>
-          </form>
-        </motion.div>
-      </IonContent>
-    </IonPage>
+                    </IonCol>
+                    <IonCol size="6">
+                      <IonItem className="form-item" lines="full">
+                        <IonSelect
+                          placeholder={t("field_sex")}
+                          interface="popover"
+                          {...register("sex", {
+                            required: t("err_sex_required"),
+                          })}
+                        >
+                          <IonSelectOption value="male">
+                            {t("sex_male")}
+                          </IonSelectOption>
+                          <IonSelectOption value="female">
+                            {t("sex_female")}
+                          </IonSelectOption>
+                          <IonSelectOption value="other">
+                            {t("sex_other")}
+                          </IonSelectOption>
+                          <IonSelectOption value="prefer-not-to-say">
+                            Prefer not to say
+                          </IonSelectOption>
+                        </IonSelect>
+                      </IonItem>
+                      {errors.sex && (
+                        <IonText color="danger" className="error-text">
+                          <p>{errors.sex.message}</p>
+                        </IonText>
+                      )}
+                    </IonCol>
+                  </IonRow>
+                </IonGrid>
+              </motion.div>
+
+              {/* Password */}
+              <motion.div custom={5} variants={itemVariants}>
+                <IonItem className="form-item" lines="full">
+                  <FiLock className="input-icon" />
+                  <IonInput
+                    type="password"
+                    placeholder={t("field_password")}
+                    {...register("password", {
+                      required: t("err_password_required"),
+                      minLength: {
+                        value: VALIDATION.PASSWORD.MIN_LENGTH,
+                        message: t("err_min_chars", {
+                          min: VALIDATION.PASSWORD.MIN_LENGTH,
+                        }),
+                      },
+                    })}
+                  />
+                </IonItem>
+                {errors.password && (
+                  <IonText color="danger" className="error-text">
+                    <p>{errors.password.message}</p>
+                  </IonText>
+                )}
+              </motion.div>
+
+              {/* Confirm Password */}
+              <motion.div custom={5} variants={itemVariants}>
+                <IonItem className="form-item" lines="full">
+                  <FiLock className="input-icon" />
+                  <IonInput
+                    type="password"
+                    placeholder={t("field_confirm_password")}
+                    {...register("confirmPassword", {
+                      required: t("err_confirm_password"),
+                      validate: (value) =>
+                        value === watch("password") ||
+                        t("err_passwords_dont_match"),
+                    })}
+                  />
+                </IonItem>
+                {errors.confirmPassword && (
+                  <IonText color="danger" className="error-text">
+                    <p>{errors.confirmPassword.message}</p>
+                  </IonText>
+                )}
+              </motion.div>
+
+              {/* Contact */}
+              <motion.div custom={6} variants={itemVariants}>
+                <IonItem className="form-item" lines="full">
+                  <FiPhone className="input-icon" />
+                  <IonInput
+                    type="tel"
+                    placeholder={t("field_phone")}
+                    {...register("contact", {
+                      required: t("err_phone_required"),
+                      pattern: {
+                        value: /^[0-9+\-\s()]{9,15}$/,
+                        message: t("err_phone_format"),
+                      },
+                      minLength: {
+                        value: VALIDATION.CONTACT.MIN_LENGTH,
+                        message: t("err_min_digits", {
+                          min: VALIDATION.CONTACT.MIN_LENGTH,
+                        }),
+                      },
+                      maxLength: {
+                        value: VALIDATION.CONTACT.MAX_LENGTH,
+                        message: t("err_max_digits", {
+                          max: VALIDATION.CONTACT.MAX_LENGTH,
+                        }),
+                      },
+                    })}
+                  />
+                </IonItem>
+                {errors.contact && (
+                  <IonText color="danger" className="error-text">
+                    <p>{errors.contact.message}</p>
+                  </IonText>
+                )}
+              </motion.div>
+
+              {/* Town */}
+              <motion.div custom={7} variants={itemVariants}>
+                <IonItem className="form-item" lines="full">
+                  <FiMapPin className="input-icon" />
+                  <IonInput
+                    type="text"
+                    placeholder={t("field_town")}
+                    {...register("town", {
+                      required: t("err_town_required"),
+                      minLength: {
+                        value: VALIDATION.TOWN.MIN_LENGTH,
+                        message: t("err_min_chars", {
+                          min: VALIDATION.TOWN.MIN_LENGTH,
+                        }),
+                      },
+                      maxLength: {
+                        value: VALIDATION.TOWN.MAX_LENGTH,
+                        message: t("err_max_chars", {
+                          max: VALIDATION.TOWN.MAX_LENGTH,
+                        }),
+                      },
+                    })}
+                  />
+                </IonItem>
+                {errors.town && (
+                  <IonText color="danger" className="error-text">
+                    <p>{errors.town.message}</p>
+                  </IonText>
+                )}
+              </motion.div>
+
+              {/* Street */}
+              <motion.div custom={8} variants={itemVariants}>
+                <IonItem className="form-item" lines="full">
+                  <FiHome className="input-icon" />
+                  <IonInput
+                    type="text"
+                    placeholder={t("field_street")}
+                    {...register("street", {
+                      required: t("err_street_required"),
+                      minLength: {
+                        value: VALIDATION.STREET.MIN_LENGTH,
+                        message: t("err_min_chars", {
+                          min: VALIDATION.STREET.MIN_LENGTH,
+                        }),
+                      },
+                      maxLength: {
+                        value: VALIDATION.STREET.MAX_LENGTH,
+                        message: t("err_max_chars", {
+                          max: VALIDATION.STREET.MAX_LENGTH,
+                        }),
+                      },
+                    })}
+                  />
+                </IonItem>
+                {errors.street && (
+                  <IonText color="danger" className="error-text">
+                    <p>{errors.street.message}</p>
+                  </IonText>
+                )}
+              </motion.div>
+
+              {/* Root error */}
+              {errors.root && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="error-message root-error"
+                >
+                  <IonText color="danger">
+                    <p>{errors.root.message}</p>
+                  </IonText>
+                </motion.div>
+              )}
+
+              {/* Submit Button */}
+              <motion.div
+                className="submit-container"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                custom={9}
+                variants={itemVariants}
+              >
+                <IonButton
+                  type="submit"
+                  expand="block"
+                  className="submit-button"
+                  disabled={isLoading || !isValid}
+                >
+                  {isLoading ? (
+                    <>
+                      <LoadingHelix className="spinner" size={18} color="white" />
+                      {t("signup_creating_account")}
+                    </>
+                  ) : (
+                    t("signup_create_account_btn")
+                  )}
+                </IonButton>
+              </motion.div>
+
+              {/* Google Sign-Up */}
+              <motion.div
+                custom={10}
+                variants={itemVariants}
+              >
+                <div className="or-divider"><span>{t("funnel_or_signup_with")}</span></div>
+                <IonButton
+                  expand="block"
+                  fill="outline"
+                  className="google-signin-btn"
+                  disabled={isGoogleLoading}
+                  onClick={handleGoogleSignup}
+                >
+                  {isGoogleLoading ? (
+                    <LoadingHelix />
+                  ) : (
+                    <>
+                      <img
+                        src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                        alt="Google"
+                        className="google-icon"
+                      />
+                      {t("signup_continue_google")}
+                    </>
+                  )}
+                </IonButton>
+              </motion.div>
+            </IonCol>
+          </IonRow>
+        </IonGrid>
+      </form>
+
+    </AuthShell>
   );
 };
 

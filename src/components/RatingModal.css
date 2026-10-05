@@ -1,41 +1,67 @@
+/* ── Sheet modal geometry ── */
 .rating-modal {
-  --width: 340px;
-  --max-width: 94vw;
+  --border-radius: 24px 24px 0 0;
+  --box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.14);
   --height: auto;
-  --border-radius: 20px;
-  --box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+  /* Push the sheet down so the avatar can overflow above it */
+  --overflow: visible;
 }
 
+/* Ionic wraps sheet content in an inner scroll element — make it overflow-visible
+   so the absolute avatar can escape the modal boundary */
+.rating-modal .ion-page,
+.rating-modal ion-content {
+  overflow: visible !important;
+  contain: none !important;
+}
+
+/* ── Avatar overflow container ──
+   Sits at the very top of the modal DOM, absolutely positioned so it
+   straddles the sheet edge. 60 % of the avatar (72 px) is above the sheet,
+   40 % is inside → translate up by 60 % of avatar height.
+   Avatar height = 80px → translateY(-48px) ≈ 60 %. */
+.rating-avatar-overflow {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -60%);
+  z-index: 10;
+}
+
+.rating-doctor-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid #fff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+}
+
+/* ── Modal inner content ──
+   Extra top padding reserves space for the 40 % of the avatar that sits
+   inside the sheet (80px * 0.4 = 32px) plus a little breathing room. */
 .rating-modal-inner {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 28px 24px 20px;
+  padding: 52px 24px 28px;
   gap: 12px;
   background: var(--ion-background-color, #fff);
-  border-radius: 20px;
+  border-radius: 24px 24px 0 0;
+  position: relative; /* anchor for the overflow container */
 }
 
-.rating-doctor-avatar {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid var(--ion-color-primary-tint);
-}
-
-.rating-doctor-initials {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #fff;
-  flex-shrink: 0;
-  border: 3px solid var(--ion-color-primary-tint);
+/* ── Handle bar ── */
+.rating-modal-inner::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--ion-color-light-shade, #d0d0d0);
 }
 
 .rating-title {

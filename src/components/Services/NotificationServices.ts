@@ -10,6 +10,8 @@ import {
 } from "@capacitor/local-notifications";
 import { App } from "@capacitor/app";
 import { isPlatform } from "@ionic/react";
+import { getAuth } from "firebase/auth";
+import { doc, setDoc, getFirestore } from "firebase/firestore";
 
 export interface NotificationPayload {
   title: string;
@@ -98,32 +100,65 @@ class NotificationService {
     });
   }
 
-  // Send token to your backend
+  /**
+   * Persist the FCM/APNs device token to the signed-in user's Firestore
+   * document so server-side code (Cloud Functions / backend) can use it to
+   * send targeted push notifications to this device.
+   *
+   * The token is written under the user's document in the `patients`,
+   * `doctors`, or `admins` collection (whichever one the user was registered
+   * in).  We also keep a secondary document in a flat `fcmTokens` collection
+   * for easy server-side fan-out queries.
+   */
   private async sendTokenToServer(token: string): Promise<void> {
     try {
-      // Replace with your backend endpoint
-      const response = await fetch(
-        "https://your-backend.com/api/register-device",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            token,
-            platform: isPlatform("ios") ? "ios" : "android",
-            userId: "current-user-id", // Get from your auth system
-          }),
-        }
-      );
+      const auth = getAuth();
+      const user = auth.currentUser;
 
-      if (!response.ok) {
-        throw new Error("Failed to register device token");
+      if (!user) {
+        console.warn("[NotificationService] No authenticated user — cannot save FCM token");
+        return;
       }
 
-      console.log("Token sent to server successfully");
+      const db = getFirestore();
+      const platform = isPlatform("ios") ? "ios" : "android";
+      const tokenData = {
+        fcmToken: token,
+        fcmTokenPlatform: platform,
+        fcmTokenUpdatedAt: new Date().toISOString(),
+      };
+
+      // 1. Try to update the user document in each possible collection.
+      //    setDoc with merge:true will not fail even if the doc doesn't exist
+      //    in that collection — it will create it.  We only write to the first
+      //    collection where the document already exists.
+      const collections = ["patients", "doctors", "admins"];
+      const { getDoc } = await import("firebase/firestore");
+
+      let saved = false;
+      for (const col of collections) {
+        const ref = doc(db, col, user.uid);
+        const snap = await getDoc(ref);
+        if (snap.exists()) {
+          await setDoc(ref, tokenData, { merge: true });
+          saved = true;
+          console.log(`[NotificationService] FCM token saved to ${col}/${user.uid}`);
+          break;
+        }
+      }
+
+      // 2. Always write to the flat fcmTokens collection so Cloud Functions
+      //    can query all tokens without knowing which role collection to look in.
+      await setDoc(doc(db, "fcmTokens", user.uid), {
+        uid: user.uid,
+        ...tokenData,
+      }, { merge: true });
+
+      if (!saved) {
+        console.warn("[NotificationService] User document not found in any role collection — token saved only to fcmTokens");
+      }
     } catch (error) {
-      console.error("Error sending token to server:", error);
+      console.error("[NotificationService] Error saving FCM token to Firestore:", error);
     }
   }
 
@@ -228,6 +263,19 @@ class NotificationService {
   // Check if push notifications are available
   isPushAvailable(): boolean {
     return isPlatform("hybrid");
+  }
+
+  /**
+   * Convenience wrapper — mirrors the standalone `sendPushNotification` helper
+   * so callers that already import NotificationService can call
+   * `NotificationService.sendPush(payload)` directly.
+   *
+   * Note: this fires only a LOCAL notification. For cross-device delivery
+   * (i.e. writing to Firestore so another user's device receives it) use the
+   * standalone `sendPushNotification` utility in `src/utils/pushNotification.ts`.
+   */
+  async sendPush(title: string, body: string, data?: Record<string, any>): Promise<void> {
+    await this.sendNow(title, body, data);
   }
 }
 

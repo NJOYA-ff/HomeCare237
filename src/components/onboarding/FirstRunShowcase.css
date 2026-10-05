@@ -1,0 +1,756 @@
+/* First-run services showcase.
+ *
+ * Reuses the onboarding design language (funnel gradient, frosted glass, glass
+ * ink) so the install feels like the same product as the landing page, but
+ * arranged as a card deck rather than a single hero.
+ *
+ * The card is intentionally close to the colour of the backdrop: --hc-glass-sheet
+ * is a 0.9 alpha of the glass ink, i.e. essentially white over a blue gradient.
+ * With the photography gone there is no opaque image to anchor the card, so the
+ * sheet is what carries the layout — hence the generous radius, the soft shadow,
+ * and no hard border.
+ *
+ * Every colour in the type and chrome is a theme token. The ART is the one
+ * exception: the vendored Storyset illustrations in ../../assets/showcase carry
+ * fixed full-colour fills rather than inheriting `currentColor`, because a
+ * single-hue silhouette cannot deliver a coloured illustration. That is safe
+ * only while the card stays a light sheet in both themes — see ShowcaseArt.
+ *
+ * INK DISCIPLINE — the one rule that is easy to get wrong here. This card is a
+ * *light* sheet (--hc-glass-sheet is rgba(255,255,255,0.9)) resting on the blue
+ * funnel, in light AND dark mode alike, because that token is a white alpha and
+ * never flips. And since the card went full-bleed it is no longer a panel with
+ * the gradient around it: the header and footer float ON TOP of the sheet, so
+ * *every* piece of type on this screen is now sitting on white. That means the
+ * dark navy is the whole screen's ink, and the white family may only be used
+ * where it is the fill rather than the backdrop — i.e. the brand-gradient
+ * button. Using --hc-glass-ink for the kicker, dots or pager would render them
+ * white-on-white and silently hide the controls. --sc-sheet/--sc-ink are
+ * declared together on .sc-content so the two cannot drift apart again.
+ * hc-auth.scss already does this split via --hc-auth-ink; the reasoning there
+ * applies unchanged. */
+
+.sc-content {
+  --background: var(--hc-gradient-funnel);
+  position: fixed;
+  overflow: hidden;
+
+  /* Sheet + ink as one pair, because they must agree. The deck is a *light*
+   * frosted sheet on the blue funnel in BOTH themes — --hc-glass-sheet is a
+   * white alpha and does not flip with dark mode — so the ink for everything
+   * on this screen is the dark navy and must NOT be swapped for a theme-aware
+   * token. Now that the card is full-bleed this really is the whole screen's
+   * ink, overlays included. Paired here so the high-contrast block can raise
+   * the sheet to opaque white without inverting the ink underneath it. */
+  --sc-sheet: var(--hc-glass-sheet);
+  --sc-ink: var(--hc-ink);
+
+  /* The sheet is full-bleed, so there is no margin left to inset the floating
+   * header and footer by — they are positioned against the page edges instead.
+   * The card then pads itself by the SAME two values, which is what keeps the
+   * copy clear of the controls floating over it. Declared once, here, so the
+   * overlay offsets and the card's clearance can never drift apart: if they
+   * disagree the content silently slides under the Skip button or the pager. */
+  --sc-edge: 20px;
+  --sc-inset-top: calc(env(safe-area-inset-top, 0px) + 18px);
+  --sc-inset-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+
+  /* Clearance for the two floating overlays, measured as the height of each
+   * stack: the header row is one 34px button, the footer is four rows plus
+   * gaps. Split out from the card's padding so the short-viewport query can
+   * shrink them without having to restate the whole padding shorthand — which
+   * is what used to happen, silently dropping the safe-area part. */
+  --sc-clear-top: 34px;
+  --sc-clear-bottom: 170px;
+
+  /* Where the ripple's ink band starts, measured from the top of the page. It
+     sits just below the kicker's descenders (the kicker box ends at y=40 on the
+     reference viewport) and is the anchor the ripple's offset is solved from —
+     see .sc-ripple-svg. Exposed as a token so the two cannot drift apart. */
+  --sc-ripple-top: 50px;
+}
+
+/* Layout: the card fills the page, so there is no column to distribute any more.
+ * This is now only a positioning context — the deck is taken out of flow and
+ * pinned to the page, while the header and footer are pinned over it. */
+.sc-frame {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+}
+
+/* ── Ripple backdrop ──
+ * Painted OVER the deck rather than behind it. This is the one counter-intuitive
+ * layer on the screen, and the reason is arithmetic: the card's sheet is a
+ * 0.9-alpha white, so a layer placed behind it survives at 10% strength. The
+ * ripple's most saturated ring (#ff3895) would emerge as rgb(255, 235, 244) —
+ * indistinguishable from the white sheet. Behind the card it is invisible;
+ * over it, at low opacity, it reads.
+ *
+ * z-index 1 puts it above the deck (which is unpositioned in stacking terms, so
+ * it paints below any positioned sibling) and below the header and footer at
+ * z-index 2. The controls therefore stay crisp and un-veiled.
+ *
+ * WHY IT IS SIZED, NUDGED AND MASKED. The copy occupies y=417..824 on the
+ * reference viewport, so the only genuinely clear space is the 375px between
+ * the kicker's descenders (y=40) and the title (y=417). The rings are centred on
+ * the canvas middle with the densest at r=150 + stroke 16/2, i.e. r=158 of the
+ * 800 viewBox, so the ink band is (2 * 158 / 800) * box = 0.395 * box tall. At
+ * the 996px this started from, that band was 394px - WIDER than the clear gap,
+ * so no offset could keep it off the type. Three changes follow from that:
+ *
+ *   1. Size the box to 900px, making the band 356px, so it fits the gap.
+ *   2. Pin the band's top edge to --sc-ripple-top and derive the offset from it,
+ *      instead of hard-coding a px that only holds at one viewport height.
+ *   3. Mask the lower part away, so the rings dissolve before the title instead
+ *      of stopping on a hard edge above it.
+ *
+ * Measured with scripts/shot-showcase.mjs, which screenshots each slide with and
+ * without the ripple and reports the worst per-pixel delta over the live rects
+ * of every copy element. Before: title 30, body 23, dots 17, with ~40% of body
+ * pixels shifted >8/255 - a visible grey wash across the words. After, across
+ * four slides at 390x844, 360x740, 844x390 and 430x932: worst copy delta 1/255.
+ * The ripple was not quieted to achieve this - mean presence over the art and
+ * the open band rose from 3.2 to 12.8, roughly 4x.
+ *
+ * `pointer-events: none` so a swipe that starts on the ripple still reaches the
+ * deck — without it the ripple would become a dead zone across the whole page,
+ * since it covers everything.
+ */
+.sc-ripple-svg {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 50%;
+  /* Sized off vmin, not vmax: the band's height decides whether the rings clear
+     the type, and vmin is the axis it is measured along. On a 390x844 phone vmin
+     is 390 so the 900px floor wins, and on a 360x740 it is 360 and the floor
+     still wins. Driving this from vmax instead scaled the box UP as the screen
+     got shorter, pushing the outer ring onto the kicker - the exact failure the
+     sizing exists to prevent. The floor also keeps the rings running off the
+     left and right edges rather than letterboxing on a phone. */
+  width: max(900px, 230vmin);
+  height: max(900px, 230vmin);
+  /* The nudge is DERIVED, not a magic number. `top: 50%` puts the box's top edge
+     at 50vh; translate(-50%, Y) then moves it up by box/2 + Y, so the box centre
+     lands at 50vh - Y. The ink band's half-height is (158/800) * box, so pinning
+     the band's top edge to --sc-ripple-top gives:
+         Y = -50vh + var(--sc-ripple-top) + (158/800) * box
+     which is what the calc below says, with the half-height term written as the
+     same max() as the sizing so it stays correct when the floor wins. On 390x844
+     this evaluates to the -194px the earlier hand-tuned value used; a fixed px
+     could not be, since it slid up into the kicker as the viewport got shorter
+     (it failed at 360x740). */
+  transform: translate(-50%, calc(-50% - 50vh + var(--sc-ripple-top) + max(177.75px, 45.4vmin)));
+  /* Restrained per-ring opacities mean each ring only carries a trace of the
+     layer opacity, so 0.34 reads as a tint on the sheet rather than a wash. */
+  opacity: 0.34;
+  /* Dissolves the rings out before the title instead of letting them thin to a
+     flat wash across the copy. In box-space, so the same percentages track the
+     box wherever the sizing lands it. */
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 60%, transparent 71%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 60%, transparent 71%);
+  pointer-events: none;
+  /* No animation: the deck already moves, and a second moving layer over text
+     is a readability cost rather than a flourish. */
+}
+
+/* ── Header ──
+ * Floats over the card rather than reserving a row for it. `pointer-events: none`
+ * with the Skip button opting back in is what lets a swipe that starts up here
+ * reach the deck underneath instead of dying on an invisible strip of layout. */
+.sc-head {
+  position: absolute;
+  z-index: 2;
+  top: var(--sc-inset-top);
+  left: var(--sc-edge);
+  right: var(--sc-edge);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.sc-kicker {
+  margin: 0;
+  /* Dark, not --hc-glass-ink: this used to sit on the blue funnel, but the card
+     is full-bleed and the kicker floats over the white sheet with it. */
+  color: color-mix(in srgb, var(--sc-ink) 70%, var(--sc-sheet));
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.sc-skip {
+  border: 0;
+  /* The auth back control's scrim is a *white* alpha, so on this white sheet it
+     would leave the label floating with nothing behind it. A faint wash of the
+     ink gives the pill just enough body to read as a control. */
+  background: color-mix(in srgb, var(--sc-ink) 8%, transparent);
+  /* Ink, to match the kicker beside it. */
+  color: var(--sc-ink);
+  /* The white drop shadow the auth back control needs is a liability here: on a
+     pale sheet it reads as a smudge rather than separation. */
+  text-shadow: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  /* Opts back into hit-testing: the header row is pointer-events: none so a
+     swipe can start there and reach the deck underneath. */
+  pointer-events: auto;
+}
+
+.sc-skip:active {
+  background: color-mix(in srgb, var(--sc-ink) 16%, transparent);
+}
+
+/* Dark ring: the label is ink-coloured now, so the ring matches rather than
+   fighting it. */
+.sc-skip:focus-visible {
+  outline: 2px solid var(--sc-ink);
+  outline-offset: 2px;
+}
+
+/* ── Deck ──
+ * The whole page now, not the leftover space between header and footer: those
+ * two float over it, so the deck is taken out of flow and pinned to the frame.
+ * `align-items: stretch` keeps the track at the deck's full height, which is what
+ * gives .sc-slide (and through it .sc-card) a definite height to fill. */
+.sc-deck {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+.sc-track {
+  display: flex;
+  width: 100%;
+  /* No transition on the container itself: framer-motion animates the
+   * transform, and a CSS transition would fight the drag. */
+  will-change: transform;
+}
+
+/* The card stretches to the full height of the deck, so the slide centres it no
+ * more: `align-items: stretch` is what lets it reach the page edges. */
+.sc-slide {
+  flex: 0 0 100%;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  /* Container for the art's `cqi` sizing: the scene scales with the card's own
+   * inline size, so it is correct at any card width without a breakpoint. */
+  container-type: inline-size;
+}
+
+/* ── Card ──
+ * The whole page. It stretches to the full height of the deck, so the slide
+ * centres it no more: `align-items: stretch` is what lets it reach the frame
+ * edges. `height: 100%` would still be ignored here — this is a flex item on the
+ * deck's cross axis — so the fill is expressed as `flex: 1` on the card instead,
+ * which is what stretch actually consumes. The deck stays `overflow: hidden`, so
+ * on a short viewport the art yields (see the max-height media query) instead of
+ * pushing the footer off-screen.
+ *
+ * No radius and no shadow any more: at full bleed the card has no edge to round
+ * off or lift away from a backdrop, and a shadow on a panel flush with the
+ * viewport edges just reads as a dirty rim.
+ *
+ * The padding is the frame inset plus the height of the two floating overlays
+ * (~34px for the header, ~170px for the footer stack). That clearance is what
+ * keeps the art and copy off the Skip button and the pager — without it the
+ * centred content lands underneath them, because the card no longer reserves
+ * their rows.
+ *
+ * The sheet is deliberately translucent (--hc-glass-sheet is a 0.9 alpha of the
+ * glass ink, i.e. white on this funnel), so the gradient reads straight through
+ * the card and the two surfaces read as one plane instead of a panel dropped on
+ * a background. */
+.sc-card {
+  width: 100%;
+  /* Fill the slide's stretched height. min-width: 0 lets the flex base resolve
+     against the definite cross size rather than the content. */
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Centres art + copy in the taller box rather than pinning them to the top. */
+  justify-content: center;
+  text-align: center;
+  padding: calc(var(--sc-inset-top) + var(--sc-clear-top)) 24px
+    calc(var(--sc-inset-bottom) + var(--sc-clear-bottom));
+  background: var(--sc-sheet);
+  -webkit-backdrop-filter: blur(var(--hc-glass-blur)) saturate(1.4);
+  backdrop-filter: blur(var(--hc-glass-blur)) saturate(1.4);
+}
+
+.sc-card-title {
+  margin: 6px 0 12px;
+  /* Dark, not --hc-glass-ink. The sheet is rgba(255,255,255,0.9) — i.e. white —
+     so white text here is white-on-white. --hc-glass-ink is for type sitting
+     directly on the blue gradient (see .sc-kicker below); anything on the card
+     needs the dark ink, the same override hc-auth.scss makes with
+     --hc-auth-ink. */
+  color: var(--sc-ink);
+  font-size: 1.42rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.sc-card-body {
+  margin: 0;
+  /* Softened dark rather than pure, to match --hc-auth-ink-soft's role.
+     Mixed toward the sheet rather than --hc-surface: the surface flips to
+     near-black in dark mode, which would drag this body copy dark too. */
+  color: color-mix(in srgb, var(--sc-ink) 76%, var(--sc-sheet));
+  font-size: 1.02rem;
+  line-height: 1.6;
+  /* Long French strings need more room than the English original. */
+  max-width: 38ch;
+}
+
+/* ── Art ──
+ * The scene is a fixed square so the card keeps its height from slide to slide
+ * — the deck must not jump as the user advances. Sized in `cqi`/`min()` terms so
+ * it grows with the card but still yields on short landscape viewports.
+ *
+ * The disc behind the art is a neutral wash rather than a primary tint. A
+ * brand-coloured disc fought the illustration for attention; the illustration is
+ * the colourful thing now, and the disc's only job is to keep it off the bare
+ * sheet. */
+.sc-card-art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(56cqi, 240px);
+  height: min(56cqi, 240px);
+  margin-bottom: 22px;
+  border-radius: 50%;
+  background: rgba(var(--ion-color-primary-rgb), 0.07);
+}
+
+/* ── Operator marks ──
+ * The wallet slide's logo row. Rides with the copy below the art disc, not inside
+ * it: two marks in a 240px circle would crowd the illustration and clip against
+ * the border-radius. */
+.sc-operators {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sc-operator {
+  display: flex;
+}
+
+/* Vendored Storyset illustration, inlined so its layers are reachable and can be
+ * animated (see ShowcaseArt). Every one is a 500×500 artwork drawn to bleed to
+ * its own canvas edges, so `preserveAspectRatio="xMidYMid slice"` on the element
+ * is what reproduces how it is meant to be seen; `meet` would letterbox it.
+ * This replaces a `.sc-art-img` rule that styled the <img> these used to be. */
+.sc-art-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ── Showcase illustration motion ──
+ * The vendor files ship with NO animation CSS — no <style>, no <animate> — so
+ * the motion is authored here rather than switched on. Storyset's own version of
+ * this keys everything off an `.animated` class on the root <svg>; ShowcaseArt
+ * adds that class to the art 1000ms after mount, and these rules hang off it.
+ *
+ * `backwards` fill is load-bearing: it holds every layer at its `from` state
+ * during its stagger delay, so the illustration assembles layer by layer instead
+ * of appearing fully formed and then jumping. `forwards` is deliberately NOT set
+ * — the resting state is the element's own, so the art returns to normal flow
+ * once the animation ends and nothing is left pinned by a filled keyframe.
+ *
+ * `--sc-layer-i` is the layer's position in the file, stamped by
+ * buildSceneMarkup. The vendor's layer order is back-to-front (background, then
+ * shadow, then props, then character), so a plain index stagger reads as depth
+ * coming forward without needing per-file rules. */
+.sc-art-svg.animated .sc-svg-layer {
+  animation: sc-art-layer-in 620ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: calc(var(--sc-layer-i, 0) * 85ms);
+}
+
+@keyframes sc-art-layer-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* The character gets its own entrance rather than riding the shared one: it is
+ * the tallest, nearest layer on every slide, so sliding it up with everything
+ * else flattens the depth the stagger is there to create. */
+.sc-art-svg.animated .sc-svg-layer--character {
+  animation-name: sc-art-character-in;
+  animation-duration: 760ms;
+}
+
+@keyframes sc-art-character-in {
+  from {
+    opacity: 0;
+    transform: translateY(26px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* `transform-box: fill-box` makes the translate/scale resolve against each
+ * layer's own bounding box rather than the 500×500 canvas. Without it a group
+ * positioned in the upper half of the art is displaced as though it were
+ * measured from the canvas origin, and the layers visibly slide apart. */
+.sc-art-svg .sc-svg-layer {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+
+.sc-card-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ── Footer ──
+ * The second overlay, pinned to the bottom of the frame. Same
+ * `pointer-events: none` treatment as the header: the controls inside opt back
+ * in individually, so the empty space between them still passes a swipe through
+ * to the deck. */
+.sc-foot {
+  position: absolute;
+  z-index: 2;
+  bottom: var(--sc-inset-bottom);
+  left: var(--sc-edge);
+  right: var(--sc-edge);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  pointer-events: none;
+}
+
+.sc-sub {
+  margin: 0;
+  color: color-mix(in srgb, var(--sc-ink) 62%, var(--sc-sheet));
+  font-size: 0.88rem;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.sc-dots {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.sc-dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  /* A wash of the ink: an inactive dot was a white alpha, which is invisible
+     against the sheet it now sits on. */
+  background: color-mix(in srgb, var(--sc-ink) 24%, transparent);
+  cursor: pointer;
+  /* Enlarge the touch target without growing the visual dot (WCAG 2.5.8). */
+  position: relative;
+  transition: width 0.25s ease, background-color 0.25s ease;
+}
+
+.sc-dot::after {
+  content: "";
+  position: absolute;
+  inset: -12px;
+}
+
+.sc-dot-on {
+  width: 24px;
+  /* Brand primary, not --ion-color-primary-contrast. The active dot used to be
+     white to pop off the gradient; on the white sheet that made the *active*
+     state the invisible one. */
+  background: var(--ion-color-primary);
+}
+
+.sc-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  pointer-events: auto;
+}
+
+.sc-progress {
+  margin: 0;
+  color: color-mix(in srgb, var(--sc-ink) 66%, var(--sc-sheet));
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Icon-only pager buttons, transparent so the gradient reads through them.
+   The 52px box clears the 44px minimum touch target with the icon centred,
+   which is what keeps this comfortable on a phone. */
+.sc-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  /* Ink, not --hc-glass-ink: these floated on the blue backdrop when the card
+     was a panel, but the card is full-bleed and they sit on the sheet with it. */
+  color: var(--sc-ink);
+  cursor: pointer;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+/* Hover/focus needs *some* affordance now that the fill is gone, otherwise the
+   control reads as decoration. A faint wash of the ink colour does it without
+   reintroducing an opaque pill. */
+.sc-nav:hover:not(:disabled),
+.sc-nav:focus-visible:not(:disabled) {
+  background: color-mix(in srgb, var(--sc-ink) 10%, transparent);
+}
+
+.sc-nav:focus-visible {
+  outline: 2px solid var(--sc-ink);
+  outline-offset: 3px;
+}
+
+.sc-nav:disabled {
+  opacity: 0.32;
+  cursor: default;
+}
+
+.sc-cta-icon {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+}
+
+/* ── Ripple (behind the art disc)
+ * The rings draw themselves on, once, a beat after mount. The `--animated`
+ * class is applied by ShowcaseRipple's timer rather than by the stylesheet, so
+ * the delay is owned in one place with the component. The stroke draw uses
+ * `pathLength="1"` normalisation (see ShowcaseRipple), which is what lets a
+ * dash offset run 0 -> 1 in exact proportion to each ring's real length
+ * instead of a magic number per circle. */
+.sc-ripple-svg circle {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+
+.sc-ripple-svg--animated circle {
+  animation: sc-ripple-draw 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes sc-ripple-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ── Operator marks (wallet slide)
+ * A two-up row of the real mobile-money logos, under the art disc.
+ * See ShowcaseArt.tsx for the trademark rules on these assets. */
+.sc-operators {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  /* Sits below .sc-card-art's own 22px bottom margin; the row is an
+     afterthought to the illustration, not a second headline. */
+  margin: 0 0 18px;
+  padding: 0;
+  list-style: none;
+}
+
+.sc-operator-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 14px;
+  border-radius: 10px;
+  /* The fill itself is inline (see the trademark note): third-party brand
+     colours travel with the asset, not with the stylesheet. */
+  box-shadow: 0 2px 8px -2px rgba(15, 23, 42, 0.28);
+}
+
+.sc-operator-logo {
+  /* Height-driven so both marks read at the same visual weight regardless of
+     their very different source aspect ratios (MTN is 296x118, Orange 175x47).
+     Width is left free, so neither is stretched — see the trademark note. */
+  height: 26px;
+  width: auto;
+  display: block;
+  object-fit: contain;
+}
+
+/* ── Small screens (Galaxy S8+ and below) ── */
+@media (max-width: 380px) {
+  /* Narrower gutter for the floating overlays, and a tighter card inset to
+     match. Both are overrides of the shared tokens, not fresh paddings, so the
+     overlays stay aligned with the card's clearance. */
+  .sc-content {
+    --sc-edge: 16px;
+  }
+
+  .sc-card {
+    padding-right: 20px;
+    padding-left: 20px;
+  }
+
+  .sc-card-title {
+    font-size: 1.2rem;
+  }
+
+  .sc-card-body {
+    font-size: 0.93rem;
+  }
+
+  .sc-card-art {
+    margin-bottom: 16px;
+  }
+}
+
+/* Short viewports (landscape phones): the scene is the tallest thing on the card,
+ * so it is capped to a shallower box rather than letting the copy clip. The
+ * overlay clearance shrinks too, or the copy would have almost no room left
+ * between the two floating stacks. */
+@media (max-height: 620px) {
+  .sc-content {
+    --sc-clear-top: 28px;
+    --sc-clear-bottom: 132px;
+  }
+
+  .sc-foot {
+    gap: 9px;
+  }
+
+  .sc-card {
+    padding-right: 22px;
+    padding-left: 22px;
+  }
+
+  .sc-card-art {
+    width: min(34cqi, 130px);
+    height: min(34cqi, 130px);
+    margin-bottom: 14px;
+  }
+
+  .sc-card-title {
+    margin: 2px 0 6px;
+    font-size: 1.14rem;
+  }
+
+  .sc-card-body {
+    font-size: 0.92rem;
+  }
+
+  /* Landscape phones shrink the art, which pulls the title up to roughly y=250 —
+     straight into where the ripple band sits. Shortening the box and pulling it
+     back up keeps the rings above the title instead of across it. vmin again,
+     for the same reason as the base rule. */
+  .sc-ripple-svg {
+    width: max(720px, 185vmin);
+    height: max(720px, 185vmin);
+    /* Re-solved for this box: the band's half-height term has to match the size
+       above, or the offset is derived against a box that is no longer there. */
+    transform: translate(-50%, calc(-50% - 50vh + var(--sc-ripple-top) + max(142.2px, 36.5vmin)));
+  }
+}
+
+/* Respect the OS setting: the deck still works, it just stops moving on its
+ * own. Nothing here is load-bearing for comprehension. */
+@media (prefers-reduced-motion: reduce) {
+  .sc-track {
+    transition: none;
+  }
+
+  /* The ripple: ShowcaseRipple still flips its `--animated` class on the same
+     1000ms timer, but with no keyframe attached the rings simply stay at
+     `stroke-dashoffset: 1` — undrawn. That is the honest outcome for a
+     decorative flourish nobody asked for; the wash behind the disc is what
+     carries the slide without it. */
+  .sc-ripple-svg circle {
+    animation: none;
+  }
+
+  /* The illustration layers. ShowcaseArt already declines to schedule its timer
+     when this preference is set, so `.animated` never arrives and these rules
+     are belt-and-braces — but they are kept because the CSS is the layer that
+     actually holds the animation, and a reader changing the class in devtools
+     should still get the static art rather than a frozen half-entrance. */
+  .sc-art-svg.animated .sc-svg-layer {
+    animation: none;
+  }
+}
+
+/* ── High contrast ── */
+@media (prefers-contrast: more) {
+  /* Drop the translucency. NOTE: this used to swap the sheet for
+     --hc-surface, which flips to near-black under body.dark and left the
+     dark-navy ink sitting on near-black. The card is a light sheet in every
+     theme, so the opaque form of that same sheet is the correct swap. */
+  .sc-content {
+    --sc-sheet: var(--hc-glass-ink);
+  }
+
+  /* The Skip pill sat on the gradient before, so a light scrim was the thing
+     separating it from the backdrop. It floats on the sheet now, so it needs a
+     real edge instead. */
+  .sc-skip {
+    background: transparent;
+    border: 2px solid var(--sc-ink);
+  }
+
+  /* The kicker, subtitle and progress counter were the type sitting directly on
+     the blue gradient while the card was a panel; they float over the sheet with
+     everything else now, so they stay on the dark ink — which is already their
+     default. High contrast strengthens that ink rather than inverting it back. */
+  .sc-progress,
+  .sc-kicker,
+  .sc-sub {
+    color: var(--sc-ink);
+  }
+
+  .sc-dot {
+    background: color-mix(in srgb, var(--sc-ink) 55%, transparent);
+  }
+}
+
+/* Ink rings, not the white glass ink: the deck and the dots sit on the sheet, so
+   a white ring would highlight nothing. */
+.sc-dot:focus-visible,
+.sc-cta:focus-visible,
+.sc-deck:focus-visible {
+  outline: 2px solid var(--sc-ink);
+  outline-offset: 3px;
+}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import LoadingHelix from "../../components/LoadingHelix";
 import {
   IonContent,
   IonHeader,
@@ -16,12 +17,12 @@ import {
   IonBadge,
   IonText,
   IonChip,
-  IonAlert,
   IonModal,
   IonButtons,
   IonBackButton,
   IonToast,
 } from "@ionic/react";
+import { MessageBox } from "../../components/ui/MessageBox";
 import { db, auth } from "../../firebaseconfig";
 import {
   collection,
@@ -598,11 +599,7 @@ const Diagnoses: React.FC = () => {
         </IonHeader>
         <IonContent fullscreen className="ion-padding">
           <div className="loading-container">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              className="loading-spinner"
-            />
+            <LoadingHelix />
             <IonText className="ion-text-center ion-padding">
               <p>Loading your diagnoses...</p>
             </IonText>
@@ -654,12 +651,22 @@ const Diagnoses: React.FC = () => {
           )}
         </div>
 
-        <IonAlert
+        <MessageBox
           isOpen={showAlert}
-          onDidDismiss={() => setShowAlert(false)}
-          header={alertMessage.includes("Failed") ? "Error" : "Success"}
+          title={alertMessage.includes("Failed") ? "Error" : "Success"}
           message={alertMessage}
-          buttons={["OK"]}
+          /* The title is already conditional on the outcome, so the icon and
+             accent follow it too — a green tick on a failed action would be a
+             lie the copy already contradicts. */
+          tone={alertMessage.includes("Failed") ? "danger" : "success"}
+          actions={[
+            {
+              label: "OK",
+              color: "primary",
+              onClick: () => setShowAlert(false),
+            },
+          ]}
+          onDismiss={() => setShowAlert(false)}
         />
 
         <IonToast
@@ -752,7 +759,8 @@ const DiagnosisCard: React.FC<{
             )}
             <IonButton
               size="small"
-              fill="outline"
+              fill="solid"
+              color="success"
               onClick={handleSaveFullReport}
               disabled={isSaving}
             >
@@ -886,7 +894,8 @@ const LabResultItem: React.FC<{
 
         <IonButton
           expand="block"
-          fill="outline"
+          fill="solid"
+          color="success"
           onClick={handleSaveLabResult}
           disabled={isSaving}
         >
@@ -978,7 +987,8 @@ const PrescriptionItem: React.FC<{
 
         <IonButton
           expand="block"
-          fill="outline"
+          fill="solid"
+          color="success"
           onClick={handleSavePrescription}
           disabled={isSaving}
         >
