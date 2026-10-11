@@ -132,6 +132,28 @@ describe("DoctorSignin — admin access", () => {
     });
   });
 
+  it("never routes an unexpected role to a dashboard (no default fallback)", async () => {
+    // login1() in the real app would have thrown a RoleMismatchError for a
+    // patient here; the point of this test is purely to pin that the page
+    // itself has no `default:` branch funneling unknown roles somewhere.
+    mocks.login1.mockResolvedValueOnce({
+      uid: "mystery-1",
+      role: "patient",
+      name: "Odd Account",
+      email: "odd@example.com",
+    });
+
+    renderPage();
+    await fillAndSubmitForm();
+
+    await waitFor(() => {
+      expect(mocks.login1).toHaveBeenCalled();
+    });
+
+    expect(screen.queryByText("Doctor Dashboard")).not.toBeInTheDocument();
+    expect(screen.queryByText("Admin Dashboard")).not.toBeInTheDocument();
+  });
+
   it("shows a neutral message (not doctor-specific) when no account is found", async () => {
     mocks.login1.mockRejectedValueOnce({
       code: "auth/user-not-found",

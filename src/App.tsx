@@ -208,17 +208,27 @@ class AuthService {
   /**
    * Resolves a user's role from the collection their account lives in.
    *
-   * The document's own `role` field is preferred, but many accounts created by
-   * admins (or by older versions of the app) never wrote one. Since collection
-   * membership is the actual source of truth — a doc in `doctors` is a doctor —
-   * falling back to it keeps those accounts able to sign in instead of being
-   * rejected as "cannot sign in here". The value is normalised (trimmed and
-   * lower-cased) so legacy values such as "Doctor" still resolve correctly.
+   * Membership in `admins` wins outright (see the guard inside the method).
+   * For every other collection the document's own `role`/`userType` fields are
+   * preferred, but many accounts created by admins (or by older versions of
+   * the app) never wrote one. Since collection membership is the actual source
+   * of truth — a doc in `doctors` is a doctor — falling back to it keeps those
+   * accounts able to sign in instead of being rejected as "cannot sign in
+   * here". The value is normalised (trimmed and lower-cased) so legacy values
+   * such as "Doctor" still resolve correctly.
    */
   private resolveRole(
     userData: Record<string, any>,
     collectionName: string
   ): UserRole {
+    // Membership in `admins` is decisive and is checked FIRST. Admin accounts
+    // are provisioned only by existing admins into this collection (with
+    // role: "admin"), so a stale or incorrect `role`/`userType` field on the
+    // document must never demote an admin — e.g. to "doctor", which would
+    // then trip the doctor verification gate below and block the sign-in the
+    // Doctor portal is supposed to allow for admins.
+    if (collectionName === "admins") return UserRole.Admin;
+
     const validRoles = Object.values(UserRole) as string[];
     for (const candidate of [userData.role, userData.userType]) {
       if (typeof candidate === "string") {

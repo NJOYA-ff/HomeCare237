@@ -57,17 +57,15 @@ const DoctorSignin: React.FC = () => {
       const user = await authService.login1(data.email1, data.password1, [UserRole.Doctor, UserRole.Admin]);
 
       if (user) {
-        // Redirect based on user role
-        switch (user.role) {
-          case UserRole.Admin:
-            history.push("/admin/dashboard");
-            break;
-          case UserRole.Doctor:
-            history.push("/doc/dashboard");
-            break;
-
-          default:
-            history.push("/doc/dashboard");
+        // Route strictly by the role loaded from Firebase (AuthService in
+        // App.tsx resolves it from the user's Firestore document): Admin →
+        // admin dashboard, Doctor → doctor dashboard. Deliberately no
+        // `default` branch — an unexpected role must never be funneled into
+        // a dashboard it does not belong to.
+        if (user.role === UserRole.Admin) {
+          history.push("/admin/dashboard");
+        } else if (user.role === UserRole.Doctor) {
+          history.push("/doc/dashboard");
         }
       } else {
         setLoginError(t("err_login_failed"));
@@ -98,13 +96,11 @@ const DoctorSignin: React.FC = () => {
     try {
       const user = await authService.login1(creds.email, creds.password, [UserRole.Doctor, UserRole.Admin]);
       if (user) {
-        switch (user.role) {
-          case UserRole.Admin:
-            history.push("/admin/dashboard");
-            break;
-          case UserRole.Doctor:
-          default:
-            history.push("/doc/dashboard");
+        // Same strict role routing as the password path above — no default.
+        if (user.role === UserRole.Admin) {
+          history.push("/admin/dashboard");
+        } else if (user.role === UserRole.Doctor) {
+          history.push("/doc/dashboard");
         }
       } else {
         setLoginError(t("err_quick_signin_failed"));
@@ -282,9 +278,12 @@ const DoctorSignin: React.FC = () => {
                             UserRole.Admin,
                           ]);
                           if (user) {
-                            switch (user.role) {
-                              case UserRole.Admin: history.push("/admin/dashboard"); break;
-                              case UserRole.Doctor: default: history.push("/doc/dashboard");
+                            // Strict role routing from the Firebase-loaded
+                            // role — no default branch (see password path).
+                            if (user.role === UserRole.Admin) {
+                              history.push("/admin/dashboard");
+                            } else if (user.role === UserRole.Doctor) {
+                              history.push("/doc/dashboard");
                             }
                           }
                         } catch (err: unknown) {
