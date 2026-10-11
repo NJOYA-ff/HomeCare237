@@ -116,7 +116,15 @@ import {
   signInWithRedirect,
   getRedirectResult,
 } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  setDoc,
+  where,
+} from "firebase/firestore";
 import Refer_patient from "./pages/Doctor/Refer_Patients";
 import SMS_Admin from "./pages/Doctor/SMS_Admin";
 import Tabs from "./components/Tabs";
@@ -244,33 +252,77 @@ class AuthService {
     return roleByCollection[collectionName] ?? UserRole.Patient;
   }
 
+  /**
+   * Shape a raw Firestore user document into the app's `User` model.
+   *
+   * `uid` is always the Firebase Auth UID — the identity sessions are keyed
+   * on. For legacy documents it differs from the Firestore document ID.
+   */
+  private toUser(
+    userData: Record<string, any>,
+    collectionName: string,
+    uid: string
+  ): User {
+    return {
+      id: uid,
+      name: userData.name || userData.fullName || "Unknown",
+      email: userData.email,
+      name1: userData.name || userData.fullName || "Unknown",
+      email1: userData.email,
+      role: this.resolveRole(userData, collectionName),
+      phone: userData.phone,
+      specialty: userData.specialty,
+      department: userData.department,
+      status: userData.status,
+      isActive: userData.isActive,
+      isEnabled: userData.isEnabled,
+      isVerified: userData.isVerified,
+    };
+  }
+
   private async findUserInCollections(uid: string): Promise<User | null> {
     const collections = ["patients", "doctors", "admins", "users"];
 
+    // Fast path: the document is keyed by the Auth UID — the format every
+    // signup flow writes today.
     for (const collectionName of collections) {
       try {
         const userDoc = await getDoc(doc(db, collectionName, uid));
         if (userDoc.exists()) {
           const userData = userDoc.data();
           console.log(`Found user in ${collectionName}:`, userData);
-          return {
-            id: uid,
-            name: userData.name || userData.fullName || "Unknown",
-            email: userData.email,
-            name1: userData.name || userData.fullName || "Unknown",
-            email1: userData.email,
-            role: this.resolveRole(userData, collectionName),
-            phone: userData.phone,
-            specialty: userData.specialty,
-            department: userData.department,
-            status: userData.status,
-            isActive: userData.isActive,
-            isEnabled: userData.isEnabled,
-            isVerified: userData.isVerified,
-          };
+          return this.toUser(userData, collectionName, uid);
         }
       } catch (error) {
         console.log(`User not found in ${collectionName}`);
+      }
+    }
+
+    // Legacy fallback: admin records created by older builds used addDoc(),
+    // so the document ID is a random auto-ID and the Auth UID only lives in
+    // the document's `uid` FIELD (older records also carry no `role` field —
+    // the collection name was the role). A UID-keyed getDoc() can never find
+    // those accounts, which made every pre-existing admin unable to sign in
+    // anywhere. Query the `uid` field before giving up. The `users`
+    // collection is intentionally not searched here: it has no security
+    // rules, so such a query would always be denied.
+    for (const collectionName of ["admins", "doctors", "patients"]) {
+      try {
+        const legacyQuery = query(
+          collection(db, collectionName),
+          where("uid", "==", uid)
+        );
+        const snapshot = await getDocs(legacyQuery);
+        const match = snapshot.docs[0];
+        if (match) {
+          const userData = match.data();
+          console.log(`Found legacy user in ${collectionName}:`, userData);
+          return this.toUser(userData, collectionName, uid);
+        }
+      } catch (error) {
+        // e.g. permission denied before the updated Firestore rules are
+        // deployed — treat as "not in this collection" and keep going.
+        console.warn(`Legacy uid lookup failed in ${collectionName}:`, error);
       }
     }
     return null;

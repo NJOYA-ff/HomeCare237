@@ -48,9 +48,21 @@ service cloud.firestore {
     }
 
     // Admins collection:
-    // - Only accessible by verified admins
+    // - Managed by verified admins (isAdmin()).
+    // - A signed-in user may also READ their own record:
+    //     • the UID-keyed document (current format — provable via
+    //       exists(.../admins/{auth.uid}) inside isAdmin()), or
+    //     • a legacy document whose `uid` FIELD equals their Auth UID.
+    //       Older builds created admin docs with addDoc(), so the document
+    //       ID is a random auto-ID and the Auth UID only lives in the
+    //       document. The field equality is exactly the constraint of the
+    //       sign-in fallback query, so the rules engine can prove it.
+    //       A user can only ever match their own record this way, so no
+    //       other admin's data becomes readable.
     match /admins/{adminId} {
-      allow read, write: if isAdmin();
+      allow read: if isAdmin() ||
+        (isAuthenticated() && resource.data.uid == request.auth.uid);
+      allow write: if isAdmin();
     }
 
     // Appointments collection:
