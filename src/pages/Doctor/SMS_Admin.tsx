@@ -1,6 +1,7 @@
 import LoadingHelix from "../../components/LoadingHelix";
 import { EmptyState } from "../../components/ui";
 import { avatarColor } from "../../utils/avatarColor";
+import { assertMicPermission, MicPermissionDeniedError } from "../../utils/micPermission";
 import React, { useState, useRef, useEffect } from "react";
 import {
   IonContent,
@@ -28,6 +29,7 @@ import {
   useIonActionSheet,
   IonBackButton,
   IonFooter,
+  isPlatform,
 } from "@ionic/react";
 import { MessageBox } from "../../components/ui/MessageBox";
 import { useNotifications } from "../../context/NotificationContext";
@@ -177,6 +179,7 @@ const SMS_Admin: React.FC = () => {
   const recordingIntervalRef = useRef<any>(null);
   const amplitudeIntervalRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const contentRef = useRef<HTMLIonContentElement>(null);
   const messageInputRef = useRef<HTMLIonTextareaElement>(null);
   const recordButtonRef = useRef<HTMLIonButtonElement>(null);
@@ -500,7 +503,12 @@ const SMS_Admin: React.FC = () => {
     });
   };
 
+  // Take photo using Capacitor Camera (native) or file picker (web)
   const handleTakePhoto = async () => {
+    if (!isPlatform("hybrid")) {
+      imageInputRef.current?.click();
+      return;
+    }
     try {
       const photo = await Camera.getPhoto({
         resultType: CameraResultType.DataUrl,
@@ -520,6 +528,18 @@ const SMS_Admin: React.FC = () => {
       console.error("Camera error:", error);
       presentToast({ message: "Unable to take photo", duration: 2000, color: "danger" });
     }
+  };
+
+  /** Web fallback: handles images selected via the hidden image file input */
+  const handleImageFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const objectUrl = URL.createObjectURL(file);
+    setAttachments((prev) => [
+      ...prev,
+      { id: Math.random().toString(36).substring(7), type: "image", url: objectUrl, name: file.name, isPlaying: false, currentTime: 0 },
+    ]);
+    if (imageInputRef.current) imageInputRef.current.value = "";
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -545,6 +565,7 @@ const SMS_Admin: React.FC = () => {
 
   const startRecording = async () => {
     try {
+      await assertMicPermission();
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
       audioContextRef.current = new AudioContext();
@@ -582,7 +603,11 @@ const SMS_Admin: React.FC = () => {
       }, 100);
     } catch (error) {
       console.error("Recording error:", error);
-      setAlertMessage("Microphone access is required for voice messages. Please allow microphone permissions and try again.");
+      if (error instanceof MicPermissionDeniedError) {
+        setAlertMessage("Microphone access was denied. Please enable microphone permission in your device Settings and try again.");
+      } else {
+        setAlertMessage("Microphone access is required for voice messages. Please allow microphone permissions and try again.");
+      }
       setShowAlert(true);
     }
   };
@@ -1048,6 +1073,14 @@ const SMS_Admin: React.FC = () => {
           accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
           multiple
           onChange={handleFileSelect}
+        />
+        {/* Web fallback for camera — used when not running on native Android/iOS */}
+        <input
+          type="file"
+          ref={imageInputRef}
+          style={{ display: "none" }}
+          accept="image/*"
+          onChange={handleImageFileSelect}
         />
 
         {/* ── Image preview modal ── */}

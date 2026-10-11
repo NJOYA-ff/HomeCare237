@@ -19,15 +19,28 @@ import {
   IonChip,
   IonButton,
   IonIcon,
+  IonCard,
+  IonCardContent,
 } from "@ionic/react";
 import { useHistory } from "react-router-dom";
 import { FiMenu } from "react-icons/fi";
 import { useNotifications } from "../../context/NotificationContext";
 import { useSettings } from "../../context/SettingsContext";
+import { auth } from "../../firebaseconfig";
+import { onAuthStateChanged, type User } from "firebase/auth";
+import { useLocationTracking } from "../../hooks/useLocationTracking";
+import { useWeather } from "../../hooks/useWeather";
+import { WeatherWidget } from "../../components/WeatherWidget";
+import "../../components/LocationMap/LocationMap.css";
 import {
   collection,
   getDocs,
+  getDoc,
+  doc,
   onSnapshot,
+  query,
+  orderBy,
+  limit,
 } from "firebase/firestore";
 import { db } from "../../firebaseconfig";
 import {
@@ -39,7 +52,8 @@ import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement
 import { Doughnut, Line } from 'react-chartjs-2';
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, ArcElement, BarElement, Title, Tooltip, Legend, Filler);
 import "./Admin.scss";
-import { DEFAULT_AVATAR, handleImageError, pickImageField } from "../../utils/profileImageStorage";
+import { DEFAULT_AVATAR, getDocumentImageUrl, handleImageError, pickImageField } from "../../utils/profileImageStorage";
+import { DashboardProfileCard } from "../../components/ui";
 import {
   people,
   medkit,
@@ -49,6 +63,9 @@ import {
   notificationsOutline,
   pulse,
   statsChart,
+  arrowForwardOutline,
+  swapHorizontalOutline,
+  locationOutline,
 } from "ionicons/icons";
 import {
   SoftKpiCard,
@@ -109,6 +126,17 @@ interface HealthUnit {
   patients: number;
   capacity: number;
   status: "optimal" | "busy" | "overcrowded";
+}
+
+interface RecentReferral {
+  id: string;
+  referringDoctorName: string;
+  receivingDoctorName: string;
+  receivingDoctorSpecialization: string;
+  patientName: string;
+  urgency: "routine" | "urgent" | "emergency";
+  status: "pending" | "accepted" | "rejected" | "completed";
+  createdAt: any;
 }
 
 // Define proper variant types
@@ -187,6 +215,15 @@ const AdminDashboard: React.FC = () => {
     completed: 0,
     cancelled: 0,
   });
+  const [referralStats, setReferralStats] = useState({
+    total: 0,
+    pending: 0,
+    accepted: 0,
+    completed: 0,
+    rejected: 0,
+  });
+  const [referralSeries, setReferralSeries] = useState<number[]>([]);
+  const [recentReferrals, setRecentReferrals] = useState<RecentReferral[]>([]);
   const [recentCaregivers, setRecentCaregivers] = useState<Caregiver[]>([]);
   const [recentPatients, setRecentPatients] = useState<Patient[]>([]);
   const [upcomingAppointments, setUpcomingAppointments] = useState<
@@ -227,6 +264,50 @@ const AdminDashboard: React.FC = () => {
       },
     }),
   };
+
+  // ── Location tracking state ───────────────────────────────────────────────
+  const [adminUser, setAdminUser] = React.useState<User | null>(null);
+  const [adminName, setAdminName] = React.useState("Admin");
+  const [adminAvatar, setAdminAvatar] = React.useState("");
+
+  const {
+    town,
+    division,
+    subdivision,
+    isTracking: locationTracking,
+    position: ownPosition,
+    permissionState: locationPermission,
+    error: locationError,
+  } = useLocationTracking({
+    uid: adminUser?.uid ?? null,
+    role: "admin",
+    name: adminName,
+  });
+
+  // ── Weather state ─────────────────────────────────────────────────────────
+  const { weather, weatherLoading, refreshWeather } = useWeather(ownPosition);
+
+  // Track admin auth state
+  React.useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      setAdminUser(user);
+      if (user?.displayName) setAdminName(user.displayName);
+      if (!user) {
+        setAdminAvatar("");
+        return;
+      }
+      // Resolve the admin's own profile picture from their Firestore document,
+      // falling back to the Firebase Auth photo URL.
+      try {
+        const snap = await getDoc(doc(db, "admins", user.uid));
+        const url = snap.exists() ? await getDocumentImageUrl(snap.data()) : "";
+        setAdminAvatar(url || user.photoURL || "");
+      } catch {
+        setAdminAvatar(user.photoURL || "");
+      }
+    });
+    return () => unsub();
+  }, []);
 
   const listItemVariants: CustomVariants = {
     hidden: {
@@ -499,11 +580,56 @@ const AdminDashboard: React.FC = () => {
 
     loadFirebaseData();
 
+    // Real-time listener for referrals
+    const referralsQuery = query(
+      collection(db, "referrals"),
+      orderBy("createdAt", "desc"),
+      limit(5),
+    );
+    const unsubscribeReferrals = onSnapshot(referralsQuery, (snapshot) => {
+      let pending = 0, accepted = 0, completed = 0, rejected = 0;
+      const referralDates: (Date | null)[] = [];
+      const recent: RecentReferral[] = [];
+
+      snapshot.docs.forEach((d) => {
+        const data = d.data();
+        const status: RecentReferral["status"] = data.status ?? "pending";
+        if (status === "pending") pending++;
+        else if (status === "accepted") accepted++;
+        else if (status === "completed") completed++;
+        else if (status === "rejected") rejected++;
+        referralDates.push(toDate(data.createdAt));
+        if (recent.length < 5) {
+          recent.push({
+            id: d.id,
+            referringDoctorName: data.referringDoctorName ?? "Unknown",
+            receivingDoctorName: data.receivingDoctorName ?? "Unknown",
+            receivingDoctorSpecialization: data.receivingDoctorSpecialization ?? "",
+            patientName: data.patientName ?? "Unknown Patient",
+            urgency: data.urgency ?? "routine",
+            status,
+            createdAt: data.createdAt,
+          });
+        }
+      });
+
+      setReferralStats({
+        total: snapshot.size,
+        pending,
+        accepted,
+        completed,
+        rejected,
+      });
+      setReferralSeries(bucketByMonth(referralDates, MONTH_KEYS));
+      setRecentReferrals(recent);
+    });
+
     // Cleanup subscription
     return () => {
       if (unsubscribeAppointments) {
         unsubscribeAppointments();
       }
+      unsubscribeReferrals();
     };
   }, []);
 
@@ -783,6 +909,19 @@ const AdminDashboard: React.FC = () => {
       footers: undefined,
       url: "/admin/notifications",
     },
+    {
+      key: "referrals",
+      icon: swapHorizontalOutline,
+      label: t("referrals"),
+      value: referralStats.total.toLocaleString(),
+      series: activeSeries(referralSeries),
+      delta: seriesDelta(referralSeries),
+      footers: [
+        { label: t("pending"), value: referralStats.pending },
+        { label: t("completed"), value: referralStats.completed },
+      ] as [KpiFooterItem, KpiFooterItem],
+      url: "/admin/referrals",
+    },
   ];
 
   return (
@@ -825,6 +964,15 @@ const AdminDashboard: React.FC = () => {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.3 }}
             >
+              {/* Profile summary card */}
+              <DashboardProfileCard
+                className="dpc--flush"
+                name={adminName}
+                roleLabel="Administrator"
+                subtitle={adminUser?.email || undefined}
+                avatar={adminAvatar}
+              />
+
               {/* KPI cards */}
               <IonGrid className="stats-grid soft-kpi-grid">
                 <IonRow>
@@ -983,6 +1131,114 @@ const AdminDashboard: React.FC = () => {
                 </IonRow>
               </IonGrid>
 
+              {/* Recent Referrals Section */}
+              <IonGrid>
+                <IonRow>
+                  <IonCol size="12">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.58 }}
+                    >
+                      <SoftChartCard
+                        icon={swapHorizontalOutline}
+                        title={t("referrals")}
+                        subtitle="Latest patient referrals between doctors"
+                        action={
+                          <span
+                            style={{ cursor: "pointer", fontSize: "0.8rem", color: "var(--ion-color-primary)" }}
+                            onClick={() => history.push("/admin/referrals")}
+                          >
+                            View all
+                          </span>
+                        }
+                      >
+                        {recentReferrals.length > 0 ? (
+                          <IonList lines="none" style={{ padding: 0 }}>
+                            {recentReferrals.map((ref, index) => (
+                              <motion.div
+                                key={ref.id}
+                                custom={index}
+                                initial="hidden"
+                                animate="visible"
+                                variants={listItemVariants}
+                                whileHover={{ x: 5 }}
+                              >
+                                <IonItem
+                                  button
+                                  detail={false}
+                                  routerLink="/admin/referrals"
+                                  style={{ "--padding-start": "0", "--inner-padding-end": "0", marginBottom: 6 }}
+                                >
+                                  {/* Status dot */}
+                                  <span
+                                    slot="start"
+                                    style={{
+                                      width: 10,
+                                      height: 10,
+                                      borderRadius: "50%",
+                                      flexShrink: 0,
+                                      marginRight: 10,
+                                      background:
+                                        ref.status === "completed" ? SOFT_COLORS.mint
+                                        : ref.status === "accepted" ? SOFT_COLORS.violet
+                                        : ref.status === "rejected" ? SOFT_COLORS.rose
+                                        : SOFT_COLORS.amber,
+                                    }}
+                                  />
+                                  <IonLabel>
+                                    {/* Patient name */}
+                                    <h2 style={{ fontWeight: 700, fontSize: "0.93rem", margin: "0 0 2px" }}>
+                                      {ref.patientName}
+                                    </h2>
+                                    {/* Doctor flow */}
+                                    <p style={{ fontSize: "0.78rem", color: "var(--ion-color-medium)", margin: "0 0 4px", display: "flex", alignItems: "center", gap: 4 }}>
+                                      {ref.referringDoctorName}
+                                      <IonIcon icon={arrowForwardOutline} style={{ fontSize: 12, flexShrink: 0 }} />
+                                      {ref.receivingDoctorName}
+                                      {ref.receivingDoctorSpecialization && (
+                                        <span style={{ marginLeft: 4, color: "var(--ion-color-primary)", fontWeight: 600 }}>
+                                          · {ref.receivingDoctorSpecialization}
+                                        </span>
+                                      )}
+                                    </p>
+                                    {/* Status + urgency chips */}
+                                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                                      <IonChip
+                                        color={
+                                          ref.status === "completed" ? "success"
+                                          : ref.status === "accepted" ? "secondary"
+                                          : ref.status === "rejected" ? "danger"
+                                          : "warning"
+                                        }
+                                        style={{ height: 20, fontSize: "0.68rem", margin: 0, "--padding-start": "8px", "--padding-end": "8px" } as any}
+                                      >
+                                        {ref.status.charAt(0).toUpperCase() + ref.status.slice(1)}
+                                      </IonChip>
+                                      {ref.urgency !== "routine" && (
+                                        <IonChip
+                                          color={ref.urgency === "emergency" ? "danger" : "warning"}
+                                          outline
+                                        style={{ height: 20, fontSize: "0.68rem", margin: 0, "--padding-start": "8px", "--padding-end": "8px" } as any}
+                                      >
+                                        {ref.urgency.charAt(0).toUpperCase() + ref.urgency.slice(1)}
+                                      </IonChip>
+                                      )}
+                                    </div>
+                                  </IonLabel>
+                                </IonItem>
+                              </motion.div>
+                            ))}
+                          </IonList>
+                        ) : (
+                          <p className="soft-card-empty">No referrals yet</p>
+                        )}
+                      </SoftChartCard>
+                    </motion.div>
+                  </IonCol>
+                </IonRow>
+              </IonGrid>
+
               {/* Recent Activity Sections */}
               <IonGrid className="activity-grid">
                 <IonRow>
@@ -1132,6 +1388,74 @@ const AdminDashboard: React.FC = () => {
             </motion.div>
           </AnimatePresence>
         )}
+
+        {/* ── Live User Location Map ─────────────────────────────────────── */}
+        <AnimatePresence>
+          {!loading && (
+            <motion.div
+              key="location-section"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ delay: 0.5, duration: 0.5, type: "spring", stiffness: 100 }}
+              style={{ padding: "0 16px 16px" }}
+            >
+              <IonCard className="location-tracking-card">
+                <IonCardContent>
+                  <div className="location-tracking-header">
+                    <h3 className="location-tracking-title">
+                      <IonIcon icon={locationOutline} />
+                      My Location
+                    </h3>
+                    <span className={`location-status-chip ${locationTracking ? "active" : "inactive"}`}>
+                      {locationTracking ? "Active" : "Locating…"}
+                    </span>
+                  </div>
+
+                  {locationError && (
+                    <div className="location-error-banner" role="alert">
+                      {locationError}
+                    </div>
+                  )}
+
+                  <div className="location-town-display">
+                    <IonIcon icon={locationOutline} className="location-town-pin" />
+                    <div className="location-town-details">
+                      <span className="location-town-name">
+                        {town ?? (locationPermission === "denied" ? "Permission denied" : "Detecting…")}
+                      </span>
+                      {division && (
+                        <span className="location-division">{division}</span>
+                      )}
+                      {subdivision && (
+                        <span className="location-subdivision">{subdivision}</span>
+                      )}
+                      {ownPosition && (
+                        <span className="location-coords">
+                          {ownPosition.coords.latitude.toFixed(4)}°, {ownPosition.coords.longitude.toFixed(4)}° · ±{Math.round(ownPosition.coords.accuracy)}m
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* ── Weather Widget ── */}
+                  {ownPosition && (
+                    <div className="weather-section">
+                      <div className="weather-divider" />
+                      <WeatherWidget
+                        weather={weather}
+                        loading={weatherLoading}
+                        onRefresh={refreshWeather}
+                      />
+                    </div>
+                  )}
+                </IonCardContent>
+              </IonCard>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        {/* ── End Live Location Map ─────────────────────────────────────── */}
+
       </IonContent>
     </IonPage>
   );

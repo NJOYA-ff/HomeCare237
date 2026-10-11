@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import LoadingHelix from "../../components/LoadingHelix";
+import { calcDoctorProgress } from "../../utils/profileCompleteness";
 import {
   IonContent,
   IonHeader,
@@ -35,11 +36,8 @@ import {
   IonToggle,
 } from "@ionic/react";
 import {
-  calendar,
-  person,
   location,
   time,
-  star,
   notifications,
   chatbubbleEllipses,
   wallet,
@@ -60,7 +58,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import { useIonToast } from "@ionic/react";
 import { runTransaction, addDoc } from "firebase/firestore";
 import { useMessageBox } from "../../components/ui/useMessageBox";
-import { EmptyState } from "../../components/ui";
+import { EmptyState, DashboardProfileCard } from "../../components/ui";
 import "./Doctor.scss";
 import { DEFAULT_AVATAR, getDocumentImageUrl, handleImageError } from "../../utils/profileImageStorage";
 import { db, auth } from "../../firebaseconfig";
@@ -79,11 +77,15 @@ import {
 } from "firebase/firestore";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { motion, Variants } from "framer-motion";
-import { FiMenu, FiClock, FiCalendar, FiMapPin, FiFileText, FiPhone, FiMessageSquare, FiVideo } from "react-icons/fi";
+import { FiMenu, FiClock, FiCalendar, FiMapPin, FiFileText, FiVideo, FiUsers, FiStar, FiAlertCircle } from "react-icons/fi";
 import { helix } from "ldrs";
 import { FaStethoscope } from "react-icons/fa";
 import { useNotifications } from "../../context/NotificationContext";
 import { useSettings } from "../../context/SettingsContext";
+import { useLocationTracking } from "../../hooks/useLocationTracking";
+import { useWeather } from "../../hooks/useWeather";
+import { WeatherWidget } from "../../components/WeatherWidget";
+import "../../components/LocationMap/LocationMap.css";
 
 // Updated Types to match your appointments data structure
 interface Appointment {
@@ -196,6 +198,7 @@ interface DoctorProfile {
   rating: number;
   totalRatings: number;
   availableSlots: string[];
+  isAvailable: boolean;
 }
 
 type AnimationType = "spring" | "tween" | "keyframes";
@@ -241,11 +244,16 @@ const DoctorDashboard: React.FC = () => {
   const [doctorProfile, setDoctorProfile] = useState<DoctorProfile | null>(
     null,
   );
+  const [doctorAvatar, setDoctorAvatar] = useState("");
   const [showProfileBanner, setShowProfileBanner] = useState(false);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [recentPatients, setRecentPatients] = useState<Patient[]>([]);
   const analytics = useMemo(() => dashboardAnalytics(appointments), [appointments]);
   const stats: Stats = { ...analytics, rating: doctorProfile?.rating || 0 };
+  const profileProgress = useMemo(
+    () => calcDoctorProgress(doctorProfile ?? {}),
+    [doctorProfile],
+  );
   const presentMessage = useMessageBox();
   const [presentToast] = useIonToast();
   const updatingRef = useRef(false);
@@ -268,6 +276,27 @@ const DoctorDashboard: React.FC = () => {
   const [tempSlots, setTempSlots] = useState<string[]>([]);
   const [slotInput, setSlotInput] = useState("");
   const slotInputRef = useRef<HTMLIonInputElement>(null);
+  // Availability toggle — mirrors the same field in DoctorSettings
+  const [isAvailable, setIsAvailable] = useState(true);
+  const [savingAvailability, setSavingAvailability] = useState(false);
+
+  // ── Location tracking state ───────────────────────────────────────────────
+  const {
+    town,
+    division,
+    subdivision,
+    isTracking: locationTracking,
+    position: ownPosition,
+    permissionState: locationPermission,
+    error: locationError,
+  } = useLocationTracking({
+    uid: currentUser?.uid ?? null,
+    role: "doctor",
+    name: doctorProfile?.name || "Doctor",
+  });
+
+  // ── Weather state ─────────────────────────────────────────────────────────
+  const { weather, weatherLoading, refreshWeather } = useWeather(ownPosition);
 
   // Register the helix component
   useEffect(() => {
@@ -339,6 +368,15 @@ const DoctorDashboard: React.FC = () => {
         } as DoctorProfile;
 
         setDoctorProfile(profile);
+        setIsAvailable(doctorData.isAvailable ?? true);
+        // Resolve the doctor's own profile picture for the dashboard header,
+        // checking every historical field name (`profilePhoto`, `avatar`, …).
+        try {
+          const avatarUrl = await getDocumentImageUrl(doctorData);
+          setDoctorAvatar(avatarUrl || auth.currentUser?.photoURL || "");
+        } catch {
+          setDoctorAvatar(auth.currentUser?.photoURL || "");
+        }
         await loadDashboardData(doctorId, profile);
       } else {
         console.log("No doctor profile found!");
@@ -674,9 +712,38 @@ const DoctorDashboard: React.FC = () => {
     return t("goodEvening");
   };
 
+  // Availability toggle handler — same logic as DoctorSettings
+  const handleAvailabilityToggle = async (checked: boolean) => {
+    if (!currentUser) return;
+    setSavingAvailability(true);
+    try {
+      await updateDoc(doc(db, "doctors", currentUser.uid), { isAvailable: checked });
+      setIsAvailable(checked);
+      setDoctorProfile((prev) => prev ? { ...prev, isAvailable: checked } : null);
+      void presentToast({
+        message: checked
+          ? "You are now available for appointments"
+          : "You are now unavailable for appointments",
+        duration: 2500,
+        color: checked ? "success" : "medium",
+        position: "top",
+      });
+    } catch {
+      void presentToast({
+        message: "Failed to update availability",
+        duration: 2500,
+        color: "danger",
+        position: "top",
+      });
+    } finally {
+      setSavingAvailability(false);
+    }
+  };
+
   // Available slots management functions
   const openSlotsModal = () => {
     setTempSlots(doctorProfile?.availableSlots || []);
+    setIsAvailable(doctorProfile?.isAvailable ?? true);
     setShowSlotsModal(true);
   };
 
@@ -870,6 +937,13 @@ const DoctorDashboard: React.FC = () => {
         </IonRefresher>
 
         <div className="doctor-workspace">
+        <DashboardProfileCard
+          className="dpc--flush"
+          name={doctorProfile ? `Dr. ${doctorProfile.name}` : "Doctor"}
+          roleLabel="Doctor"
+          subtitle={doctorProfile?.specialization || doctorProfile?.email || undefined}
+          avatar={doctorAvatar}
+        />
         <section className="workspace-welcome" aria-label="Welcome">
           <div>
             <p className="workspace-eyebrow">YOUR PRACTICE AT A GLANCE</p>
@@ -882,11 +956,41 @@ const DoctorDashboard: React.FC = () => {
             <div><span>{new Date().toLocaleDateString(undefined, { weekday: "long" })}</span><strong>{new Date().toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })}</strong></div>
           </div>
         </section>
-        {showProfileBanner && (
-          <aside className="workspace-profile-nudge">
-            <p>Help patients get to know you. Complete your professional profile.</p>
-            <IonButton size="small" fill="clear" routerLink="/doc/profile">Update profile</IonButton>
-            <IonButton fill="clear" size="small" aria-label="Dismiss profile reminder" onClick={dismissProfileBanner}><IonIcon slot="icon-only" icon={close} /></IonButton>
+        {showProfileBanner && profileProgress.percent < 100 && (
+          <aside className="workspace-profile-nudge" aria-label="Profile completion">
+            <div className="profile-nudge-header">
+              <p>
+                <strong>Complete your profile</strong> — help patients find and trust you.
+              </p>
+              <IonButton fill="clear" size="small" aria-label="Dismiss profile reminder" onClick={dismissProfileBanner}>
+                <IonIcon slot="icon-only" icon={close} />
+              </IonButton>
+            </div>
+
+            {/* Progress bar */}
+            <div className="profile-nudge-progress" role="progressbar"
+              aria-valuenow={profileProgress.percent} aria-valuemin={0} aria-valuemax={100}
+              aria-label={`Profile ${profileProgress.percent}% complete`}>
+              <div className="profile-nudge-track">
+                <div
+                  className="profile-nudge-fill"
+                  style={{ width: `${profileProgress.percent}%` }}
+                />
+              </div>
+              <span className="profile-nudge-pct">{profileProgress.percent}%</span>
+            </div>
+
+            {/* Missing fields */}
+            {profileProgress.missing.length > 0 && (
+              <p className="profile-nudge-missing">
+                Missing: {profileProgress.missing.slice(0, 4).join(", ")}
+                {profileProgress.missing.length > 4 && ` +${profileProgress.missing.length - 4} more`}
+              </p>
+            )}
+
+            <IonButton size="small" fill="clear" className="profile-nudge-cta" routerLink="/doc/profile">
+              Update profile →
+            </IonButton>
           </aside>
         )}
 
@@ -901,14 +1005,22 @@ const DoctorDashboard: React.FC = () => {
           <>
             <section className="workspace-metrics" aria-label="Practice summary">
               {[
-                { label: t("appointments"), value: stats.totalAppointments, note: `${stats.completedAppointments} completed`, icon: calendar, route: "/doc/appointments", tone: "teal" },
-                { label: t("patients"), value: stats.totalPatients, note: "In loaded bookings", icon: person, route: "/doc/Patients", tone: "blue" },
-                { label: "Pending requests", value: analytics.pendingAppointments, note: "Awaiting your review", icon: time, route: "/doc/appointments", tone: "amber" },
-                { label: "Patient rating", value: stats.rating > 0 ? `${stats.rating}/5` : "—", note: stats.rating > 0 ? "Patient feedback" : "No ratings yet", icon: star, route: "/doc/profile", tone: "violet" },
+                { label: t("appointments"), value: stats.totalAppointments, note: `${stats.completedAppointments} completed`, icon: <FiCalendar size={22} />, route: "/doc/appointments", tone: "teal" },
+                { label: t("patients"), value: stats.totalPatients, note: "In loaded bookings", icon: <FiUsers size={22} />, route: "/doc/Patients", tone: "blue" },
+                { label: "Pending requests", value: analytics.pendingAppointments, note: "Awaiting your review", icon: <FiAlertCircle size={22} />, route: "/doc/appointments", tone: "amber" },
+                { label: "Patient rating", value: stats.rating > 0 ? `${stats.rating}/5` : "—", note: stats.rating > 0 ? "Patient feedback" : "No ratings yet", icon: <FiStar size={22} />, route: "/doc/profile", tone: "violet" },
               ].map((metric) => (
                 <IonButton key={metric.label} routerLink={metric.route} className={`metric-card metric-${metric.tone}`}>
-                  <span className="metric-icon"></span>
-                  <span className="metric-copy"><span>{metric.label}</span><strong>{metric.value}</strong><small>{metric.note}</small></span>
+                  <div className="metric-inner">
+                    <div className="metric-header">
+                      <span className="metric-icon">{metric.icon}</span>
+                    </div>
+                    <span className="metric-copy">
+                      <span>{metric.label}</span>
+                      <strong>{metric.value}</strong>
+                      <small>{metric.note}</small>
+                    </span>
+                  </div>
                 </IonButton>
               ))}
             </section>
@@ -1211,6 +1323,67 @@ const DoctorDashboard: React.FC = () => {
           </>
         )}
 
+          {/* ── Location Tracking Widget ──────────────────────────────────── */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.5, type: "spring", stiffness: 100 }}
+            style={{ padding: "0 0 8px" }}
+          >
+            <IonCard className="location-tracking-card">
+              <IonCardContent>
+                <div className="location-tracking-header">
+                  <h3 className="location-tracking-title">
+                    <IonIcon icon={location} />
+                    My Location
+                  </h3>
+                  <span className={`location-status-chip ${locationTracking ? "active" : "inactive"}`}>
+                    {locationTracking ? "Active" : "Locating…"}
+                  </span>
+                </div>
+
+                {locationError && (
+                  <div className="location-error-banner" role="alert">
+                    {locationError}
+                  </div>
+                )}
+
+                <div className="location-town-display">
+                  <IonIcon icon={location} className="location-town-pin" />
+                  <div className="location-town-details">
+                    <span className="location-town-name">
+                      {town ?? (locationPermission === "denied" ? "Permission denied" : "Detecting…")}
+                    </span>
+                    {division && (
+                      <span className="location-division">{division}</span>
+                    )}
+                    {subdivision && (
+                      <span className="location-subdivision">{subdivision}</span>
+                    )}
+                    {ownPosition && (
+                      <span className="location-coords">
+                        {ownPosition.coords.latitude.toFixed(4)}°, {ownPosition.coords.longitude.toFixed(4)}° · ±{Math.round(ownPosition.coords.accuracy)}m
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* ── Weather Widget ── */}
+                {ownPosition && (
+                  <div className="weather-section">
+                    <div className="weather-divider" />
+                    <WeatherWidget
+                      weather={weather}
+                      loading={weatherLoading}
+                      onRefresh={refreshWeather}
+                    />
+                  </div>
+                )}
+              </IonCardContent>
+            </IonCard>
+          </motion.div>
+          {/* ── End Location Tracking Widget ──────────────────────────────── */}
+
         </div>
 
         {/* Appointment Detail Modal */}
@@ -1336,7 +1509,6 @@ const DoctorDashboard: React.FC = () => {
                       <IonButton
                         expand="block"
                         color="danger"
-                        fill="outline"
                         disabled={updating}
                         onClick={() => confirmStatusUpdate(selectedAppointment, "rejected")}
                       >
@@ -1355,14 +1527,6 @@ const DoctorDashboard: React.FC = () => {
                       {t("completed")}
                     </IonButton>
                   )}
-                  <IonButton expand="block" color="primary">
-                    <FiPhone size={20} />
-                    {t("consult")}
-                  </IonButton>
-                  <IonButton expand="block" color="secondary" fill="outline">
-                    <FiMessageSquare size={20} />
-                    {t("smsPatient")}
-                  </IonButton>
                   {selectedAppointment.type === "virtual" && (
                     <IonButton expand="block" color="tertiary">
                       <FiVideo size={20} />
@@ -1399,6 +1563,23 @@ const DoctorDashboard: React.FC = () => {
           <IonText color="medium">
             <p>Set your available appointment slots (24-hour format, e.g., 09:00, 14:30)</p>
           </IonText>
+
+          {/* Availability toggle — mirrors the one in Doctor Settings */}
+          <IonItem lines="full" className="ion-margin-bottom">
+            <IonIcon icon={calendarOutline} slot="start" color="primary" />
+            <IonLabel>
+              <h3>Available for Appointments</h3>
+              <p style={{ fontSize: "0.8rem", color: "var(--ion-color-medium)" }}>
+                Patients can book appointments with you
+              </p>
+            </IonLabel>
+            <IonToggle
+              slot="end"
+              checked={isAvailable}
+              disabled={savingAvailability}
+              onIonChange={(e) => handleAvailabilityToggle(e.detail.checked)}
+            />
+          </IonItem>
 
           <IonItem className="ion-margin-top">
             <IonInput

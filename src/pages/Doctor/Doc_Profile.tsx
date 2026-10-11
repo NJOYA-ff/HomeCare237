@@ -1,5 +1,7 @@
-import React, { useState, useRef, useEffect } from "react";
-import { DEFAULT_AVATAR, isUsableImageValue, handleImageError } from "../../utils/profileImageStorage";
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import { DEFAULT_AVATAR, getDocumentImageUrl, isUsableImageValue, handleImageError } from "../../utils/profileImageStorage";
+import { useCameraCapture } from "../../hooks/useCameraCapture";
+import { CameroonLocationSelect, type CameroonLocationValue } from "../../components/CameroonLocationSelect";
 import {
   IonPage,
   IonHeader,
@@ -19,6 +21,8 @@ import {
   IonInput,
   IonChip,
   IonToggle,
+  IonSelect,
+  IonSelectOption,
 } from "@ionic/react";
 import { MessageBox } from "../../components/ui/MessageBox";
 import { EmptyState } from "../../components/ui";
@@ -56,6 +60,9 @@ interface DoctorData {
   password?: string;
   contact: string;
   address: string;
+  region: string;
+  division: string;
+  subdivision: string;
   joinDate: string;
   notifications: number;
   specialization: string;
@@ -77,6 +84,9 @@ const defaultDoctorData: DoctorData = {
   email: "",
   contact: "",
   address: "",
+  region: "",
+  division: "",
+  subdivision: "",
   joinDate: new Date().toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
@@ -96,6 +106,42 @@ const defaultDoctorData: DoctorData = {
   isAvailable: true,
 };
 
+const SPECIALIZATIONS = [
+  "General Practitioner",
+  "Cardiologist",
+  "Pediatrician",
+  "Dermatologist",
+  "Gynecologist",
+  "Orthopedic Surgeon",
+  "Neurologist",
+  "Psychiatrist",
+  "Dentist",
+  "Ophthalmologist",
+  "ENT Specialist",
+  "Urologist",
+  "Endocrinologist",
+  "Gastroenterologist",
+  "Oncologist",
+  "Rheumatologist",
+  "Pulmonologist",
+  "Nephrologist",
+  "Allergist",
+  "Physiotherapist",
+];
+
+const LANGUAGES = [
+  "English",
+  "French",
+  "Fulfulde",
+  "Ewondo",
+  "Bassa",
+  "Duala",
+  "Beti",
+  "Pidgin English",
+  "Arabic",
+  "Hausa",
+];
+
 const Doc_profile: React.FC = () => {
   const [doctor, setDoctor] = useState<DoctorData>(defaultDoctorData);
   const [isEditing, setIsEditing] = useState(false);
@@ -104,10 +150,24 @@ const Doc_profile: React.FC = () => {
   const [showAlert, setShowAlert] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const slotInputRef = useRef<HTMLIonInputElement>(null);
-  const languageInputRef = useRef<HTMLIonInputElement>(null);
   const [showLogOutAlert, setShowLogOutAlert] = useState(false);
+  /* Resolved avatar `<img src>`. Kept separate from `doctor.avatar` because the
+     Firestore document may hold the image under several historical field names
+     (`profilePhoto` at signup, `photoURL` for Google sign-in, `avatar` from
+     the profile editor) or a bare Storage path rather than a download URL.
+     `avatarUrl` holds the value that is safe to hand to `<img src>`. */
+  const [avatarUrl, setAvatarUrl] = useState<string>(DEFAULT_AVATAR);
+
+  /** Resolve whichever profile-photo field the document actually populated. */
+  const resolveAvatar = useCallback(async (source: unknown) => {
+    try {
+      const resolved = await getDocumentImageUrl(source);
+      setAvatarUrl(resolved || DEFAULT_AVATAR);
+    } catch {
+      setAvatarUrl(DEFAULT_AVATAR);
+    }
+  }, []);
 
   // Listen for authentication state changes
   useEffect(() => {
@@ -163,6 +223,7 @@ const Doc_profile: React.FC = () => {
 
         setDoctor({ ...doctorData, uid });
         setTempData({ ...doctorData, uid });
+        void resolveAvatar(raw);
       } else {
         // Create initial doctor document with default data
         const initialData: DoctorData = {
@@ -256,31 +317,15 @@ const Doc_profile: React.FC = () => {
     setIsEditing(false);
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !currentUser) return;
-
-    if (!file.type.match("image.*")) {
-      alert("Please select an image file");
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Image must be less than 5MB");
-      return;
-    }
-
+  const uploadAvatarFile = async (file: File) => {
+    if (!currentUser) return;
     try {
       setIsLoading(true);
-
-      // Upload to Firebase Storage
       const storageRef = ref(storage, `doctors/${currentUser.uid}/avatar`);
       const snapshot = await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(snapshot.ref);
-
-      // Update temp data with new avatar URL
-      setTempData({ ...tempData, avatar: downloadURL });
-      // persist avatar immediately
+      setTempData((prev) => ({ ...prev, avatar: downloadURL }));
+      setAvatarUrl(downloadURL);
       await saveField("avatar", downloadURL);
     } catch (error) {
       console.error("Error uploading avatar:", error);
@@ -290,36 +335,13 @@ const Doc_profile: React.FC = () => {
     }
   };
 
+  const { fileInputRef, pickImage, handleFileInputChange } = useCameraCapture({
+    onImage: uploadAvatarFile,
+    onError: (msg) => alert(msg),
+  });
+
   const selectFromGallery = () => {
-    fileInputRef.current?.click();
-  };
-
-  const addLanguage = async () => {
-    if (!languageInputRef.current) return;
-
-    const inputValue = await languageInputRef.current.getInputElement();
-    const lang = inputValue.value.trim();
-
-    if (!lang) return;
-
-    try {
-      // Create a new array with the new language
-      const updatedLanguages = [...tempData.languages, lang];
-
-      // Update local state
-      handleInputChange("languages", updatedLanguages);
-
-      // Save to Firebase
-      await saveField("languages", updatedLanguages);
-
-      // Clear input
-      inputValue.value = "";
-
-      console.log("Language added successfully:", lang);
-    } catch (e) {
-      console.error("Error adding language:", e);
-      alert("Failed to add language. Please try again.");
-    }
+    pickImage();
   };
 
   const removeLanguage = async (index: number) => {
@@ -394,13 +416,6 @@ const Doc_profile: React.FC = () => {
     }
   };
 
-  const handleLanguageKeyPress = async (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      await addLanguage();
-    }
-  };
-
   const handleSlotKeyPress = async (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -460,7 +475,7 @@ const Doc_profile: React.FC = () => {
         <input
           type="file"
           ref={fileInputRef}
-          onChange={handleFileChange}
+          onChange={handleFileInputChange}
           accept="image/*"
           style={{ display: "none" }}
         />
@@ -500,7 +515,7 @@ const Doc_profile: React.FC = () => {
             >
               <IonAvatar className="profile-avatar">
                 <img
-                  src={isUsableImageValue(tempData.avatar) ? tempData.avatar : DEFAULT_AVATAR}
+                  src={avatarUrl}
                   alt="Doctor Avatar"
                   onError={handleImageError}
                 />
@@ -532,17 +547,20 @@ const Doc_profile: React.FC = () => {
               <div className="profile-specialty">
                 <IonIcon icon={shieldCheckmarkOutline} color="primary" />
                 {isEditing ? (
-                  <IonInput
+                  <IonSelect
                     value={tempData.specialization}
-                    onIonInput={(e) =>
-                      handleInputChange("specialization", e.detail.value!)
-                    }
-                    className="profile-edit-input"
-                    placeholder="Enter your specialty"
-                    onIonBlur={() =>
-                      saveField("specialization", tempData.specialization)
-                    }
-                  />
+                    placeholder="Select specialization"
+                    onIonChange={(e) => {
+                      handleInputChange("specialization", e.detail.value);
+                      saveField("specialization", e.detail.value);
+                    }}
+                    interface="action-sheet"
+                    className="profile-edit-select"
+                  >
+                    {SPECIALIZATIONS.map((s) => (
+                      <IonSelectOption key={s} value={s}>{s}</IonSelectOption>
+                    ))}
+                  </IonSelect>
                 ) : (
                   <span>{doctor.specialization || "Specialty not set"}</span>
                 )}
@@ -559,7 +577,21 @@ const Doc_profile: React.FC = () => {
                 </div>
                 <div className="stat-item">
                   <IonIcon icon={calendarOutline} color="primary" />
-                  <span className="stat-value">{doctor.experience || 0}y</span>
+                  {isEditing ? (
+                    <IonInput
+                      type="number"
+                      value={tempData.experience}
+                      onIonInput={(e) =>
+                        handleInputChange("experience", parseInt(e.detail.value!) || 0)
+                      }
+                      onIonBlur={() => saveField("experience", Number(tempData.experience))}
+                      className="stat-edit-input"
+                      min="0"
+                      max="60"
+                    />
+                  ) : (
+                    <span className="stat-value">{doctor.experience || 0}y</span>
+                  )}
                   <span className="stat-label">Experience</span>
                 </div>
                 <div className="stat-item">
@@ -641,6 +673,37 @@ const Doc_profile: React.FC = () => {
                   )}
                 </IonItem>
               </motion.div>
+
+              {/* Region / Division / Subdivision */}
+              {isEditing ? (
+                <motion.div whileHover={{ scale: 1.01 }}>
+                  <CameroonLocationSelect
+                    value={{
+                      region:      tempData.region      ?? "",
+                      division:    tempData.division    ?? "",
+                      subdivision: tempData.subdivision ?? "",
+                    }}
+                    onChange={(val) =>
+                      setTempData((prev) => ({ ...prev!, ...val }))
+                    }
+                    itemClassName="profile-d-item"
+                  />
+                </motion.div>
+              ) : (
+                <motion.div whileHover={{ scale: 1.01 }}>
+                  <IonItem className="profile-d-item">
+                    <IonIcon slot="start" icon={locationOutline} color="medium" />
+                    <IonLabel>
+                      <h3>Location</h3>
+                      <p>
+                        {[doctor.region, doctor.division, doctor.subdivision]
+                          .filter(Boolean)
+                          .join(" › ") || "Not set"}
+                      </p>
+                    </IonLabel>
+                  </IonItem>
+                </motion.div>
+              )}
 
               {/* Consultation Fee Field */}
               <motion.div whileHover={{ scale: 1.01 }}>
@@ -792,20 +855,34 @@ const Doc_profile: React.FC = () => {
                     <h3>Languages</h3>
                     {isEditing ? (
                       <div className="languages-edit">
-                        <IonInput
-                          ref={languageInputRef}
+                        <IonSelect
                           placeholder="Add a language"
-                          onKeyPress={handleLanguageKeyPress}
-                          className="language-input"
-                          onIonBlur={addLanguage}
-                        />
+                          interface="popover"
+                          value=""
+                          onIonChange={async (e) => {
+                            const lang: string = e.detail.value;
+                            if (!lang || tempData.languages.includes(lang)) return;
+                            const updatedLanguages = [...tempData.languages, lang];
+                            handleInputChange("languages", updatedLanguages);
+                            try {
+                              await saveField("languages", updatedLanguages);
+                            } catch (err) {
+                              console.error("Error saving language:", err);
+                            }
+                          }}
+                          className="language-select"
+                        >
+                          {LANGUAGES.filter((l) => !tempData.languages.includes(l)).map((l) => (
+                            <IonSelectOption key={l} value={l}>{l}</IonSelectOption>
+                          ))}
+                        </IonSelect>
 
                         {tempData.languages.length === 0 ? (
                           <EmptyState
                             className="hc-empty-state--inline"
                             icon={languageOutline}
                             title="No languages added yet"
-                            description="Add the languages you consult in so patients can be matched correctly."
+                            description="Select the languages you consult in so patients can be matched correctly."
                           />
                         ) : (
                           <div className="language-chips">

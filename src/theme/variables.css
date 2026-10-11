@@ -827,3 +827,14 @@ ion-segment {
 ion-segment::-webkit-scrollbar {
   display: none;
 }
+
+/* ===== REACT-ICONS (Feather / Fi*) — global medium colour =====
+   react-icons renders plain <svg> elements with stroke="currentColor"
+   fill="none" and no class name. Setting `color` here cascades into
+   every Fi* icon across the app. Inline `color` props on individual
+   icons still override this (inline styles win over class selectors).
+   We exclude SVGs that carry a class (e.g. sc-cta-icon, custom artwork)
+   so those keep their own colour context. */
+svg[stroke="currentColor"][fill="none"]:not([class]) {
+  color: var(--ion-color-medium);
+}

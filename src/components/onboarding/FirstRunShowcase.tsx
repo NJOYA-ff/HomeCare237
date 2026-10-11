@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { IonContent, IonPage } from "@ionic/react";
+import { IonContent, IonPage, useIonViewDidEnter } from "@ionic/react";
 import { motion, useReducedMotion } from "framer-motion";
 
 import { SHOWCASE_SERVICES } from "../../data/servicesShowcase";
@@ -68,6 +68,30 @@ const FirstRunShowcase: React.FC<FirstRunShowcaseProps> = ({ onDone }) => {
    * setting mid-deck would otherwise keep getting the animation. */
   const reduceMotion = useReducedMotion();
 
+  /* ── Shared "page ready" signal ──────────────────────────────────────────
+   * All entrance animations (ripple, illustration layers, kicker) start from
+   * this single flag rather than each counting their own independent timer.
+   *
+   * useIonViewDidEnter fires once the Ionic page-entry transition has fully
+   * completed, so the flag is set only when the screen is actually visible —
+   * not at mount, which on a pushed route happens while the incoming slide is
+   * still mid-transition. A short settle delay (120 ms) gives the browser one
+   * or two frames to finish any deferred layout work before the animations
+   * kick off, so the first frame is never the "catch-up" frame of a keyframe
+   * that started while layout was still running.
+   *
+   * Under prefers-reduced-motion the flag is never set and every child that
+   * gates on it stays static, which is the correct outcome for a decorative
+   * flourish nobody asked for. The CSS media query in FirstRunShowcase.css is
+   * a belt-and-braces fallback for any animation that is not gated here. */
+  const [pageReady, setPageReady] = useState(false);
+
+  useIonViewDidEnter(() => {
+    if (reduceMotion) return;
+    const timer = window.setTimeout(() => setPageReady(true), 120);
+    return () => window.clearTimeout(timer);
+  });
+
   const goTo = useCallback(
     (next: number) => {
       setIndex(Math.max(0, Math.min(total - 1, next)));
@@ -113,13 +137,13 @@ const FirstRunShowcase: React.FC<FirstRunShowcaseProps> = ({ onDone }) => {
               footer. It has to sit ABOVE the card: the sheet is a 0.9-alpha
               white, so a backdrop layer would survive at 10% strength and read
               as blank. See ShowcaseRipple for the geometry. */}
-          <ShowcaseRipple />
+          <ShowcaseRipple ready={pageReady} />
 
           <header className="sc-head">
             <motion.p
               className="sc-kicker"
               initial={{ opacity: 0, y: -12 }}
-              animate={{ opacity: 1, y: 0 }}
+              animate={pageReady ? { opacity: 1, y: 0 } : { opacity: 0, y: -12 }}
               transition={{ duration: 0.5 }}
             >
               {t("sc_kicker")}
@@ -176,23 +200,38 @@ const FirstRunShowcase: React.FC<FirstRunShowcaseProps> = ({ onDone }) => {
                         it. Framer only reads `initial` at mount, so re-running
                         the animation on arrival means remounting: the key flips
                         with `active`, which mounts the art fresh each time its
-                        slide is reached and replays the spring. `initial={false}`
-                        on the way out means the departing slide snaps to its
-                        resting state rather than animating back to invisible. */}
+                        slide is reached and replays the spring.
+
+                        `initial` is only set to the hidden state when `pageReady`
+                        is already true at re-mount time — i.e. when the user
+                        navigates to a slide after the page transition has
+                        settled. For the first slide, `pageReady` is false at
+                        mount so `initial={false}` and `animate` drives it
+                        straight to visible with no delay. This prevents the
+                        SVG from being invisible during the Ionic page
+                        transition before `useIonViewDidEnter` fires. */}
                     <motion.div
                       key={`${service.id}-${active ? "in" : "out"}`}
                       className="sc-card-art"
                       role="img"
                       aria-label={t(service.artAltKey)}
-                      initial={active && !reduceMotion ? { opacity: 0, scale: 0.9 } : false}
-                      animate={active && !reduceMotion ? { opacity: 1, scale: 1 } : undefined}
+                      /* `initial` is the hidden state only when the animation is
+                       * actually going to play: `pageReady` is already true (page
+                       * transition done) AND motion is allowed. For the first
+                       * slide before `pageReady`, this evaluates to `false` so
+                       * Framer skips the hidden-then-animate cycle and the art
+                       * is visible immediately. For subsequent slides, `pageReady`
+                       * is already true at re-mount (because the key flip happens
+                       * after the page has settled), so the entrance plays. */
+                      initial={active && !reduceMotion && pageReady ? { opacity: 0, scale: 0.9 } : false}
+                      animate={{ opacity: 1, scale: 1 }}
                       transition={
-                        active && !reduceMotion
+                        active && !reduceMotion && pageReady
                           ? { type: "spring", stiffness: 220, damping: 22 }
-                          : undefined
+                          : { duration: 0 }
                       }
                     >
-                      <ShowcaseArt art={service.art} />
+                      <ShowcaseArt art={service.art} ready={pageReady} />
                     </motion.div>
                     {/* The mobile-money marks, on the wallet slide only. Inside
                         the copy block rather than the art disc: the disc is a

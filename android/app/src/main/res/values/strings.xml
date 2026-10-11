@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App name shown in the launcher and notification shade header -->
+    <string name="app_name">HomeCare237</string>
+
+    <!--
+        Default FCM notification channel ID.
+        Referenced by AndroidManifest meta-data and must match the channelId
+        used in NotificationService.initialize() when creating the channel.
+    -->
+    <string name="default_notification_channel_id">homecare237_default</string>
+
+    <!-- Human-readable channel name shown in device Settings → App notifications -->
+    <string name="default_notification_channel_name">HomeCare237 Notifications</string>
+
+    <!-- Channel description shown in device Settings -->
+    <string name="default_notification_channel_description">Appointment reminders, medication alerts, and health updates from HomeCare237.</string>
+</resources>

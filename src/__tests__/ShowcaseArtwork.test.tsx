@@ -5,22 +5,23 @@
  * FirstRunShowcase.firstRun.test.tsx, which mounts the whole <App>. What is
  * covered here is narrower and only reachable through those two components:
  *
- *   - the ripple gains its `--animated` class after the documented delay, and
- *     loses the pending timer if it unmounts first
+ *   - the ripple gains its `--animated` class when `ready={true}` is passed,
+ *     and stays unanimated when `ready={false}`
  *   - the wallet slide is the only one carrying the operator marks, and it
  *     names both operators in real alt text
+ *
+ * Note: the ripple no longer owns an internal timer. The parent (FirstRunShowcase)
+ * is responsible for the delay and passes `ready` once the page transition ends.
+ * These tests therefore drive `ready` directly rather than advancing fake timers.
  */
 import React from "react";
-import { act, render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
 
 import ShowcaseRipple from "../components/onboarding/ShowcaseRipple";
 import { ShowcaseOperators } from "../components/onboarding/ShowcaseArt";
 import { SHOWCASE_SERVICES } from "../data/servicesShowcase";
 import type { ShowcaseArtId } from "../data/servicesShowcase";
-
-/** Mirrors ANIMATE_AFTER_MS in ShowcaseRipple. */
-const ANIMATE_AFTER_MS = 1000;
 
 const WALLET: ShowcaseArtId = "wallet";
 /* Any non-wallet slide, taken from the real deck rather than hardcoded, so this
@@ -28,49 +29,33 @@ const WALLET: ShowcaseArtId = "wallet";
 const OTHER_SLIDE = SHOWCASE_SERVICES.find((s) => s.art !== WALLET)!.art;
 
 describe("ShowcaseRipple", () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it("holds the rings back, then marks the SVG animated after the delay", () => {
-    const { container } = render(<ShowcaseRipple />);
+  it("holds the rings back when ready=false", () => {
+    const { container } = render(<ShowcaseRipple ready={false} />);
     const svg = container.querySelector("svg");
 
-    // Not yet: the class is what the draw-on keyframes hang off, and applying it
-    // on mount would animate before the deck's own content has settled.
+    // Not animated: the class is what the draw-on keyframes hang off, and it
+    // must not appear until the parent signals ready.
     expect(svg).not.toHaveClass("sc-ripple-svg--animated");
+  });
 
-    act(() => {
-      vi.advanceTimersByTime(ANIMATE_AFTER_MS);
-    });
+  it("marks the SVG animated immediately when ready=true", () => {
+    const { container } = render(<ShowcaseRipple ready={true} />);
+    const svg = container.querySelector("svg");
 
     expect(svg).toHaveClass("sc-ripple-svg--animated");
   });
 
-  it("stops the timer on unmount, so skipping the deck cannot warn about setting state", () => {
-    const { unmount } = render(<ShowcaseRipple />);
+  it("removes the animated class when ready flips back to false", () => {
+    const { container, rerender } = render(<ShowcaseRipple ready={true} />);
+    const svg = container.querySelector("svg");
+    expect(svg).toHaveClass("sc-ripple-svg--animated");
 
-    // Unmount mid-delay: the effect's cleanup must clear the pending timeout,
-    // or this fires into a torn-down component.
-    act(() => {
-      vi.advanceTimersByTime(ANIMATE_AFTER_MS / 2);
-    });
-    unmount();
-
-    expect(() =>
-      act(() => {
-        vi.advanceTimersByTime(ANIMATE_AFTER_MS * 2);
-      })
-    ).not.toThrow();
-    expect(vi.getTimerCount()).toBe(0);
+    rerender(<ShowcaseRipple ready={false} />);
+    expect(svg).not.toHaveClass("sc-ripple-svg--animated");
   });
 
   it("normalises every ring's dash length so one keyframe can draw them all", () => {
-    const { container } = render(<ShowcaseRipple />);
+    const { container } = render(<ShowcaseRipple ready={false} />);
     const rings = container.querySelectorAll("circle");
 
     expect(rings.length).toBeGreaterThan(1);

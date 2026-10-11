@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- ── Location ──────────────────────────────────────────────────────── -->
+    <!-- Required by @capacitor/geolocation -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- Android 10+ (API 29+): background location for tracking while backgrounded -->
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+
+    <!-- ── Notifications ─────────────────────────────────────────────────── -->
+    <!-- Android 13+ (API 33+): must be requested at runtime AND declared here -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Required for notification sound + vibration pattern -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Allows the app to reschedule local notifications after device reboot -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Required to keep the screen on while a foreground service is active (optional but safe) -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Required by FCM on some OEM variants -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Hardware feature hints (not hard requirements) -->
+    <uses-feature android:name="android.hardware.location.gps"     android:required="false" />
+    <uses-feature android:name="android.hardware.location.network" android:required="false" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+
+        <!-- ── FCM: default notification appearance ──────────────────────── -->
+        <!--
+             These meta-data tags tell FCM which resources to use when a DATA
+             message arrives and the app is in the background (i.e. when the
+             FCM library renders the notification itself, before the app has a
+             chance to handle it).
+
+             firebase_messaging_default_notification_icon:
+               Must be a white-on-transparent drawable. ic_notification was
+               generated from the app logo for exactly this purpose.
+
+             firebase_messaging_default_notification_color:
+               The accent colour used behind the icon in the notification shade.
+               Matches the app's primary brand colour (#2563eb).
+
+             firebase_messaging_default_notification_channel_id:
+               The channel that FCM uses for background-delivered notifications.
+               We create this channel in code (NotificationService.initialize)
+               so the user can configure it per-channel in device Settings.
+        -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@mipmap/ic_notification" />
+
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/notification_color" />
+
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="@string/default_notification_channel_id" />
+
+        <!-- ── Main Activity ─────────────────────────────────────────────── -->
+        <activity
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:name=".MainActivity"
+            android:theme="@style/AppTheme.NoActionBarLaunch">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+        </activity>
+
+        <!-- ── FileProvider (required by @capacitor/camera etc.) ─────────── -->
+        <provider
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true"
+            android:name="androidx.core.content.FileProvider">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+    </application>
+
+</manifest>

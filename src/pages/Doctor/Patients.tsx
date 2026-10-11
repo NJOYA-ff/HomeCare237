@@ -24,12 +24,15 @@ import {
   IonItem,
   IonList,
   IonBackButton,
+  IonBadge,
+  IonIcon,
 } from "@ionic/react";
 import { db, auth } from "../../firebaseconfig";
 import {
   collection,
   getDocs,
   doc,
+  getDoc,
   addDoc,
   updateDoc,
   deleteDoc,
@@ -40,10 +43,20 @@ import {
   documentId,
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
+import {
+  medicalOutline,
+  peopleOutline,
+  timeOutline,
+  flaskOutline,
+  calendarOutline,
+  checkmarkCircleOutline,
+  timeOutline as clockOutline,
+  documentTextOutline,
+  chevronDownOutline,
+} from "ionicons/icons";
 import "./Patients.scss";
 import { DEFAULT_AVATAR, getDocumentImageUrl, handleImageError } from "../../utils/profileImageStorage";
 import { motion } from "framer-motion";
-import { medicalOutline, peopleOutline, timeOutline } from "ionicons/icons";
 
 
 // Define patient interface
@@ -54,26 +67,49 @@ interface Patient {
   sex: string;
   contact: string;
   photo: string;
-  town: string;
+  subdivision: string;
   street: string;
   lastVisit: string;
   status: "stable" | "critical" | "recovering";
   bloodType: string;
   conditions: string[];
+  allergies: string[];
+  medications: string[];
+  /** Free-text note set by admin in Admin_patient. */
+  medicalHistoryNote: string;
   createdAt?: any;
   updatedAt?: any;
 }
 
-// Define medical history interface
-interface MedicalHistory {
+interface LabResult {
+  id: string;
+  name: string;
+  date: string;
+  status: "pending" | "completed" | "cancelled";
+  results: Record<string, string>;
+  notes?: string;
+}
+
+interface Prescription {
+  id: string;
+  medication: string;
+  dosage: string;
+  frequency: string;
+  duration: string;
+  status: "active" | "completed" | "cancelled";
+  instructions?: string;
+}
+
+interface DiagnosisRecord {
   id: string;
   date: string;
-  diagnosis: string;
-  doctor: string;
-  treatment: string;
-  notes: string;
-  patientId: string;
-  createdAt?: any;
+  condition: string;
+  description: string;
+  status: "active" | "resolved" | "followup";
+  doctor: { name: string; specialty: string; hospital: string };
+  labResults: LabResult[];
+  prescriptions: Prescription[];
+  createdAt?: string;
 }
 
 const Patients: React.FC = () => {
@@ -86,7 +122,8 @@ const Patients: React.FC = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
   /** Bumped by the error state's "Try again" action to re-run the loaders. */
   const [reloadKey, setReloadKey] = useState(0);
-  const [medicalHistory, setMedicalHistory] = useState<MedicalHistory[]>([]);
+  const [diagnoses, setDiagnoses] = useState<DiagnosisRecord[]>([]);
+  const [loadingDiagnoses, setLoadingDiagnoses] = useState(false);
   const [doctorId, setDoctorId] = useState<string | null>(null);
   const [relatedPatientIds, setRelatedPatientIds] = useState<string[]>([]);
 
@@ -178,12 +215,15 @@ const Patients: React.FC = () => {
               sex: data.sex,
               contact: data.contact,
               photo: await getDocumentImageUrl(data),
-              town: data.town,
+              subdivision: data.subdivision || data.town || "",
               street: data.street,
               lastVisit: data.lastVisit,
               status: data.status,
               bloodType: data.bloodType,
               conditions: data.conditions || [],
+              allergies: Array.isArray(data.allergies) ? data.allergies : (data.allergies ? [data.allergies] : []),
+              medications: Array.isArray(data.medications) ? data.medications : (data.medications ? [data.medications] : []),
+              medicalHistoryNote: data.medicalHistory || "",
               createdAt: data.createdAt,
               updatedAt: data.updatedAt,
             });
@@ -207,35 +247,64 @@ const Patients: React.FC = () => {
     loadPatientsByIds();
   }, [doctorId, relatedPatientIds, reloadKey]);
 
-  // Fetch medical history for selected patient
-  const fetchMedicalHistory = async (patientId: string) => {
+  // The `medicalHistory` Firestore collection is never written to by this app.
+  // Real clinical data lives on the patient document (allergies, medications,
+  // conditions, bloodType, medicalHistory note) and in the `diagnoses`
+  // collection. This function re-fetches the patient document so the modal
+  // always shows the freshest values even if the list was cached.
+  const fetchPatientMedicalProfile = async (patientId: string) => {
     try {
-      const medicalHistoryCollection = collection(db, "medicalHistory");
-      const medicalHistoryQuery = query(
-        medicalHistoryCollection,
-        where("patientId", "==", patientId),
-        orderBy("date", "desc"),
+      const snap = await getDoc(doc(db, "patients", patientId));
+      if (!snap.exists()) return;
+      const data = snap.data() as any;
+      // Patch the selected patient in state with fresh document fields
+      setSelectedPatient((prev) =>
+        prev
+          ? {
+              ...prev,
+              bloodType: data.bloodType || prev.bloodType || "",
+              conditions: data.conditions || prev.conditions || [],
+              allergies: Array.isArray(data.allergies)
+                ? data.allergies
+                : data.allergies
+                ? [data.allergies]
+                : prev.allergies || [],
+              medications: Array.isArray(data.medications)
+                ? data.medications
+                : data.medications
+                ? [data.medications]
+                : prev.medications || [],
+              medicalHistoryNote: data.medicalHistory || prev.medicalHistoryNote || "",
+            }
+          : prev,
       );
-      const querySnapshot = await getDocs(medicalHistoryQuery);
-
-      const medicalHistoryData: MedicalHistory[] = [];
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        medicalHistoryData.push({
-          id: doc.id,
-          date: data.date,
-          diagnosis: data.diagnosis,
-          doctor: data.doctor,
-          treatment: data.treatment,
-          notes: data.notes,
-          patientId: data.patientId,
-          createdAt: data.createdAt,
-        });
-      });
-
-      setMedicalHistory(medicalHistoryData);
     } catch (error) {
-      console.error("Error fetching medical history:", error);
+      console.error("Error fetching patient medical profile:", error);
+    }
+  };
+
+  // Fetch diagnoses (with embedded lab results) for the selected patient
+  const fetchDiagnoses = async (patientId: string) => {
+    if (!doctorId) return;
+    setLoadingDiagnoses(true);
+    try {
+      const q = query(
+        collection(db, "diagnoses"),
+        where("patientId", "==", patientId),
+        where("doctorId", "==", doctorId),
+        orderBy("createdAt", "desc"),
+      );
+      const snapshot = await getDocs(q);
+      const data: DiagnosisRecord[] = snapshot.docs.map((d) => ({
+        id: d.id,
+        ...(d.data() as Omit<DiagnosisRecord, "id">),
+      }));
+      setDiagnoses(data);
+    } catch (error) {
+      console.error("Error fetching diagnoses:", error);
+      setDiagnoses([]);
+    } finally {
+      setLoadingDiagnoses(false);
     }
   };
 
@@ -253,7 +322,9 @@ const Patients: React.FC = () => {
   // Open patient detail modal
   const openPatientDetail = async (patient: Patient) => {
     setSelectedPatient(patient);
-    await fetchMedicalHistory(patient.id);
+    setDiagnoses([]);
+    fetchPatientMedicalProfile(patient.id);
+    fetchDiagnoses(patient.id);
     setShowModal(true);
   };
 
@@ -475,7 +546,7 @@ const Patients: React.FC = () => {
                       <IonItem className="contact-item">
                         <div className="contact-type">Address:</div>
                         <IonLabel className="contact-value">
-                          {selectedPatient.town}, {selectedPatient.street}
+                          {selectedPatient.subdivision}, {selectedPatient.street}
                         </IonLabel>
                       </IonItem>
                     </IonList>
@@ -507,44 +578,253 @@ const Patients: React.FC = () => {
 
                 <IonCard className="info-card">
                   <IonCardHeader>
-                    <IonCardTitle>Medical History</IonCardTitle>
+                    <IonCardTitle>Medical Profile</IonCardTitle>
                   </IonCardHeader>
                   <IonCardContent>
-                    <IonAccordionGroup>
-                      {medicalHistory.length > 0 ? (
-                        medicalHistory.map((record) => (
-                          <IonAccordion
-                            key={record.id}
-                            value={`record-${record.id}`}
-                          >
-                            <IonItem slot="header">
-                              <IonLabel>
-                                <h3>{record.diagnosis}</h3>
-                                <p>
-                                  {record.date} • {record.doctor}
-                                </p>
-                              </IonLabel>
-                            </IonItem>
-                            <div className="ion-padding" slot="content">
-                              <p>
-                                <strong>Treatment:</strong> {record.treatment}
-                              </p>
-                              <p>
-                                <strong>Notes:</strong> {record.notes}
-                              </p>
-                            </div>
-                          </IonAccordion>
-                        ))
+
+                    {/* Blood Type */}
+                    {selectedPatient.bloodType && (
+                      <div className="med-profile-row">
+                        <span className="med-profile-label">Blood Type</span>
+                        <IonChip color="danger" className="med-profile-chip med-profile-chip--blood">
+                          {selectedPatient.bloodType}
+                        </IonChip>
+                      </div>
+                    )}
+
+                    {/* Conditions */}
+                    <div className="med-profile-row med-profile-row--wrap">
+                      <span className="med-profile-label">Conditions</span>
+                      {selectedPatient.conditions?.length > 0 ? (
+                        <div className="med-profile-tags">
+                          {selectedPatient.conditions.map((c, i) => (
+                            <IonChip key={i} color="primary" className="med-profile-chip">
+                              {c}
+                            </IonChip>
+                          ))}
+                        </div>
                       ) : (
-                        <EmptyState
-                          icon={timeOutline}
-                          title="No medical history records"
-                          description="Visit records and clinical notes for this patient will appear here."
-                        />
+                        <span className="med-profile-empty">None recorded</span>
                       )}
-                    </IonAccordionGroup>
+                    </div>
+
+                    {/* Allergies */}
+                    <div className="med-profile-row med-profile-row--wrap">
+                      <span className="med-profile-label">Allergies</span>
+                      {selectedPatient.allergies?.length > 0 ? (
+                        <div className="med-profile-tags">
+                          {selectedPatient.allergies.map((a, i) => (
+                            <IonChip key={i} color="warning" className="med-profile-chip">
+                              {a}
+                            </IonChip>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="med-profile-empty">None recorded</span>
+                      )}
+                    </div>
+
+                    {/* Current medications */}
+                    <div className="med-profile-row med-profile-row--wrap">
+                      <span className="med-profile-label">Medications</span>
+                      {selectedPatient.medications?.length > 0 ? (
+                        <div className="med-profile-tags">
+                          {selectedPatient.medications.map((m, i) => (
+                            <IonChip key={i} color="secondary" className="med-profile-chip">
+                              {m}
+                            </IonChip>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="med-profile-empty">None recorded</span>
+                      )}
+                    </div>
+
+                    {/* Admin-entered medical history note */}
+                    {selectedPatient.medicalHistoryNote && (
+                      <div className="med-profile-note">
+                        <span className="med-profile-label">Notes</span>
+                        <p className="med-profile-note-text">
+                          {selectedPatient.medicalHistoryNote}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* If truly nothing is on record */}
+                    {!selectedPatient.bloodType &&
+                      !selectedPatient.conditions?.length &&
+                      !selectedPatient.allergies?.length &&
+                      !selectedPatient.medications?.length &&
+                      !selectedPatient.medicalHistoryNote && (
+                        <EmptyState
+                          icon={medicalOutline}
+                          title="No medical profile yet"
+                          description="Blood type, conditions, allergies and medications will appear here once the patient completes their profile."
+                        />
+                    )}
                   </IonCardContent>
                 </IonCard>
+
+                {/* ── Diagnoses & Lab Results ─────────────────────── */}
+                <IonCard className="info-card">
+                  <IonCardHeader>
+                    <IonCardTitle>
+                      Diagnoses &amp; Lab Results
+                      {diagnoses.length > 0 && (
+                        <IonBadge color="primary" className="diag-history-badge">
+                          {diagnoses.length}
+                        </IonBadge>
+                      )}
+                    </IonCardTitle>
+                  </IonCardHeader>
+                  <IonCardContent>
+                    {loadingDiagnoses ? (
+                      <div className="diag-history-loading">
+                        <p>Loading diagnoses…</p>
+                      </div>
+                    ) : diagnoses.length === 0 ? (
+                      <EmptyState
+                        icon={medicalOutline}
+                        title="No diagnoses recorded"
+                        description="Diagnoses you create for this patient will appear here."
+                      />
+                    ) : (
+                      <IonAccordionGroup className="diag-history-group">
+                        {diagnoses.map((diagnosis) => (
+                          <IonAccordion
+                            key={diagnosis.id}
+                            value={`diag-${diagnosis.id}`}
+                            className="diag-history-accordion"
+                          >
+                            {/* ── Accordion header ── */}
+                            <IonItem slot="header" className="diag-history-header">
+                              <IonLabel>
+                                <h3 className="diag-history-condition">
+                                  {diagnosis.condition}
+                                </h3>
+                                <p className="diag-history-meta">
+                                  <IonIcon icon={calendarOutline} />
+                                  {new Date(diagnosis.date).toLocaleDateString("en-CM")}
+                                  {diagnosis.doctor?.name && (
+                                    <> &middot; {diagnosis.doctor.name}</>
+                                  )}
+                                </p>
+                              </IonLabel>
+                              <IonBadge
+                                slot="end"
+                                color={
+                                  diagnosis.status === "active" ? "success" :
+                                  diagnosis.status === "resolved" ? "primary" :
+                                  "tertiary"
+                                }
+                                className="diag-history-status"
+                              >
+                                {diagnosis.status}
+                              </IonBadge>
+                            </IonItem>
+
+                            {/* ── Accordion content ── */}
+                            <div slot="content" className="diag-history-content">
+
+                              {/* Description */}
+                              {diagnosis.description && (
+                                <p className="diag-history-desc">
+                                  {diagnosis.description}
+                                </p>
+                              )}
+
+                              {/* Doctor */}
+                              {diagnosis.doctor && (
+                                <div className="diag-history-doctor">
+                                  <span className="diag-history-field-label">Attending Doctor</span>
+                                  <span className="diag-history-field-value">
+                                    {diagnosis.doctor.name}
+                                    {diagnosis.doctor.specialty && ` · ${diagnosis.doctor.specialty}`}
+                                    {diagnosis.doctor.hospital && ` · ${diagnosis.doctor.hospital}`}
+                                  </span>
+                                </div>
+                              )}
+
+                              {/* Lab Results */}
+                              {diagnosis.labResults?.length > 0 && (
+                                <div className="diag-history-section">
+                                  <h4 className="diag-history-section-title">
+                                    <IonIcon icon={flaskOutline} />
+                                    Lab Results ({diagnosis.labResults.length})
+                                  </h4>
+                                  {diagnosis.labResults.map((lab) => (
+                                    <div key={lab.id} className="diag-history-lab">
+                                      <div className="diag-history-lab-header">
+                                        <span className="diag-history-lab-name">{lab.name}</span>
+                                        <IonBadge
+                                          color={
+                                            lab.status === "completed" ? "success" :
+                                            lab.status === "pending" ? "warning" :
+                                            "danger"
+                                          }
+                                        >
+                                          {lab.status}
+                                        </IonBadge>
+                                      </div>
+                                      {Object.entries(lab.results || {}).length > 0 && (
+                                        <div className="diag-history-lab-results">
+                                          {Object.entries(lab.results).map(([key, value]) => (
+                                            <div key={key} className="diag-history-lab-row">
+                                              <span className="diag-history-lab-key">{key}</span>
+                                              <span className="diag-history-lab-val">{value}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                      {lab.notes && (
+                                        <p className="diag-history-lab-notes">{lab.notes}</p>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Prescriptions */}
+                              {diagnosis.prescriptions?.length > 0 && (
+                                <div className="diag-history-section">
+                                  <h4 className="diag-history-section-title">
+                                    <IonIcon icon={documentTextOutline} />
+                                    Prescriptions ({diagnosis.prescriptions.length})
+                                  </h4>
+                                  {diagnosis.prescriptions.map((rx) => (
+                                    <div key={rx.id} className="diag-history-rx">
+                                      <div className="diag-history-rx-header">
+                                        <span className="diag-history-rx-name">{rx.medication}</span>
+                                        <IonBadge
+                                          color={
+                                            rx.status === "active" ? "success" :
+                                            rx.status === "completed" ? "primary" :
+                                            "danger"
+                                          }
+                                        >
+                                          {rx.status}
+                                        </IonBadge>
+                                      </div>
+                                      <div className="diag-history-rx-detail">
+                                        {rx.dosage && <span>{rx.dosage}</span>}
+                                        {rx.frequency && <span>{rx.frequency}</span>}
+                                        {rx.duration && <span>{rx.duration}</span>}
+                                      </div>
+                                      {rx.instructions && (
+                                        <p className="diag-history-rx-instructions">{rx.instructions}</p>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </IonAccordion>
+                        ))}
+                      </IonAccordionGroup>
+                    )}
+                  </IonCardContent>
+                </IonCard>
+
               </div>
             )}
           </IonContent>

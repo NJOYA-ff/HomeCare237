@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { db, auth, storage } from "../../firebaseconfig";
 import { DEFAULT_AVATAR, handleImageError } from "../../utils/profileImageStorage";
 import {
@@ -122,7 +122,7 @@ interface Doctor {
   rating: number;
   reviews: number;
   region: string;
-  city: string;
+  subdivision: string;
   address: string;
   consultationFee: number;
   languages: string[];
@@ -282,6 +282,8 @@ const Refer_patient: React.FC = () => {
   >(null);
   const [unsubscribeReceivedReferrals, setUnsubscribeReceivedReferrals] =
     useState<(() => void) | null>(null);
+  // Ref for the real-time doctors listener so it can be torn down cleanly.
+  const unsubscribeDoctorsRef = useRef<(() => void) | null>(null);
   const [referralStep, setReferralStep] = useState<
     "patient" | "doctor" | "review"
   >("patient");
@@ -329,63 +331,83 @@ const Refer_patient: React.FC = () => {
     };
   }, [unsubscribeSentReferrals, unsubscribeReceivedReferrals]);
 
-  // Load doctors from Firebase with deduplication
-  const loadDoctors = async () => {
-    try {
-      setIsLoading(true);
-      const doctorsCollection = collection(db, "doctors");
-      const doctorSnapshot = await getDocs(doctorsCollection);
-      const doctorsList: Doctor[] = [];
-
-      // Use a Set to track unique doctor IDs
-      const uniqueDoctorIds = new Set<string>();
-
-      doctorSnapshot.forEach((doc) => {
-        if (uniqueDoctorIds.has(doc.id)) {
-          return; // Skip if already added
-        }
-        uniqueDoctorIds.add(doc.id);
-
-        const doctorData = doc.data();
-        doctorsList.push({
-          id: doc.id,
-          name: doctorData.name || "Unknown Doctor",
-          specialization: doctorData.specialization || "General Practitioner",
-          avatar:
-            doctorData.avatar ||
-            DEFAULT_AVATAR,
-          rating: doctorData.rating || 4.0,
-          reviews: doctorData.reviews || 0,
-          region: doctorData.region || "Centre",
-          city: doctorData.city || "Unknown City",
-          address: doctorData.address || "Unknown Address",
-          consultationFee: doctorData.consultationFee || 5000,
-          languages: doctorData.languages || ["English", "French"],
-          availableSlots: doctorData.availableSlots || [
-            "09:00",
-            "10:00",
-            "11:00",
-            "14:00",
-            "15:00",
-            "16:00",
-          ],
-          isAvailable:
-            doctorData.isAvailable !== undefined
-              ? doctorData.isAvailable
-              : true,
-          experience: doctorData.experience || 5,
-          email: doctorData.email,
-          phone: doctorData.phone,
-        } as Doctor);
-      });
-
-      setDoctors(doctorsList);
-      setFilteredDoctors(doctorsList);
-    } catch (error) {
-      console.error("Error loading doctors:", error);
-    } finally {
-      setIsLoading(false);
+  // Subscribe to the doctors collection in real-time so that availability and
+  // admin-enabled changes are reflected immediately without a page refresh.
+  const loadDoctors = () => {
+    // Tear down any previous listener before creating a new one.
+    if (unsubscribeDoctorsRef.current) {
+      unsubscribeDoctorsRef.current();
+      unsubscribeDoctorsRef.current = null;
     }
+
+    setIsLoading(true);
+    const doctorsCollection = collection(db, "doctors");
+
+    const unsub = onSnapshot(
+      doctorsCollection,
+      (doctorSnapshot) => {
+        const uniqueDoctorIds = new Set<string>();
+        const doctorsList: Doctor[] = [];
+
+        doctorSnapshot.forEach((docSnap) => {
+          if (uniqueDoctorIds.has(docSnap.id)) return;
+          uniqueDoctorIds.add(docSnap.id);
+
+          const doctorData = docSnap.data();
+
+          // Hide doctors disabled by an admin, unavailable (switched off in
+          // settings), unverified, or with an inactive/pending status.
+          if (
+            doctorData.isEnabled === false ||
+            doctorData.isVerified === false ||
+            doctorData.isAvailable === false ||
+            doctorData.status === "inactive" ||
+            doctorData.status === "pending"
+          ) {
+            return;
+          }
+
+          doctorsList.push({
+            id: docSnap.id,
+            name: doctorData.name || "Unknown Doctor",
+            specialization: doctorData.specialization || "General Practitioner",
+            avatar: doctorData.avatar || DEFAULT_AVATAR,
+            rating: doctorData.rating || 4.0,
+            reviews: doctorData.reviews || 0,
+            region: doctorData.region || "Centre",
+            subdivision: doctorData.subdivision || doctorData.town || "",
+            address: doctorData.address || "Unknown Address",
+            consultationFee: doctorData.consultationFee || 5000,
+            languages: doctorData.languages || ["English", "French"],
+            availableSlots: doctorData.availableSlots || [
+              "09:00",
+              "10:00",
+              "11:00",
+              "14:00",
+              "15:00",
+              "16:00",
+            ],
+            isAvailable:
+              doctorData.isAvailable !== undefined
+                ? doctorData.isAvailable
+                : true,
+            experience: doctorData.experience || 5,
+            email: doctorData.email,
+            phone: doctorData.phone,
+          } as Doctor);
+        });
+
+        setDoctors(doctorsList);
+        setFilteredDoctors(doctorsList);
+        setIsLoading(false);
+      },
+      (error) => {
+        console.error("Error loading doctors:", error);
+        setIsLoading(false);
+      }
+    );
+
+    unsubscribeDoctorsRef.current = unsub;
   };
 
   // Load patients who have booked an appointment with this doctor
@@ -449,7 +471,7 @@ const Refer_patient: React.FC = () => {
           rating: doctorData.rating || 4.0,
           reviews: doctorData.reviews || 0,
           region: doctorData.region || "Centre",
-          city: doctorData.city || "Unknown City",
+          subdivision: doctorData.subdivision || doctorData.town || "",
           address: doctorData.address || "Unknown Address",
           consultationFee: doctorData.consultationFee || 5000,
           languages: doctorData.languages || ["English", "French"],
@@ -896,7 +918,14 @@ const Refer_patient: React.FC = () => {
   useEffect(() => {
     loadDoctors();
     initializeSampleData();
-  }, []);
+    return () => {
+      // Tear down the real-time doctors listener when the component unmounts.
+      if (unsubscribeDoctorsRef.current) {
+        unsubscribeDoctorsRef.current();
+        unsubscribeDoctorsRef.current = null;
+      }
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Filter doctors based on region, specialty and search query with deduplication
   useEffect(() => {
@@ -918,7 +947,7 @@ const Refer_patient: React.FC = () => {
         (doctor) =>
           doctor.name.toLowerCase().includes(query) ||
           doctor.specialization.toLowerCase().includes(query) ||
-          doctor.city.toLowerCase().includes(query),
+          doctor.subdivision.toLowerCase().includes(query),
       );
     }
 
@@ -1234,7 +1263,7 @@ const Refer_patient: React.FC = () => {
                         <IonSearchbar
                           value={searchQuery}
                           onIonInput={(e) => setSearchQuery(e.detail.value!)}
-                          placeholder="Search doctors by name, specialty, or city"
+                          placeholder="Search doctors by name, specialty, or subdivision"
                           className="doctor-search"
                         />
 
@@ -1305,7 +1334,7 @@ const Refer_patient: React.FC = () => {
                                       <div className="detail-item-r">
                                         <IonIcon icon={location} />
                                         <span>
-                                          {doctor.city}, {doctor.region}
+                                          {doctor.subdivision}, {doctor.region}
                                         </span>
                                       </div>
                                       <div className="detail-item-r">
@@ -1661,7 +1690,7 @@ const Refer_patient: React.FC = () => {
                             </p>
                             <p>
                               <IonIcon icon={location} />
-                              {selectedReferral.referringDoctor.city},{" "}
+                              {selectedReferral.referringDoctor.subdivision},{" "}
                               {selectedReferral.referringDoctor.region}
                             </p>
                             <p>
@@ -1700,7 +1729,7 @@ const Refer_patient: React.FC = () => {
                             </p>
                             <p>
                               <IonIcon icon={location} />
-                              {selectedReferral.receivingDoctor.city},{" "}
+                              {selectedReferral.receivingDoctor.subdivision},{" "}
                               {selectedReferral.receivingDoctor.region}
                             </p>
                             <p>
@@ -1921,7 +1950,7 @@ const Refer_patient: React.FC = () => {
                     {selectedDoctor.specialization})
                   </div>
                   <div className="summary-item">
-                    <strong>Location:</strong> {selectedDoctor.city},{" "}
+                    <strong>Location:</strong> {selectedDoctor.subdivision},{" "}
                     {selectedDoctor.region}
                   </div>
                 </div>

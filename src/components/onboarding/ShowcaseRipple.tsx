@@ -31,20 +31,17 @@
  *     document.addEventListener('DOMContentLoaded', () =>
  *       setTimeout(() => document.querySelector('svg').classList.add('animated'), 1000));
  *
- * — and the class name and the 1000ms delay are kept deliberately, because the
- * delay is the point: the deck's own content animates in first, and the ripple
- * settles on top of it a beat later rather than competing with the first frame.
- * Doing it with a timer in an effect rather than a bare `setTimeout` at module
- * scope is what makes it correct here: this component mounts and unmounts with
- * the showcase, so a module-level timer would either fire against a detached
- * node or leak if the user skips the deck during the second. The effect returns
- * its own clearTimeout, and the flag lives in state so the class is applied
- * through the render rather than by reaching for a DOM node.
+ * — except the timing is now driven by the parent (FirstRunShowcase) via a
+ * `ready` prop rather than this component's own timer. That lets all animations
+ * on the page start from the same signal: when Ionic's page transition ends
+ * (useIonViewDidEnter) the parent sets `pageReady = true` and passes it here,
+ * so the ripple, the art, and the Framer Motion entrances all fire together
+ * instead of each counting their own 1000ms from mount.
  *
  * Nothing here gates comprehension, so the animation is skipped entirely under
  * `prefers-reduced-motion` (see the media query in FirstRunShowcase.css).
  */
-import React, { useEffect, useState } from "react";
+import React from "react";
 
 interface RippleRing {
   /** Ring radius in viewBox units. */
@@ -81,22 +78,26 @@ const RINGS: readonly RippleRing[] = [
 /** Matches the source art's 800x800 canvas; the CSS box decides the rendered size. */
 const VIEW_BOX = "0 0 800 800";
 
-/** Beat between mount and the draw-in, in ms. See the header note. */
-const ANIMATE_AFTER_MS = 1000;
+interface ShowcaseRippleProps {
+  /**
+   * When true the rings begin their draw-in animation.
+   * Driven by the parent (FirstRunShowcase) once the Ionic page transition
+   * has finished, so the ripple starts at the same moment as all the other
+   * showcase entrances rather than on its own independent timer.
+   */
+  ready: boolean;
+}
 
-const ShowcaseRipple: React.FC = () => {
-  const [animated, setAnimated] = useState(false);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setAnimated(true), ANIMATE_AFTER_MS);
-    return () => window.clearTimeout(timer);
-  }, []);
+const ShowcaseRipple: React.FC<ShowcaseRippleProps> = ({ ready }) => {
+  /* `ready` itself drives the animated class directly — no local timer needed.
+   * The parent is responsible for the delay between page-visible and ready=true,
+   * so this component stays stateless with respect to timing. */
 
   return (
     <svg
       /* The class is what the draw-on keyframes hang off. See the header note for
-         why this is a timer rather than a plain CSS animation on mount. */
-      className={`sc-ripple-svg${animated ? " sc-ripple-svg--animated" : ""}`}
+         why the timing is driven by the parent rather than a local timer. */
+      className={`sc-ripple-svg${ready ? " sc-ripple-svg--animated" : ""}`}
       viewBox={VIEW_BOX}
       /* Decorative: the slide's own art carries the accessible description. */
       aria-hidden="true"

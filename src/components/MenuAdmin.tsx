@@ -18,6 +18,7 @@ import {
   FaCog,
   FaBell,
   FaUserMd,
+  FaExchangeAlt,
 } from "react-icons/fa";
 import { MdSpaceDashboard } from "react-icons/md";
 import "./Menu.css";
@@ -29,6 +30,7 @@ const appPages = [
   { title: "profile",     url: "/admin/profile",      Icon: FaUserCircle },
   { title: "notifications", url: "/admin/notifications", Icon: FaBell },
   { title: "appointments", url: "/admin/appointments", Icon: FaCalendarAlt },
+  { title: "referrals",    url: "/admin/referrals",    Icon: FaExchangeAlt },
   { title: "healthUnits", url: "/admin/health_units",  Icon: FaHospital },
   { title: "smsDoctor",   url: "/admin/sms_doctor",   Icon: FaComments },
   { title: "smsPatient",  url: "/admin/sms_patient",  Icon: FaRegCommentDots },

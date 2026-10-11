@@ -852,3 +852,357 @@ body.dark {
     border-radius: 3px;
   }
 }
+
+// ── Medical Profile card (modal) ─────────────────────────────
+
+.med-profile-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--patient-border);
+
+  &:last-child { border-bottom: none; }
+
+  &--wrap {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+.med-profile-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ion-color-medium);
+  min-width: 90px;
+  flex-shrink: 0;
+}
+
+.med-profile-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+
+.med-profile-chip {
+  font-size: 0.8rem;
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  height: 26px;
+
+  &--blood {
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+}
+
+.med-profile-empty {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  color: var(--ion-color-medium);
+  font-style: italic;
+}
+
+.med-profile-note {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--patient-border);
+  margin-top: 2px;
+}
+
+.med-profile-note-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.88rem;
+  color: var(--ion-color-dark);
+  line-height: 1.55;
+  margin: 0;
+}
+
+body.dark {
+  .med-profile-row {
+    border-bottom-color: var(--patient-border);
+  }
+
+  .med-profile-note {
+    border-top-color: var(--patient-border);
+  }
+
+  .med-profile-note-text {
+    color: var(--ion-text-color);
+  }
+}
+
+// ── Diagnoses & Lab Results card (modal) ──────────────────────
+
+.diag-history-badge {
+  margin-left: 8px;
+  font-size: 0.72rem;
+  vertical-align: middle;
+  border-radius: 999px;
+  padding: 2px 7px;
+}
+
+.diag-history-loading {
+  padding: 20px 0;
+  text-align: center;
+  color: var(--ion-color-medium);
+  font-size: 0.9rem;
+  font-family: 'Inter', sans-serif;
+}
+
+.diag-history-group {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--patient-border);
+}
+
+.diag-history-accordion {
+  & + .diag-history-accordion {
+    border-top: 1px solid var(--patient-border);
+  }
+}
+
+.diag-history-header {
+  --background: rgba(var(--ion-color-primary-rgb), 0.03);
+  --padding-start: 14px;
+  --inner-padding-end: 10px;
+}
+
+.diag-history-condition {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  color: var(--ion-color-dark) !important;
+  margin: 0 0 4px !important;
+}
+
+.diag-history-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.8rem !important;
+  color: var(--ion-color-medium) !important;
+  margin: 0 !important;
+  font-family: 'Inter', sans-serif;
+
+  ion-icon {
+    font-size: 0.85rem;
+  }
+}
+
+.diag-history-status {
+  font-size: 0.72rem;
+  border-radius: 999px;
+  padding: 2px 8px;
+  flex-shrink: 0;
+}
+
+.diag-history-content {
+  padding: 14px 16px;
+  background: var(--patient-background);
+}
+
+.diag-history-desc {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.88rem;
+  color: var(--ion-color-dark);
+  line-height: 1.55;
+  margin: 0 0 12px;
+}
+
+.diag-history-doctor {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 14px;
+}
+
+.diag-history-field-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ion-color-medium);
+}
+
+.diag-history-field-value {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.88rem;
+  color: var(--ion-color-dark);
+}
+
+// Section (lab results / prescriptions)
+.diag-history-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--patient-border);
+}
+
+.diag-history-section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ion-color-primary);
+  margin: 0 0 10px;
+
+  ion-icon {
+    font-size: 0.9rem;
+  }
+}
+
+// Lab result entry
+.diag-history-lab {
+  background: var(--patient-card-bg);
+  border: 1px solid var(--patient-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+
+  &:last-child { margin-bottom: 0; }
+}
+
+.diag-history-lab-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.diag-history-lab-name {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ion-color-dark);
+}
+
+.diag-history-lab-results {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.diag-history-lab-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 6px;
+  background: rgba(var(--ion-color-primary-rgb), 0.04);
+  border-radius: 4px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.82rem;
+}
+
+.diag-history-lab-key {
+  font-weight: 600;
+  color: var(--ion-color-dark);
+}
+
+.diag-history-lab-val {
+  color: var(--ion-color-medium);
+}
+
+.diag-history-lab-notes {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.8rem;
+  color: var(--ion-color-medium);
+  font-style: italic;
+  margin: 6px 0 0;
+}
+
+// Prescription entry
+.diag-history-rx {
+  background: var(--patient-card-bg);
+  border: 1px solid var(--patient-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+
+  &:last-child { margin-bottom: 0; }
+}
+
+.diag-history-rx-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.diag-history-rx-name {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ion-color-dark);
+}
+
+.diag-history-rx-detail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.8rem;
+  color: var(--ion-color-medium);
+  margin-bottom: 4px;
+
+  span {
+    &:not(:last-child)::after {
+      content: " ·";
+      margin-left: 6px;
+    }
+  }
+}
+
+.diag-history-rx-instructions {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.8rem;
+  color: var(--ion-color-medium);
+  font-style: italic;
+  margin: 4px 0 0;
+}
+
+// Dark mode
+body.dark {
+  .diag-history-group {
+    border-color: var(--patient-border);
+  }
+
+  .diag-history-accordion + .diag-history-accordion {
+    border-top-color: var(--patient-border);
+  }
+
+  .diag-history-header {
+    --background: rgba(var(--ion-color-primary-rgb), 0.06);
+  }
+
+  .diag-history-content {
+    background: var(--patient-background);
+  }
+
+  .diag-history-lab,
+  .diag-history-rx {
+    background: var(--ion-item-background, #1a1d27);
+    border-color: var(--patient-border);
+  }
+
+  .diag-history-lab-row {
+    background: rgba(var(--ion-color-primary-rgb), 0.07);
+  }
+
+  .diag-history-section {
+    border-top-color: var(--patient-border);
+  }
+}

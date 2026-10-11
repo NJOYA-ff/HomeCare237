@@ -264,30 +264,62 @@ const Health_units_d: React.FC = () => {
         </IonToolbar>
       </IonHeader>
 
-      <IonContent fullscreen className="health-units-content">
-        {/* Search */}
-        <div className="search-section">
-          <IonSearchbar
-            value={searchTerm}
-            onIonChange={(e) => setSearchTerm(e.detail.value!)}
-            placeholder="Search facilities, services..."
-            animated
-            className="health-searchbar"
-            debounce={300}
-          />
-        </div>
+      <IonContent fullscreen className={`health-units-content${viewMode === "map" ? " map-mode" : ""}`}>
+        {/* ── Map view: only the map, nothing else ── */}
+        {viewMode === "map" && (
+          <div className="map-section-full">
+            <div className="map-container-full">
+              <MapContainer center={mapCenter} zoom={mapZoom} className="map-full" ref={mapRef}>
+                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap contributors' />
+                <MapUpdater center={mapCenter} zoom={mapZoom} />
+                {filteredUnits.map((unit) => (
+                  <Marker key={unit.id} position={[unit.lat, unit.lng]} icon={getMarkerIcon(unit.type)} eventHandlers={{ click: () => { setSelectedUnit(unit); setMapCenter([unit.lat, unit.lng]); setMapZoom(14); } }}>
+                    <Popup>
+                      <div className="popup-content">
+                        <h3>{unit.name}</h3>
+                        <p><IonIcon icon={locationOutline} /> {unit.address}</p>
+                        <p><IonIcon icon={callOutline} /> {unit.phone}</p>
+                        <IonButton size="small" fill="solid" color="primary" onClick={() => focusOnUnit(unit)}>View Details</IonButton>
+                      </div>
+                    </Popup>
+                  </Marker>
+                ))}
+              </MapContainer>
+            </div>
+            <IonFab vertical="bottom" horizontal="end" slot="fixed" className="map-controls">
+              <IonFabButton size="small" color="light" onClick={() => mapRef.current?.setView([5.6919, 9.5481], 7)}>
+                <IonIcon icon={locateOutline} />
+              </IonFabButton>
+            </IonFab>
+          </div>
+        )}
 
-        {/* Filters */}
-        <AnimatePresence>
-          {activeFilter && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3 }}
-              className="filters-section"
-            >
-              <IonGrid className="filter-grid">
+        {/* ── List view: search, filters, cards ── */}
+        {viewMode !== "map" && (
+          <>
+            {/* Search */}
+            <div className="search-section">
+              <IonSearchbar
+                value={searchTerm}
+                onIonChange={(e) => setSearchTerm(e.detail.value!)}
+                placeholder="Search facilities, services..."
+                animated
+                className="health-searchbar"
+                debounce={300}
+              />
+            </div>
+
+            {/* Filters */}
+            <AnimatePresence>
+              {activeFilter && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="filters-section"
+                >
+                  <IonGrid className="filter-grid">
                 <IonRow>
                   <IonCol size="12" sizeMd="4">
                     <IonItem className="filter-item">
@@ -331,86 +363,56 @@ const Health_units_d: React.FC = () => {
                     </IonButton>
                   </IonCol>
                 </IonRow>
-              </IonGrid>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                  </IonGrid>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-        {/* Map full view */}
-        {viewMode === "map" && (
-          <div className="map-section-full">
-            <div className="map-container-full">
-              <MapContainer center={mapCenter} zoom={mapZoom} className="map-full" ref={mapRef}>
-                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap contributors' />
-                <MapUpdater center={mapCenter} zoom={mapZoom} />
-                {filteredUnits.map((unit) => (
-                  <Marker key={unit.id} position={[unit.lat, unit.lng]} icon={getMarkerIcon(unit.type)} eventHandlers={{ click: () => { setSelectedUnit(unit); setMapCenter([unit.lat, unit.lng]); setMapZoom(14); } }}>
-                    <Popup>
-                      <div className="popup-content">
-                        <h3>{unit.name}</h3>
-                        <p><IonIcon icon={locationOutline} /> {unit.address}</p>
-                        <p><IonIcon icon={callOutline} /> {unit.phone}</p>
-                        <IonButton size="small" fill="solid" color="primary" onClick={() => focusOnUnit(unit)}>View Details</IonButton>
-                      </div>
-                    </Popup>
-                  </Marker>
-                ))}
-              </MapContainer>
+            {/* Results summary */}
+            <div className="results-summary">
+              <IonChip color="primary" className="results-chip">
+                <IonLabel>{filteredUnits.length} {filteredUnits.length === 1 ? "Facility" : "Facilities"} Found</IonLabel>
+              </IonChip>
+              {selectedRegion && <IonChip color="medium" outline className="filter-chip"><IonLabel>{selectedRegion}</IonLabel><IonIcon icon={locationOutline} /></IonChip>}
+              {selectedTown && <IonChip color="medium" outline className="filter-chip"><IonLabel>{selectedTown}</IonLabel></IonChip>}
+              {selectedType && (
+                <IonChip outline className="filter-chip">
+                  <IonLabel>{selectedType.charAt(0).toUpperCase() + selectedType.slice(1)}</IonLabel>
+                  <IonIcon icon={getTypeIcon(selectedType)} />
+                </IonChip>
+              )}
             </div>
-            <IonFab vertical="bottom" horizontal="end" slot="fixed" className="map-controls">
-              <IonFabButton size="small" color="light" onClick={() => mapRef.current?.setView([5.6919, 9.5481], 7)}>
-                <IonIcon icon={locateOutline} />
-              </IonFabButton>
-            </IonFab>
-          </div>
-        )}
 
-        {/* Results summary */}
-        <div className="results-summary">
-          <IonChip color="primary" className="results-chip">
-            <IonLabel>{filteredUnits.length} {filteredUnits.length === 1 ? "Facility" : "Facilities"} Found</IonLabel>
-          </IonChip>
-          {selectedRegion && <IonChip color="medium" outline className="filter-chip"><IonLabel>{selectedRegion}</IonLabel><IonIcon icon={locationOutline} /></IonChip>}
-          {selectedTown && <IonChip color="medium" outline className="filter-chip"><IonLabel>{selectedTown}</IonLabel></IonChip>}
-          {selectedType && (
-            <IonChip outline className="filter-chip">
-              <IonLabel>{selectedType.charAt(0).toUpperCase() + selectedType.slice(1)}</IonLabel>
-              <IonIcon icon={getTypeIcon(selectedType)} />
-            </IonChip>
-          )}
-        </div>
+            {/* Loading */}
+            {isLoading && (
+              <div className="loading-container">
+                <LoadingHelix />
+                <p>Finding health facilities near you...</p>
+              </div>
+            )}
 
-        {/* Loading */}
-        {isLoading && (
-          <div className="loading-container">
-            <LoadingHelix />
-            <p>Finding health facilities near you...</p>
-          </div>
-        )}
+            {/* Empty state */}
+            <AnimatePresence>
+              {!isLoading && filteredUnits.length === 0 && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="no-results"
+                >
+                  <EmptyState
+                    icon={medical}
+                    title="No facilities found"
+                    description="No health facilities match your search or filters. Try adjusting them or searching a different area."
+                    actionLabel="Clear all filters"
+                    onAction={clearFilters}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-        {/* Empty state */}
-        <AnimatePresence>
-          {!isLoading && filteredUnits.length === 0 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="no-results"
-            >
-              <EmptyState
-                icon={medical}
-                title="No facilities found"
-                description="No health facilities match your search or filters. Try adjusting them or searching a different area."
-                actionLabel="Clear all filters"
-                onAction={clearFilters}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* List view */}
-        {viewMode === "list" && (
-          <div className="health-units-list">
+            {/* List */}
+            <div className="health-units-list">
             <AnimatePresence>
               {!isLoading && filteredUnits.map((unit) => (
                 <motion.div
@@ -523,23 +525,49 @@ const Health_units_d: React.FC = () => {
                 </motion.div>
               ))}
             </AnimatePresence>
-          </div>
+            </div>
+          </>
         )}
       </IonContent>
 
       {/* Map Modal */}
-      <IonModal isOpen={showMapModal} onDidDismiss={() => setShowMapModal(false)}>
+      <IonModal
+        isOpen={showMapModal}
+        onDidDismiss={() => setShowMapModal(false)}
+        onDidPresent={() => {
+          // Leaflet calculates tile layout at mount time when the container
+          // has no dimensions (modal is hidden). Invalidating after the modal
+          // is fully open forces a correct recalculation.
+          if (modalMapRef.current) {
+            modalMapRef.current.invalidateSize();
+            if (selectedUnit) {
+              modalMapRef.current.setView([selectedUnit.lat, selectedUnit.lng], 15);
+            }
+          }
+        }}
+      >
         <ModalHeader>
           <ModalToolbar>
             <ModalButtons slot="start">
               <IonButton onClick={() => setShowMapModal(false)}><IonIcon icon={close} /></IonButton>
             </ModalButtons>
-            <ModalTitle>Health Facility Location</ModalTitle>
+            <ModalTitle>
+              {selectedUnit ? selectedUnit.name : "Health Facility Location"}
+            </ModalTitle>
           </ModalToolbar>
         </ModalHeader>
-        <ModalContent>
+        <ModalContent
+          className="map-modal-content"
+          style={{ "--padding-top": "0", "--padding-bottom": "0", "--padding-start": "0", "--padding-end": "0" } as React.CSSProperties}
+        >
           <div className="map-modal-container">
-            <MapContainer center={selectedUnit ? [selectedUnit.lat, selectedUnit.lng] : mapCenter} zoom={15} className="map-modal" ref={modalMapRef}>
+            <MapContainer
+              center={selectedUnit ? [selectedUnit.lat, selectedUnit.lng] : mapCenter}
+              zoom={15}
+              className="map-modal"
+              ref={modalMapRef}
+              style={{ height: "calc(100vh - 56px)", width: "100%" }}
+            >
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap contributors' />
               {selectedUnit && (
                 <Marker position={[selectedUnit.lat, selectedUnit.lng]} icon={getMarkerIcon(selectedUnit.type)}>
@@ -548,13 +576,6 @@ const Health_units_d: React.FC = () => {
               )}
             </MapContainer>
           </div>
-          {selectedUnit && (
-            <div className="modal-unit-info">
-              <h2>{selectedUnit.name}</h2>
-              <p><IonIcon icon={locationOutline} /> {selectedUnit.address}, {selectedUnit.town}</p>
-              <p><IonIcon icon={callOutline} /> {selectedUnit.phone}</p>
-            </div>
-          )}
         </ModalContent>
       </IonModal>
     </IonPage>

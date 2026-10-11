@@ -1,6 +1,8 @@
 import LoadingHelix from "../components/LoadingHelix";
 import AuthShell from "../components/AuthShell";
 import { useSettings } from "../context/SettingsContext";
+import { useCameraCapture } from "../hooks/useCameraCapture";
+import { CameroonLocationSelect, type CameroonLocationValue } from "../components/CameroonLocationSelect";
 import React, { useState, useRef } from "react";
 import {
   IonButton,
@@ -14,6 +16,7 @@ import {
   IonRow,
   IonCol,
   IonTextarea,
+  IonText,
   IonToast,
 } from "@ionic/react";
 import { motion } from "framer-motion";
@@ -55,7 +58,9 @@ type FormData = {
   password: string;
   confirmPassword: string;
   contact: string;
-  town: string;
+  region: string;
+  division: string;
+  subdivision: string;
   street: string;
   // Doctor-specific fields
   specialization: string;
@@ -101,7 +106,13 @@ const DoctorSignup: React.FC = () => {
     message: "",
     color: "success" as "success" | "danger" | "warning",
   });
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Cascading location state
+  const [location, setLocation] = useState<CameroonLocationValue>({
+    region: "", division: "", subdivision: "",
+  });
+  const [locationError, setLocationError] = useState(false);
   // Declared before the helpers below: they close over `t` to render Firebase
   // failures and toasts in the chosen language.
   const { t } = useSettings();
@@ -190,6 +201,15 @@ const DoctorSignup: React.FC = () => {
       showToast(t("err_passwords_dont_match_try"), "danger");
       return;
     }
+    if (!location.region) {
+      setLocationError(true);
+      showToast(t("err_region_required"), "warning");
+      return;
+    }
+    setLocationError(false);
+    data.region      = location.region;
+    data.division    = location.division;
+    data.subdivision = location.subdivision;
     setIsLoading(true);
 
     try {
@@ -218,7 +238,10 @@ const DoctorSignup: React.FC = () => {
         age: Number(data.age),
         sex: data.sex,
         contact: data.contact,
-        town: data.town,
+        region: data.region,
+        division: data.division,
+        subdivision: data.subdivision,
+        town: data.subdivision, // backward compat with location tracking
         street: data.street,
         specialization: data.specialization,
         licenseNumber: data.licenseNumber,
@@ -319,8 +342,37 @@ const DoctorSignup: React.FC = () => {
     }
   };
 
+  const processImageFile = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      showToast(t("err_invalid_image_type"), "danger");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      showToast(t("err_image_too_large"), "danger");
+      return;
+    }
+
+    setSelectedFile(file);
+
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    setValue("profilePhoto", dataTransfer.files);
+    await trigger("profilePhoto");
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreviewImage(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const { fileInputRef: cameraFileInputRef, pickImage } = useCameraCapture({
+    onImage: processImageFile,
+    onError: (msg) => showToast(msg, "danger"),
+  });
+
   const triggerFileInput = () => {
-    fileInputRef.current?.click();
+    pickImage();
   };
 
   /**
@@ -383,8 +435,9 @@ const DoctorSignup: React.FC = () => {
                   accept="image/*"
                   style={{ display: "none" }}
                   ref={(el) => {
-                    // attach to local ref for triggering and to RHF ref
+                    // attach to local ref, useCameraCapture ref, and RHF ref
                     fileInputRef.current = el;
+                    (cameraFileInputRef as React.MutableRefObject<HTMLInputElement | null>).current = el;
                     if (typeof profilePhotoRegister.ref === "function") {
                       profilePhotoRegister.ref(el);
                     } else if (profilePhotoRegister.ref) {
@@ -653,25 +706,29 @@ const DoctorSignup: React.FC = () => {
                   )}
                 </motion.div>
 
-                {/* Town */}
+                {/* Location — Region / Division / Subdivision */}
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.4 }}
                 >
-                  <IonItem className="form-item">
-                    <FiMapPin className="input-icon" />
-                    <IonInput
-                      type="text"
-                      placeholder={t("field_town")}
-                      {...register("town", {
-                        required: t("err_town_required"),
-                      })}
-                    />
-                  </IonItem>
-                  {errors.town && (
+                  <CameroonLocationSelect
+                    value={location}
+                    onChange={(val) => { setLocation(val); setLocationError(false); }}
+                    itemClassName="form-item"
+                    regionError={locationError}
+                    labels={{
+                      region:            t("field_region"),
+                      division:          t("field_division"),
+                      subdivision:       t("field_subdivision"),
+                      selectRegion:      t("field_select_region"),
+                      selectDivision:    t("field_select_division"),
+                      selectSubdivision: t("field_select_subdivision"),
+                    }}
+                  />
+                  {locationError && (
                     <span className="error-message">
-                      {errors.town.message}
+                      {t("err_region_required")}
                     </span>
                   )}
                 </motion.div>

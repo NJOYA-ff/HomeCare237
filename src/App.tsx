@@ -73,6 +73,7 @@ import Patients from "./pages/Doctor/Patients";
 import Doc_Consult from "./pages/Doctor/Doc_Consult";
 import Admin_Profile from "./pages/Admin/Admin_Profile";
 import Admin_Appointments from "./pages/Admin/Admin_Appointments";
+import Admin_Referrals from "./pages/Admin/Admin_Referrals";
 import SMS_patient from "./pages/Admin/SMS_patient";
 import Admin_patient from "./pages/Admin/Admin_patient";
 import Admin_diagnoses from "./pages/Admin/Admin_Diagnoses";
@@ -204,6 +205,35 @@ class AuthService {
     }
   }
 
+  /**
+   * Resolves a user's role from the collection their account lives in.
+   *
+   * The document's own `role` field is preferred, but many accounts created by
+   * admins (or by older versions of the app) never wrote one. Since collection
+   * membership is the actual source of truth — a doc in `doctors` is a doctor —
+   * falling back to it keeps those accounts able to sign in instead of being
+   * rejected as "cannot sign in here". The value is normalised (trimmed and
+   * lower-cased) so legacy values such as "Doctor" still resolve correctly.
+   */
+  private resolveRole(
+    userData: Record<string, any>,
+    collectionName: string
+  ): UserRole {
+    const validRoles = Object.values(UserRole) as string[];
+    for (const candidate of [userData.role, userData.userType]) {
+      if (typeof candidate === "string") {
+        const normalized = candidate.trim().toLowerCase();
+        if (validRoles.includes(normalized)) return normalized as UserRole;
+      }
+    }
+    const roleByCollection: Record<string, UserRole> = {
+      patients: UserRole.Patient,
+      doctors: UserRole.Doctor,
+      admins: UserRole.Admin,
+    };
+    return roleByCollection[collectionName] ?? UserRole.Patient;
+  }
+
   private async findUserInCollections(uid: string): Promise<User | null> {
     const collections = ["patients", "doctors", "admins", "users"];
 
@@ -219,7 +249,7 @@ class AuthService {
             email: userData.email,
             name1: userData.name || userData.fullName || "Unknown",
             email1: userData.email,
-            role: userData.role as UserRole,
+            role: this.resolveRole(userData, collectionName),
             phone: userData.phone,
             specialty: userData.specialty,
             department: userData.department,
@@ -402,6 +432,23 @@ class AuthService {
         }
         this.assertRoleAccess(user, allowedRoles.length ? allowedRoles : role);
 
+        // ── Returning user: keep profilePhoto in sync with Google ──────────
+        // The doc already existed so the block above was skipped. If the user
+        // changed their Google profile picture since their last sign-in, the
+        // Firestore document still holds the old URL. Refresh it silently.
+        if (firebaseUser.photoURL) {
+          try {
+            const collectionName = this.getCollectionName(role);
+            await setDoc(
+              doc(db, collectionName, firebaseUser.uid),
+              { profilePhoto: firebaseUser.photoURL },
+              { merge: true },
+            );
+          } catch {
+            // Non-critical — dashboard will still load with the cached value.
+          }
+        }
+
         this.currentUser = user;
         this.notifyAuthStateListeners(user);
 
@@ -502,6 +549,20 @@ class AuthService {
         };
       }
       this.assertRoleAccess(user, storedRoles.length ? storedRoles : storedRole ?? undefined);
+
+      // ── Returning user: keep profilePhoto in sync with Google ──────────
+      if (firebaseUser.photoURL) {
+        try {
+          const collectionName = this.getCollectionName(storedRole ?? UserRole.Patient);
+          await setDoc(
+            doc(db, collectionName, firebaseUser.uid),
+            { profilePhoto: firebaseUser.photoURL },
+            { merge: true },
+          );
+        } catch {
+          // Non-critical.
+        }
+      }
 
       this.currentUser = user;
       this.notifyAuthStateListeners(user);
@@ -988,6 +1049,9 @@ const App: React.FC = () => {
                     </Route>
                     <Route path="/admin/appointments" exact={true}>
                       <Admin_Appointments />
+                    </Route>
+                    <Route path="/admin/referrals" exact={true}>
+                      <Admin_Referrals />
                     </Route>
                     <Route path="/admin/sms_patient" exact={true}>
                       <SMS_patient />

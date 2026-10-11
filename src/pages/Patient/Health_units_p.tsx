@@ -265,79 +265,9 @@ const Health_units_p: React.FC = () => {
         </IonToolbar>
       </IonHeader>
 
-      <IonContent fullscreen className="dashboard-patient health-units-content">
-        {/* Search */}
-        <div className="search-section">
-          <IonSearchbar
-            value={searchTerm}
-            onIonChange={(e) => setSearchTerm(e.detail.value!)}
-            placeholder="Search facilities, services..."
-            animated
-            className="health-searchbar"
-            debounce={300}
-          />
-        </div>
+      <IonContent fullscreen className={`dashboard-patient health-units-content${viewMode === "map" ? " map-mode" : ""}`}>
 
-        {/* Filters */}
-        <AnimatePresence>
-          {activeFilter && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3 }}
-              className="filters-section"
-            >
-              <IonGrid className="filter-grid">
-                <IonRow>
-                  <IonCol size="12" sizeMd="4">
-                    <IonItem className="filter-item">
-                      <IonLabel position="stacked">Region</IonLabel>
-                      <IonSelect value={selectedRegion} placeholder="All Regions" onIonChange={(e) => setSelectedRegion(e.detail.value)} interface="popover">
-                        <IonSelectOption value="">All Regions</IonSelectOption>
-                        {Array.from(new Set(healthUnits.map((u) => u.region))).map((r) => (
-                          <IonSelectOption key={r} value={r}>{r}</IonSelectOption>
-                        ))}
-                      </IonSelect>
-                    </IonItem>
-                  </IonCol>
-                  <IonCol size="12" sizeMd="4">
-                    <IonItem className="filter-item">
-                      <IonLabel position="stacked">Town</IonLabel>
-                      <IonSelect value={selectedTown} placeholder="All Towns" onIonChange={(e) => setSelectedTown(e.detail.value)} interface="popover" disabled={!selectedRegion}>
-                        <IonSelectOption value="">All Towns</IonSelectOption>
-                        {towns.map((t) => (
-                          <IonSelectOption key={t} value={t}>{t}</IonSelectOption>
-                        ))}
-                      </IonSelect>
-                    </IonItem>
-                  </IonCol>
-                  <IonCol size="12" sizeMd="4">
-                    <IonItem className="filter-item">
-                      <IonLabel position="stacked">Type</IonLabel>
-                      <IonSelect value={selectedType} placeholder="All Types" onIonChange={(e) => setSelectedType(e.detail.value)} interface="popover">
-                        <IonSelectOption value="">All Types</IonSelectOption>
-                        <IonSelectOption value="hospital">Hospital</IonSelectOption>
-                        <IonSelectOption value="clinic">Clinic</IonSelectOption>
-                        <IonSelectOption value="pharmacy">Pharmacy</IonSelectOption>
-                        <IonSelectOption value="laboratory">Laboratory</IonSelectOption>
-                      </IonSelect>
-                    </IonItem>
-                  </IonCol>
-                </IonRow>
-                <IonRow>
-                  <IonCol>
-                    <IonButton expand="block" fill="clear" onClick={clearFilters} className="clear-filters">
-                      Reset Filters
-                    </IonButton>
-                  </IonCol>
-                </IonRow>
-              </IonGrid>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Map full view */}
+        {/* ── Map view: only the map, nothing else ── */}
         {viewMode === "map" && (
           <div className="map-section-full">
             <div className="map-container-full">
@@ -366,181 +296,280 @@ const Health_units_p: React.FC = () => {
           </div>
         )}
 
-        {/* Results summary */}
-        <div className="results-summary">
-          <IonChip color="primary" className="results-chip">
-            <IonLabel>{filteredUnits.length} {filteredUnits.length === 1 ? "Facility" : "Facilities"} Found</IonLabel>
-          </IonChip>
-          {selectedRegion && <IonChip color="medium" outline className="filter-chip"><IonLabel>{selectedRegion}</IonLabel><IonIcon icon={locationOutline} /></IonChip>}
-          {selectedTown && <IonChip color="medium" outline className="filter-chip"><IonLabel>{selectedTown}</IonLabel></IonChip>}
-          {selectedType && (
-            <IonChip outline className="filter-chip">
-              <IonLabel>{selectedType.charAt(0).toUpperCase() + selectedType.slice(1)}</IonLabel>
-              <IonIcon icon={getTypeIcon(selectedType)} />
-            </IonChip>
-          )}
-        </div>
+        {/* ── List view: search, filters, cards ── */}
+        {viewMode !== "map" && (
+          <>
+            {/* Search */}
+            <div className="search-section">
+              <IonSearchbar
+                value={searchTerm}
+                onIonChange={(e) => setSearchTerm(e.detail.value!)}
+                placeholder="Search facilities, services..."
+                animated
+                className="health-searchbar"
+                debounce={300}
+              />
+            </div>
 
-        {/* Loading */}
-        {isLoading && (
-          <div className="loading-container">
-            <LoadingHelix />
-            <IonText className="ion-text-center ion-padding">
-              <p>Finding health facilities near you...</p>
-            </IonText>
-          </div>
-        )}
-
-        {/* Empty state */}
-        <AnimatePresence>
-          {!isLoading && filteredUnits.length === 0 && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="no-results">
-              <IonCard className="empty-state-card">
-                <IonCardContent>
-                  <div className="empty-state-content">
-                    <IonIcon icon={medical} className="empty-state-icon" />
-                    <h3>No Facilities Found</h3>
-                    <p>Try adjusting your filters or search term</p>
-                    <IonButton fill="clear" onClick={clearFilters}>Clear All Filters</IonButton>
-                  </div>
-                </IonCardContent>
-              </IonCard>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* List view */}
-        {viewMode === "list" && (
-          <div className="health-units-list">
+            {/* Filters */}
             <AnimatePresence>
-              {!isLoading && filteredUnits.map((unit) => (
+              {activeFilter && (
                 <motion.div
-                  key={unit.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
                   transition={{ duration: 0.3 }}
-                  layout
+                  className="filters-section"
                 >
-                  <IonCard className={`health-unit-card ${expandedCard === unit.id ? "expanded" : ""}`}>
-                    <div className="card-image-container">
-                      <img
-                        src={unit.image || "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80"}
-                        alt={unit.name}
-                        className="card-image"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src =
-                            "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80";
-                        }}
-                      />
-                      <div className="card-overlay">
-                        <IonBadge className="type-badge" style={{ backgroundColor: getTypeColor(unit.type) }}>
-                          <IonIcon icon={getTypeIcon(unit.type)} />
-                          {unit.type.charAt(0).toUpperCase() + unit.type.slice(1)}
-                        </IonBadge>
-                        {unit.emergency && <IonBadge color="danger" className="emergency-badge">Emergency Services</IonBadge>}
-                      </div>
-                    </div>
-
-                    <IonCardHeader className="card-header">
-                      <IonCardTitle>{unit.name}</IonCardTitle>
-                      <IonCardSubtitle>
-                        <IonIcon icon={locationOutline} /> {unit.town}, {unit.region}
-                      </IonCardSubtitle>
-                      <div className="rating-container">
-                        {[...Array(5)].map((_, i) => (
-                          <IonIcon key={i} icon={star} color={i < Math.floor(unit.rating) ? "warning" : "medium"} className="rating-star" />
-                        ))}
-                        <span className="rating-text">{Number(unit.rating).toFixed(1)}</span>
-                      </div>
-                    </IonCardHeader>
-
-                    <IonCardContent className="card-content">
-                      <div className="basic-info">
-                        <IonItem lines="none" className="info-item">
-                          <IonIcon slot="start" icon={callOutline} color="primary" />
-                          <IonLabel>{unit.phone}</IonLabel>
+                  <IonGrid className="filter-grid">
+                    <IonRow>
+                      <IonCol size="12" sizeMd="4">
+                        <IonItem className="filter-item">
+                          <IonLabel position="stacked">Region</IonLabel>
+                          <IonSelect value={selectedRegion} placeholder="All Regions" onIonChange={(e) => setSelectedRegion(e.detail.value)} interface="popover">
+                            <IonSelectOption value="">All Regions</IonSelectOption>
+                            {Array.from(new Set(healthUnits.map((u) => u.region))).map((r) => (
+                              <IonSelectOption key={r} value={r}>{r}</IonSelectOption>
+                            ))}
+                          </IonSelect>
                         </IonItem>
-                        <IonItem lines="none" className="info-item">
-                          <IonIcon slot="start" icon={timeOutline} color="primary" />
-                          <IonLabel>{unit.openingHours}</IonLabel>
+                      </IonCol>
+                      <IonCol size="12" sizeMd="4">
+                        <IonItem className="filter-item">
+                          <IonLabel position="stacked">Town</IonLabel>
+                          <IonSelect value={selectedTown} placeholder="All Towns" onIonChange={(e) => setSelectedTown(e.detail.value)} interface="popover" disabled={!selectedRegion}>
+                            <IonSelectOption value="">All Towns</IonSelectOption>
+                            {towns.map((t) => (
+                              <IonSelectOption key={t} value={t}>{t}</IonSelectOption>
+                            ))}
+                          </IonSelect>
                         </IonItem>
-                        {unit.website && (
-                          <IonItem lines="none" className="info-item">
-                            <IonIcon slot="start" icon={globeOutline} color="primary" />
-                            <IonLabel>
-                              <a href={`https://${unit.website}`} target="_blank" rel="noopener noreferrer">Visit Website</a>
-                            </IonLabel>
-                          </IonItem>
-                        )}
+                      </IonCol>
+                      <IonCol size="12" sizeMd="4">
+                        <IonItem className="filter-item">
+                          <IonLabel position="stacked">Type</IonLabel>
+                          <IonSelect value={selectedType} placeholder="All Types" onIonChange={(e) => setSelectedType(e.detail.value)} interface="popover">
+                            <IonSelectOption value="">All Types</IonSelectOption>
+                            <IonSelectOption value="hospital">Hospital</IonSelectOption>
+                            <IonSelectOption value="clinic">Clinic</IonSelectOption>
+                            <IonSelectOption value="pharmacy">Pharmacy</IonSelectOption>
+                            <IonSelectOption value="laboratory">Laboratory</IonSelectOption>
+                          </IonSelect>
+                        </IonItem>
+                      </IonCol>
+                    </IonRow>
+                    <IonRow>
+                      <IonCol>
+                        <IonButton expand="block" fill="clear" onClick={clearFilters} className="clear-filters">
+                          Reset Filters
+                        </IonButton>
+                      </IonCol>
+                    </IonRow>
+                  </IonGrid>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Results summary */}
+            <div className="results-summary">
+              <IonChip color="primary" className="results-chip">
+                <IonLabel>{filteredUnits.length} {filteredUnits.length === 1 ? "Facility" : "Facilities"} Found</IonLabel>
+              </IonChip>
+              {selectedRegion && <IonChip color="medium" outline className="filter-chip"><IonLabel>{selectedRegion}</IonLabel><IonIcon icon={locationOutline} /></IonChip>}
+              {selectedTown && <IonChip color="medium" outline className="filter-chip"><IonLabel>{selectedTown}</IonLabel></IonChip>}
+              {selectedType && (
+                <IonChip outline className="filter-chip">
+                  <IonLabel>{selectedType.charAt(0).toUpperCase() + selectedType.slice(1)}</IonLabel>
+                  <IonIcon icon={getTypeIcon(selectedType)} />
+                </IonChip>
+              )}
+            </div>
+
+            {/* Loading */}
+            {isLoading && (
+              <div className="loading-container">
+                <LoadingHelix />
+                <IonText className="ion-text-center ion-padding">
+                  <p>Finding health facilities near you...</p>
+                </IonText>
+              </div>
+            )}
+
+            {/* Empty state */}
+            <AnimatePresence>
+              {!isLoading && filteredUnits.length === 0 && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="no-results">
+                  <IonCard className="empty-state-card">
+                    <IonCardContent>
+                      <div className="empty-state-content">
+                        <IonIcon icon={medical} className="empty-state-icon" />
+                        <h3>No Facilities Found</h3>
+                        <p>Try adjusting your filters or search term</p>
+                        <IonButton fill="clear" onClick={clearFilters}>Clear All Filters</IonButton>
                       </div>
-
-                      {expandedCard === unit.id && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="expanded-content"
-                        >
-                          {unit.description && <p className="description">{unit.description}</p>}
-                          <div className="services-section">
-                            <h4>Services Offered</h4>
-                            <div className="services-container">
-                              {unit.services.map((service) => (
-                                <IonChip key={service} outline className="service-chip">
-                                  <IonLabel>{service}</IonLabel>
-                                </IonChip>
-                              ))}
-                            </div>
-                          </div>
-                          <div className="facility-features">
-                            {unit.insuranceAccepted && (
-                              <IonChip color="success" outline>
-                                <IonIcon icon={shieldCheckmarkOutline} />
-                                <IonLabel>Insurance Accepted</IonLabel>
-                              </IonChip>
-                            )}
-                            {unit.emergency && (
-                              <IonChip color="danger" outline>
-                                <IonIcon icon={pulseOutline} />
-                                <IonLabel>Emergency Services</IonLabel>
-                              </IonChip>
-                            )}
-                          </div>
-                          <IonButton expand="block" fill="solid" color="primary" className="action-button" onClick={() => focusOnUnit(unit)}>
-                            <IonIcon slot="start" icon={navigateOutline} />
-                            View on Map
-                          </IonButton>
-                        </motion.div>
-                      )}
-
-                      <IonButton fill="clear" expand="block" className="expand-button" onClick={() => setExpandedCard(expandedCard === unit.id ? null : unit.id)}>
-                        <IonIcon icon={expandedCard === unit.id ? chevronUp : chevronDown} slot="end" />
-                        {expandedCard === unit.id ? "Show Less" : "More Details"}
-                      </IonButton>
                     </IonCardContent>
                   </IonCard>
                 </motion.div>
-              ))}
+              )}
             </AnimatePresence>
-          </div>
+
+            {/* List */}
+            <div className="health-units-list">
+              <AnimatePresence>
+                {!isLoading && filteredUnits.map((unit) => (
+                  <motion.div
+                    key={unit.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                    layout
+                  >
+                    <IonCard className={`health-unit-card ${expandedCard === unit.id ? "expanded" : ""}`}>
+                      <div className="card-image-container">
+                        <img
+                          src={unit.image || "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80"}
+                          alt={unit.name}
+                          className="card-image"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src =
+                              "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80";
+                          }}
+                        />
+                        <div className="card-overlay">
+                          <IonBadge className="type-badge" style={{ backgroundColor: getTypeColor(unit.type) }}>
+                            <IonIcon icon={getTypeIcon(unit.type)} />
+                            {unit.type.charAt(0).toUpperCase() + unit.type.slice(1)}
+                          </IonBadge>
+                          {unit.emergency && <IonBadge color="danger" className="emergency-badge">Emergency Services</IonBadge>}
+                        </div>
+                      </div>
+
+                      <IonCardHeader className="card-header">
+                        <IonCardTitle>{unit.name}</IonCardTitle>
+                        <IonCardSubtitle>
+                          <IonIcon icon={locationOutline} /> {unit.town}, {unit.region}
+                        </IonCardSubtitle>
+                        <div className="rating-container">
+                          {[...Array(5)].map((_, i) => (
+                            <IonIcon key={i} icon={star} color={i < Math.floor(unit.rating) ? "warning" : "medium"} className="rating-star" />
+                          ))}
+                          <span className="rating-text">{Number(unit.rating).toFixed(1)}</span>
+                        </div>
+                      </IonCardHeader>
+
+                      <IonCardContent className="card-content">
+                        <div className="basic-info">
+                          <IonItem lines="none" className="info-item">
+                            <IonIcon slot="start" icon={callOutline} color="primary" />
+                            <IonLabel>{unit.phone}</IonLabel>
+                          </IonItem>
+                          <IonItem lines="none" className="info-item">
+                            <IonIcon slot="start" icon={timeOutline} color="primary" />
+                            <IonLabel>{unit.openingHours}</IonLabel>
+                          </IonItem>
+                          {unit.website && (
+                            <IonItem lines="none" className="info-item">
+                              <IonIcon slot="start" icon={globeOutline} color="primary" />
+                              <IonLabel>
+                                <a href={`https://${unit.website}`} target="_blank" rel="noopener noreferrer">Visit Website</a>
+                              </IonLabel>
+                            </IonItem>
+                          )}
+                        </div>
+
+                        {expandedCard === unit.id && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="expanded-content"
+                          >
+                            {unit.description && <p className="description">{unit.description}</p>}
+                            <div className="services-section">
+                              <h4>Services Offered</h4>
+                              <div className="services-container">
+                                {unit.services.map((service) => (
+                                  <IonChip key={service} outline className="service-chip">
+                                    <IonLabel>{service}</IonLabel>
+                                  </IonChip>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="facility-features">
+                              {unit.insuranceAccepted && (
+                                <IonChip color="success" outline>
+                                  <IonIcon icon={shieldCheckmarkOutline} />
+                                  <IonLabel>Insurance Accepted</IonLabel>
+                                </IonChip>
+                              )}
+                              {unit.emergency && (
+                                <IonChip color="danger" outline>
+                                  <IonIcon icon={pulseOutline} />
+                                  <IonLabel>Emergency Services</IonLabel>
+                                </IonChip>
+                              )}
+                            </div>
+                            <IonButton expand="block" fill="solid" color="primary" className="action-button" onClick={() => focusOnUnit(unit)}>
+                              <IonIcon slot="start" icon={navigateOutline} />
+                              View on Map
+                            </IonButton>
+                          </motion.div>
+                        )}
+
+                        <IonButton fill="clear" expand="block" className="expand-button" onClick={() => setExpandedCard(expandedCard === unit.id ? null : unit.id)}>
+                          <IonIcon icon={expandedCard === unit.id ? chevronUp : chevronDown} slot="end" />
+                          {expandedCard === unit.id ? "Show Less" : "More Details"}
+                        </IonButton>
+                      </IonCardContent>
+                    </IonCard>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          </>
         )}
       </IonContent>
 
       {/* Map Modal */}
-      <IonModal isOpen={showMapModal} onDidDismiss={() => setShowMapModal(false)}>
+      <IonModal
+        isOpen={showMapModal}
+        onDidDismiss={() => setShowMapModal(false)}
+        onDidPresent={() => {
+          // Leaflet calculates tile layout at mount time when the container
+          // has no dimensions (modal is hidden). Invalidating after the modal
+          // is fully open forces a correct recalculation.
+          if (modalMapRef.current) {
+            modalMapRef.current.invalidateSize();
+            if (selectedUnit) {
+              modalMapRef.current.setView([selectedUnit.lat, selectedUnit.lng], 15);
+            }
+          }
+        }}
+      >
         <ModalHeader>
           <ModalToolbar>
             <ModalButtons slot="start">
               <IonButton onClick={() => setShowMapModal(false)}><IonIcon icon={close} /></IonButton>
             </ModalButtons>
-            <ModalTitle>Health Facility Location</ModalTitle>
+            <ModalTitle>
+              {selectedUnit ? selectedUnit.name : "Health Facility Location"}
+            </ModalTitle>
           </ModalToolbar>
         </ModalHeader>
-        <ModalContent>
+        <ModalContent
+          className="map-modal-content"
+          style={{ "--padding-top": "0", "--padding-bottom": "0", "--padding-start": "0", "--padding-end": "0" } as React.CSSProperties}
+        >
           <div className="map-modal-container">
-            <MapContainer center={selectedUnit ? [selectedUnit.lat, selectedUnit.lng] : mapCenter} zoom={15} className="map-modal" ref={modalMapRef}>
+            <MapContainer
+              center={selectedUnit ? [selectedUnit.lat, selectedUnit.lng] : mapCenter}
+              zoom={15}
+              className="map-modal"
+              ref={modalMapRef}
+              style={{ height: "calc(100vh - 56px)", width: "100%" }}
+            >
               <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap contributors' />
               {selectedUnit && (
                 <Marker position={[selectedUnit.lat, selectedUnit.lng]} icon={getMarkerIcon(selectedUnit.type)}>
@@ -549,13 +578,6 @@ const Health_units_p: React.FC = () => {
               )}
             </MapContainer>
           </div>
-          {selectedUnit && (
-            <div className="modal-unit-info">
-              <h2>{selectedUnit.name}</h2>
-              <p><IonIcon icon={locationOutline} /> {selectedUnit.address}, {selectedUnit.town}</p>
-              <p><IonIcon icon={callOutline} /> {selectedUnit.phone}</p>
-            </div>
-          )}
         </ModalContent>
       </IonModal>
     </IonPage>

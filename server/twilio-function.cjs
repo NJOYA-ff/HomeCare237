@@ -515,6 +515,76 @@ app.post("/api/ai/health-tips", async (req, res) => {
   }
 });
 
+// ── YouTube Health Videos Proxy ───────────────────────────────────────────
+const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || "";
+const YOUTUBE_API_BASE = "https://www.googleapis.com/youtube/v3";
+
+/**
+ * GET /api/youtube/search?q=<query>&pageToken=<token>&maxResults=<n>
+ * Searches YouTube for health videos and returns video items with stats.
+ */
+app.get("/api/youtube/search", async (req, res) => {
+  if (!YOUTUBE_API_KEY) {
+    return res.status(503).json({ success: false, error: "YOUTUBE_KEY_MISSING" });
+  }
+  try {
+    const q = encodeURIComponent(req.query.q || "health tips");
+    const maxResults = Math.min(parseInt(req.query.maxResults) || 10, 20);
+    const pageToken = req.query.pageToken ? `&pageToken=${req.query.pageToken}` : "";
+
+    const searchUrl =
+      `${YOUTUBE_API_BASE}/search?part=snippet&type=video&videoCategoryId=26` +
+      `&q=${q}&maxResults=${maxResults}${pageToken}&key=${YOUTUBE_API_KEY}`;
+
+    const searchRes = await fetch(searchUrl);
+    if (!searchRes.ok) throw new Error(`YouTube search failed: ${searchRes.status}`);
+    const searchData = await searchRes.json();
+
+    if (!searchData.items || searchData.items.length === 0) {
+      return res.json({ success: true, items: [], nextPageToken: null });
+    }
+
+    // Fetch statistics for all returned videos in one batch call
+    const videoIds = searchData.items.map((item) => item.id.videoId).join(",");
+    const statsUrl =
+      `${YOUTUBE_API_BASE}/videos?part=statistics,contentDetails&id=${videoIds}&key=${YOUTUBE_API_KEY}`;
+
+    const statsRes = await fetch(statsUrl);
+    const statsData = statsRes.ok ? await statsRes.json() : { items: [] };
+    const statsMap = {};
+    (statsData.items || []).forEach((v) => {
+      statsMap[v.id] = { statistics: v.statistics, contentDetails: v.contentDetails };
+    });
+
+    const items = searchData.items.map((item) => {
+      const id = item.id.videoId;
+      const stats = statsMap[id] || {};
+      return {
+        id,
+        title: item.snippet.title,
+        description: item.snippet.description,
+        thumbnail: item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url || "",
+        channelTitle: item.snippet.channelTitle,
+        channelId: item.snippet.channelId,
+        publishedAt: item.snippet.publishedAt,
+        viewCount: stats.statistics?.viewCount || "0",
+        likeCount: stats.statistics?.likeCount || "0",
+        commentCount: stats.statistics?.commentCount || "0",
+        duration: stats.contentDetails?.duration || "",
+      };
+    });
+
+    return res.json({
+      success: true,
+      items,
+      nextPageToken: searchData.nextPageToken || null,
+    });
+  } catch (err) {
+    console.error("/api/youtube/search error:", err);
+    return res.status(500).json({ success: false, error: "YOUTUBE_UPSTREAM_ERROR" });
+  }
+});
+
 // Start Server
 app.listen(PORT, () => {
   console.log(`[HomeCare237 API] Listening on http://localhost:${PORT}`);

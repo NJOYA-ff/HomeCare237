@@ -178,7 +178,8 @@ describe("post-gate funnel localization", () => {
     "Roleselect2.tsx",
     "PatientSignin.tsx",
     "DoctorSignin.tsx",
-    "AdminSignin.tsx",
+    // AdminSignin.tsx is intentionally absent: it is now an alias that
+    // re-exports the shared DoctorSignin page, so it has no copy of its own.
     "PatientSignup.tsx",
     "DoctorSignup.tsx",
     "PatientPasswordRecovery.tsx",

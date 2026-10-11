@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import { useCameraCapture } from "../../hooks/useCameraCapture";
+import { CameroonLocationSelect, type CameroonLocationValue } from "../../components/CameroonLocationSelect";
 import {
   IonPage,
   IonHeader,
@@ -15,7 +17,6 @@ import {
   IonBackButton,
   IonBadge,
   IonText,
-  IonLoading,
   IonSelect,
   IonSelectOption,
   IonTextarea,
@@ -47,7 +48,7 @@ import {
   closeCircleOutline,
   logOutOutline,
 } from "ionicons/icons";
-import LoadingHelix from "../../components/LoadingHelix";
+import LoadingHelix, { LoadingHelixOverlay } from "../../components/LoadingHelix";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   doc,
@@ -82,6 +83,9 @@ interface PatientData {
   email: string;
   phone: string;
   address: string;
+  region: string;
+  division: string;
+  subdivision: string;
   joinDate: string;
   notifications: number;
   avatar: string;
@@ -91,6 +95,8 @@ interface PatientData {
   bloodType: string;
   height: string;
   weight: string;
+  language: string;
+  occupation: string;
   emergencyContact: {
     name: string;
     phone: string;
@@ -114,6 +120,9 @@ const defaultPatientData: Omit<PatientData, "id"> = {
   email: "",
   phone: "",
   address: "",
+  region: "",
+  division: "",
+  subdivision: "",
   joinDate: "",
   notifications: 0,
   avatar: "",
@@ -123,6 +132,8 @@ const defaultPatientData: Omit<PatientData, "id"> = {
   bloodType: "",
   height: "",
   weight: "",
+  language: "",
+  occupation: "",
   emergencyContact: {
     name: "",
     phone: "",
@@ -156,7 +167,6 @@ const Profile: React.FC = () => {
      bare Storage path rather than a download URL. `avatarUrl` holds the value
      that is actually safe to hand to `<img src>`. */
   const [avatarUrl, setAvatarUrl] = useState<string>(DEFAULT_AVATAR);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const allergyInputRef = useRef<any>(null);
   const conditionInputRef = useRef<any>(null);
   const medicationInputRef = useRef<any>(null);
@@ -410,56 +420,24 @@ const Profile: React.FC = () => {
     setIsEditing(false);
   }, [patient]);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !patientId) return;
-
-    if (!file.type.match("image.*")) {
-      setAlertMessage("Please select an image file");
-      setShowAlert(true);
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      setAlertMessage("Image must be less than 5MB");
-      setShowAlert(true);
-      return;
-    }
+  const uploadAvatarFile = async (file: File) => {
+    if (!patientId) return;
 
     setIsLoading(true);
 
     try {
-      // Create a reference to the storage location.
       // `profile_photos/{uid}/…` is the path the Storage rules explicitly
-      // authorise for the user's own picture; `patients/{uid}/avatar` only fell
-      // through to the catch-all `allow write: if isAuthenticated()`, which let
-      // *any* signed-in user overwrite *any* other user's avatar.
+      // authorise for the user's own picture.
       const storageRef = ref(storage, `profile_photos/${patientId}/avatar`);
-
-      // Upload the file
       const snapshot = await uploadBytes(storageRef, file);
-
-      // Get the download URL
       const downloadURL = await getDownloadURL(snapshot.ref);
 
-      // Update the patient data with new avatar URL
       if (tempData) {
-        setTempData({
-          ...tempData,
-          avatar: downloadURL,
-        });
+        setTempData({ ...tempData, avatar: downloadURL });
       }
-
-      // Show the new picture immediately instead of waiting for the round trip.
       setAvatarUrl(downloadURL);
 
-      // Also update in Firestore.
-      // Write `profilePhoto` — the field both signup flows and `App.tsx` use —
-      // *and* `avatar`, so every reader of this document finds it. Writing only
-      // `avatar` left the picture invisible to the dashboard, the doctor's patient
-      // list and the admin views.
-      // Merge-write, for the same reason as `saveChanges`: the patient document
-      // may not exist yet.
+      // Write both fields so every reader finds the picture.
       const patientDocRef = doc(db, "patients", patientId);
       await setDoc(
         patientDocRef,
@@ -475,8 +453,13 @@ const Profile: React.FC = () => {
     }
   };
 
+  const { fileInputRef, pickImage, handleFileInputChange } = useCameraCapture({
+    onImage: uploadAvatarFile,
+    onError: (msg) => { setAlertMessage(msg); setShowAlert(true); },
+  });
+
   const selectFromGallery = () => {
-    fileInputRef.current?.click();
+    pickImage();
   };
 
   const addItem = async (
@@ -780,16 +763,15 @@ const Profile: React.FC = () => {
           <input
             type="file"
             ref={fileInputRef}
-            onChange={handleFileChange}
+            onChange={handleFileInputChange}
             accept="image/*"
             style={{ display: "none" }}
           />
 
           {/* Loading Indicator */}
-          <IonLoading
+          <LoadingHelixOverlay
             isOpen={isLoading}
             message={isLoading ? "Saving changes..." : "Uploading image..."}
-            spinner="circles"
           />
 
           <MessageBox
@@ -1034,6 +1016,37 @@ const Profile: React.FC = () => {
                   </IonItem>
                 </motion.div>
 
+                {/* Region / Division / Subdivision */}
+                {isEditing ? (
+                  <motion.div whileHover={{ scale: 1.01 }}>
+                    <CameroonLocationSelect
+                      value={{
+                        region:      tempData.region      ?? "",
+                        division:    tempData.division    ?? "",
+                        subdivision: tempData.subdivision ?? "",
+                      }}
+                      onChange={(val) =>
+                        setTempData((prev) => prev ? { ...prev, ...val } : prev)
+                      }
+                      itemClassName="profile-d-item"
+                    />
+                  </motion.div>
+                ) : (
+                  <motion.div whileHover={{ scale: 1.01 }}>
+                    <IonItem className="profile-d-item">
+                      <IonIcon slot="start" icon={locationOutline} color="medium" />
+                      <IonLabel>
+                        <h3>Location</h3>
+                        <p>
+                          {[patient.region, patient.division, patient.subdivision]
+                            .filter(Boolean)
+                            .join(" › ") || "Not set"}
+                        </p>
+                      </IonLabel>
+                    </IonItem>
+                  </motion.div>
+                )}
+
                 {/* Physical Stats */}
                 <IonCard>
                   <IonCardContent>
@@ -1079,6 +1092,63 @@ const Profile: React.FC = () => {
                     </IonGrid>
                   </IonCardContent>
                 </IonCard>
+
+                {/* Language */}
+                <motion.div whileHover={{ scale: 1.01 }}>
+                  <IonItem className="profile-d-item">
+                    <IonIcon slot="start" icon={accessibilityOutline} color="medium" />
+                    {isEditing ? (
+                      <IonSelect
+                        label="Language"
+                        labelPlacement="stacked"
+                        value={tempData.language}
+                        placeholder="Select language"
+                        interface="popover"
+                        onIonChange={(e) =>
+                          handleInputChange("language", e.detail.value!)
+                        }
+                        className="profile-edit-input"
+                      >
+                        {[
+                          "English", "French", "Fulfulde", "Ewondo", "Bassa",
+                          "Duala", "Beti", "Pidgin English", "Arabic", "Hausa",
+                        ].map((lang) => (
+                          <IonSelectOption key={lang} value={lang}>{lang}</IonSelectOption>
+                        ))}
+                      </IonSelect>
+                    ) : (
+                      <IonLabel>
+                        <h3>Language</h3>
+                        <p>{patient.language || "Not set"}</p>
+                      </IonLabel>
+                    )}
+                  </IonItem>
+                </motion.div>
+
+                {/* Occupation */}
+                <motion.div whileHover={{ scale: 1.01 }}>
+                  <IonItem className="profile-d-item">
+                    <IonIcon slot="start" icon={documentTextOutline} color="medium" />
+                    {isEditing ? (
+                      <IonInput
+                        label="Occupation"
+                        labelPlacement="stacked"
+                        type="text"
+                        value={tempData.occupation}
+                        placeholder="e.g. Teacher, Engineer…"
+                        onIonInput={(e) =>
+                          handleInputChange("occupation", e.detail.value!)
+                        }
+                        className="profile-edit-input"
+                      />
+                    ) : (
+                      <IonLabel>
+                        <h3>Occupation</h3>
+                        <p>{patient.occupation || "Not set"}</p>
+                      </IonLabel>
+                    )}
+                  </IonItem>
+                </motion.div>
 
                 {/* Emergency Contact */}
                 <motion.div whileHover={{ scale: 1.01 }}>

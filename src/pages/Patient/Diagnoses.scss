@@ -189,8 +189,9 @@
   overflow: hidden;
 }
 
-.action-buttons {
+.diagnosis-card-p .action-buttons {
   display: flex;
+  flex-direction: row;
   gap: 8px;
   margin-top: 4px;
 

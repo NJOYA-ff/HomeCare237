@@ -1,5 +1,7 @@
 import LoadingHelix, { LoadingHelixOverlay } from "../../components/LoadingHelix";
 import { MessageBox } from "../../components/ui/MessageBox";
+import { useCameraCapture } from "../../hooks/useCameraCapture";
+import { CameroonLocationSelect, type CameroonLocationValue } from "../../components/CameroonLocationSelect";
 import React, { useState, useRef, useEffect } from "react";
 import {
   IonPage,
@@ -79,6 +81,9 @@ interface AdminData {
   email: string;
   phone: string;
   address: string;
+  region: string;
+  division: string;
+  subdivision: string;
   createdAt: string;
   role: string;
   avatar: string;
@@ -112,7 +117,6 @@ const Admin_Profile: React.FC = () => {
   const [tempStatValue, setTempStatValue] = useState<string>("");
   const [showStatModal, setShowStatModal] = useState(false);
   const [showLogOutAlert, setShowLogOutAlert] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Format Firebase Timestamp to readable date
   const formatFirebaseTimestamp = (timestamp: Timestamp | string): string => {
@@ -293,20 +297,8 @@ const Admin_Profile: React.FC = () => {
     return downloadURL;
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !admin) return;
-
-    // Validate file
-    if (!file.type.match("image.*")) {
-      showToast("Please select an image file", "danger");
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      showToast("Image must be less than 5MB", "danger");
-      return;
-    }
+  const handleFileChange = async (file: File) => {
+    if (!admin) return;
 
     setIsLoading(true);
 
@@ -331,6 +323,15 @@ const Admin_Profile: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const { fileInputRef, pickImage, handleFileInputChange } = useCameraCapture({
+    onImage: handleFileChange,
+    onError: (msg) => showToast(msg, "danger"),
+  });
+
+  const triggerFileInput = () => {
+    pickImage();
   };
 
   const saveChanges = async () => {
@@ -368,6 +369,18 @@ const Admin_Profile: React.FC = () => {
 
       if (tempData.street !== admin.street) {
         updates.street = tempData.street!;
+      }
+
+      if (tempData.region !== admin.region) {
+        updates.region = tempData.region!;
+      }
+
+      if (tempData.division !== admin.division) {
+        updates.division = tempData.division!;
+      }
+
+      if (tempData.subdivision !== admin.subdivision) {
+        updates.subdivision = tempData.subdivision!;
       }
 
       // Update stats if changed
@@ -516,10 +529,6 @@ const Admin_Profile: React.FC = () => {
     }
   };
 
-  const triggerFileInput = () => {
-    fileInputRef.current?.click();
-  };
-
   const cancelEditing = () => {
     setTempData(admin || {});
     setIsEditing(false);
@@ -569,7 +578,7 @@ const Admin_Profile: React.FC = () => {
       </IonHeader>
 
       <IonContent className="profile-content">
-        <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" style={{ display: "none" }} />
+        <input type="file" ref={fileInputRef} onChange={handleFileInputChange} accept="image/*" style={{ display: "none" }} />
         <LoadingHelixOverlay isOpen={isLoading} message="Saving..." />
 
         {/* Modals */}
@@ -684,6 +693,33 @@ const Admin_Profile: React.FC = () => {
                   )}
                 </IonItem>
               ))}
+
+              {/* Region / Division / Subdivision */}
+              {isEditing ? (
+                <CameroonLocationSelect
+                  value={{
+                    region:      (tempData.region      ?? ""),
+                    division:    (tempData.division    ?? ""),
+                    subdivision: (tempData.subdivision ?? ""),
+                  }}
+                  onChange={(val: CameroonLocationValue) =>
+                    setTempData((prev) => ({ ...prev, ...val }))
+                  }
+                  itemClassName="profile-d-item"
+                />
+              ) : (
+                <IonItem>
+                  <IonIcon slot="start" icon={locationOutline} color="primary" />
+                  <IonLabel>
+                    <h3>Region / Division / Subdivision</h3>
+                    <p>
+                      {[admin.region, admin.division, admin.subdivision]
+                        .filter(Boolean)
+                        .join(" › ") || "—"}
+                    </p>
+                  </IonLabel>
+                </IonItem>
+              )}
 
               <IonItem button onClick={() => { setFieldToUpdate("password"); setShowReauthModal(true);} }>
                 <IonIcon slot="start" icon={lockClosedOutline} color="primary" />

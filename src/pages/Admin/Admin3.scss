@@ -933,8 +933,7 @@ ion-modal {
   }
 
   .form-actions {
-    flex-direction: column;
-    .action-button { min-width: 100%; }
+    .action-button { flex: 1; min-width: 0; }
   }
 
   .admins-section,

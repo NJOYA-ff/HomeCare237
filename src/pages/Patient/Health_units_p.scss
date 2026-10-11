@@ -8,16 +8,13 @@
     --background: var(--ion-background-color);
   }
 
-  // Map section height for the patient full-map view
+  // Map section — fills the full IonContent area (set in Admin2.scss)
   .map-section-full {
-    margin: 0 12px 10px;
-    border-radius: 16px;
-    overflow: hidden;
-    border: 1px solid var(--ion-color-step-100);
+    // inherits height: 100% from Admin2.scss
   }
 
   .map-container-full {
-    height: 370px;
+    height: 100%;
   }
 
   // List bottom padding accounts for tab bar

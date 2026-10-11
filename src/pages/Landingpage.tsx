@@ -47,29 +47,7 @@ const Landingpage: React.FC = () => {
   return (
     <IonPage>
       <IonContent fullscreen className="ob-content">
-        {/* <div className="ob-bg" aria-hidden="true">
-      
-          <motion.div
-            className="ob-orb ob-orb-1"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 1.5, delay: 0.2 }}
-          />
-
-          <motion.div
-            className="ob-orb ob-orb-2"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 1.5, delay: 0.6 }}
-          />
-
-          <motion.div
-            className="ob-orb ob-orb-3"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 1.5, delay: 0.4 }}
-          />
-        </div> */}
+       
 
         <IonGrid className="ob-grid">
           <IonRow className="ion-justify-content-center">

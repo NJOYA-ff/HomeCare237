@@ -1108,15 +1108,42 @@
 }
 
 .map-modal-container {
-  height: 280px;
   width: 100%;
+  overflow: hidden;
 
-  .map-modal { height: 100%; width: 100%; }
+  .map-modal { width: 100%; }
 }
 
+// Make the IonContent inside the map modal fill the full modal height
+ion-modal .map-modal-container {
+  height: 100%;
+}
+
+ion-modal ion-content.map-modal-content {
+  --overflow: hidden;
+  &::part(scroll) {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+  }
+}
+
+// Map mode: fill the entire IonContent area beneath the header
 .health-units-content .map-section-full {
-  height: calc(100vh - 200px);
-  position: relative;
+  height: 100%;
+  width: 100%;
+}
+
+// When in map mode, the IonContent itself fills remaining screen height
+.health-units-content.map-mode {
+  --overflow: hidden;
+  height: 100%;
+
+  &::part(scroll) {
+    height: 100%;
+    overflow: hidden;
+  }
 }
 
 .map-popup .popup-content {

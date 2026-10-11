@@ -49,8 +49,8 @@
 }
 
 .app-logo {
-  width: 120px;
-  height: 120px;
+  width: 100px;
+  height: 100px;
   margin: 0 auto 20px;
 }
 
@@ -64,7 +64,7 @@
 .welcome-title span {
   /* Accent within the headline: the brand tint channel reads as "brighter
      white" against the gradient without needing its own value. */
-  color: rgba(var(--ion-color-primary-tint-rgb), 0.55);
+  color: rgba(var(--ion-color-primary-tint-rgb), 1);
 }
 
 .welcome-subtitle {

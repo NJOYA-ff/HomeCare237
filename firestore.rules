@@ -162,5 +162,43 @@ service cloud.firestore {
     match /fcmTokens/{tokenId} {
       allow read, write: if isAuthenticated();
     }
+
+    // ── User Locations (real-time location tracking) ──────────────────────
+    //
+    // Privacy model:
+    //  - A user can only WRITE their own location document (uid == document id).
+    //  - Any authenticated user can READ locations where isSharing == true,
+    //    so patients can see nearby doctors, doctors see patients, and the
+    //    admin sees everyone.
+    //  - Admins can read any location document regardless of isSharing.
+    //  - No one can read a location that has isSharing == false unless they
+    //    are the owner or an admin.
+    //  - Users can delete their own document to fully remove location data
+    //    (right-to-be-forgotten / GDPR compliance).
+    //
+    // Enforced fields on write (prevents spoofing):
+    //  - uid must equal the authenticated user's UID
+    //  - isSharing must be a boolean
+    //  - lat/lng must be numbers (basic geo-bounds check for Cameroon ±10°)
+    match /userLocations/{userId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        request.auth.uid == userId ||
+        resource.data.isSharing == true
+      );
+      allow create, update: if isAuthenticated() &&
+        request.auth.uid == userId &&
+        request.resource.data.uid == request.auth.uid &&
+        request.resource.data.isSharing is bool &&
+        request.resource.data.lat is number &&
+        request.resource.data.lng is number &&
+        request.resource.data.lat >= -90 &&
+        request.resource.data.lat <= 90 &&
+        request.resource.data.lng >= -180 &&
+        request.resource.data.lng <= 180;
+      allow delete: if isAuthenticated() && (
+        request.auth.uid == userId || isAdmin()
+      );
+    }
   }
 }

@@ -20,6 +20,8 @@ export { default as ResultSheet } from "./ResultSheet";
 export { default as SectionHeader } from "./SectionHeader";
 export { default as StatusBadge } from "./StatusBadge";
 export { default as UserAvatar } from "./UserAvatar";
+export { default as DashboardProfileCard } from "./DashboardProfileCard";
+export type { DashboardProfileCardProps } from "./DashboardProfileCard";
 export {
   default as Skeleton,
   SkeletonGroup,

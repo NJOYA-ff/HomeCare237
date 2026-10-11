@@ -49,7 +49,7 @@ import {
 } from "ionicons/icons";
 import {
   collection,
-  addDoc,
+  setDoc,
   updateDoc,
   deleteDoc,
   doc,
@@ -324,17 +324,21 @@ const Admin_patient: React.FC = () => {
 
       const user = userCredential.user;
 
-      // Create patient record in Firestore
+      // Create patient record in Firestore. The document ID must be the Auth
+      // UID (sign-in looks up patients/{uid}, and firestore.rules use the same
+      // path) and the role explicit so role detection is reliable.
       const newPatient = {
         ...patientForm,
         email: authForm.email, // Use the email from auth form
         avatar: `https://ionicframework.com/docs/img/demos/avatar.svg`,
         uid: user.uid, // Link to Firebase Auth UID
+        role: "patient",
+        isActive: true,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
       };
 
-      await addDoc(patientsCollection, newPatient);
+      await setDoc(doc(db, "patients", user.uid), newPatient);
 
       presentToast({
         message: "Patient account created successfully!",
@@ -854,7 +858,7 @@ const Admin_patient: React.FC = () => {
               <IonButton
                 color="medium"
                 onClick={closeModal}
-                fill="outline"
+                fill="solid"
                 className="action-button"
               >
                 Cancel

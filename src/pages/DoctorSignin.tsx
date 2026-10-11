@@ -1,6 +1,12 @@
 import LoadingHelix from "../components/LoadingHelix";
 import QuickSignIn from "../components/QuickSignIn";
-import { getGoogleSignInErrorMessageT, getQuickSignInErrorMessageT } from "../utils/authErrors";
+import {
+  getGoogleSignInErrorMessageT,
+  getQuickSignInErrorMessageT,
+  getAuthErrorMessageT,
+  isRoleMismatchError,
+  getRoleMismatchMessageT,
+} from "../utils/authErrors";
 import AuthShell from "../components/AuthShell";
 import { useSettings } from "../context/SettingsContext";
 import React, { useState } from "react";
@@ -17,8 +23,11 @@ import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { FiMail, FiLock } from "react-icons/fi";
 import { authService, UserRole } from "../App";
-import { authBackLabel, authBackTarget, roleLabel } from "../utils/authFlow";
-import "./Page.scss";
+import {
+  authBackLabel,
+  authBackTarget,
+  roleLabel,
+} from "../utils/authFlow";
 import { useHistory } from "react-router";
 
 type FormData = {
@@ -63,27 +72,19 @@ const DoctorSignin: React.FC = () => {
       } else {
         setLoginError(t("err_login_failed"));
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Login error:", error);
-      // Handle specific Firebase error codes
-      switch (error.code) {
-        case "auth/user-not-found":
-          setLoginError(t("err_no_doctor_account_email"));
-          break;
-        case "auth/invalid-email":
-          setLoginError(t("err_email_format"));
-          break;
-        case "auth/invalid-password":
-          setLoginError(t("err_password_invalid"));
-          break;
-        case "auth/too-many-requests":
-          setLoginError(t("err_too_many_attempts"));
-          break;
-        case "auth/network-request-failed":
-          setLoginError(t("err_network_short"));
-          break;
-        default:
-          setLoginError(t("err_failed_to_login"));
+      // Role-mismatch first: e.g. a Patient using the Doctor / Admin portal.
+      // The RoleMismatchError carries no Firebase `code`, so it would be
+      // swallowed by the generic handler below without this check.
+      if (isRoleMismatchError(error)) {
+        setLoginError(getRoleMismatchMessageT(error, t));
+      } else {
+        // Everything else is a Firebase error — route it through the
+        // shared mapper so the messages are neutral for both Doctor and
+        // Admin accounts (e.g. "No account was found" instead of the
+        // old doctor-only "No doctor account found").
+        setLoginError(getAuthErrorMessageT(error, t));
       }
     } finally {
       setIsLoading(false);

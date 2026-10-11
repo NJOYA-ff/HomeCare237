@@ -114,7 +114,7 @@ interface Doctor {
   rating: number;
   reviews: number;
   region: string;
-  city: string;
+  subdivision: string;
   address: string;
   consultationFee: number;
   languages: string[];
@@ -291,6 +291,7 @@ const Book_Appointment: React.FC = () => {
     (() => void) | null
   >(null);
   const [doctorsLoaded, setDoctorsLoaded] = useState<boolean>(false);
+  const unsubscribeDoctorsRef = useRef<(() => void) | null>(null);
   const { sendLocalNotification } = useNotifications();
   const prevStatusesRef = useRef<Record<string, string>>({});
 
@@ -339,68 +340,81 @@ const Book_Appointment: React.FC = () => {
     };
   }, [unsubscribeAppointments]);
 
-  // Load doctors from Firebase - FIXED: Prevent duplicate loading
-  const loadDoctors = async () => {
-    if (doctorsLoaded) {
-      console.log("Doctors already loaded, skipping...");
-      return;
+  // Subscribe to the doctors collection in real-time so that availability and
+  // admin-enabled changes are reflected immediately without a page refresh.
+  const loadDoctors = () => {
+    // Tear down any previous listener before creating a new one.
+    if (unsubscribeDoctorsRef.current) {
+      unsubscribeDoctorsRef.current();
+      unsubscribeDoctorsRef.current = null;
     }
 
-    try {
-      setIsLoading(true);
-      const doctorsCollection = collection(db, "doctors");
-      const doctorSnapshot = await getDocs(doctorsCollection);
+    setIsLoading(true);
+    const doctorsCollection = collection(db, "doctors");
 
-      // Use Set to track unique doctor IDs
-      const uniqueDoctors = new Map<string, Doctor>();
+    const unsub = onSnapshot(
+      doctorsCollection,
+      async (doctorSnapshot) => {
+        // Sequential iteration because resolving a doctor's picture is async:
+        // `getDocumentImageUrl` accepts every historical field name and turns a
+        // bare Storage path into a real download URL.
+        const uniqueDoctors = new Map<string, Doctor>();
 
-      // Sequential (not forEach) because resolving a doctor's picture is async:
-      // `getDocumentImageUrl` accepts every historical field name and turns a
-      // bare Storage path into a real download URL. This page used to read
-      // `doctorData.avatar` and fall back to the remote Ionic placeholder, which
-      // no write path populates and which cannot load offline.
-      for (const doc of doctorSnapshot.docs) {
-        const doctorData = doc.data();
-        const doctorId = doc.id;
+        for (const docSnap of doctorSnapshot.docs) {
+          const doctorData = docSnap.data();
+          const doctorId = docSnap.id;
 
-        // Only add if not already in the map
-        if (!uniqueDoctors.has(doctorId)) {
-          uniqueDoctors.set(doctorId, {
-            id: doctorId,
-            name: doctorData.name || "Unknown Doctor",
-            specialization: doctorData.specialization || "General Practitioner",
-            avatar: (await getDocumentImageUrl(doctorData)) || DEFAULT_AVATAR,
-            rating: doctorData.rating || 4.0,
-            reviews: doctorData.reviews || 0,
-            region: doctorData.region || "Centre",
-            city: doctorData.city || "Unknown City",
-            address: doctorData.address || "Unknown Address",
-            consultationFee: doctorData.consultationFee || 5000,
-            languages: doctorData.languages || ["English", "French"],
-            availableSlots: doctorData.availableSlots || [],
-            isAvailable:
-              doctorData.isAvailable !== undefined
-                ? doctorData.isAvailable
-                : true,
-            experience: doctorData.experience || 5,
-            email: doctorData.email,
-            contact: doctorData.contact,
-            phone: doctorData.phone || doctorData.contact,
-          } as Doctor);
+          // Hide doctors disabled by an admin, unavailable (switched off in
+          // settings), unverified, or with an inactive/pending status.
+          if (
+            doctorData.isEnabled === false ||
+            doctorData.isVerified === false ||
+            doctorData.isAvailable === false ||
+            doctorData.status === "inactive" ||
+            doctorData.status === "pending"
+          ) {
+            continue;
+          }
+
+          if (!uniqueDoctors.has(doctorId)) {
+            uniqueDoctors.set(doctorId, {
+              id: doctorId,
+              name: doctorData.name || "Unknown Doctor",
+              specialization: doctorData.specialization || "General Practitioner",
+              avatar: (await getDocumentImageUrl(doctorData)) || DEFAULT_AVATAR,
+              rating: doctorData.rating || 4.0,
+              reviews: doctorData.reviews || 0,
+              region: doctorData.region || "Centre",
+              subdivision: doctorData.subdivision || doctorData.town || "",
+              address: doctorData.address || "Unknown Address",
+              consultationFee: doctorData.consultationFee || 5000,
+              languages: doctorData.languages || ["English", "French"],
+              availableSlots: doctorData.availableSlots || [],
+              isAvailable:
+                doctorData.isAvailable !== undefined
+                  ? doctorData.isAvailable
+                  : true,
+              experience: doctorData.experience || 5,
+              email: doctorData.email,
+              contact: doctorData.contact,
+              phone: doctorData.phone || doctorData.contact,
+            } as Doctor);
+          }
         }
+
+        const doctorsList = Array.from(uniqueDoctors.values());
+        setDoctors(doctorsList);
+        setFilteredDoctors(doctorsList);
+        setDoctorsLoaded(true);
+        setIsLoading(false);
+      },
+      (error) => {
+        console.error("Error loading doctors:", error);
+        setIsLoading(false);
       }
+    );
 
-      const doctorsList = Array.from(uniqueDoctors.values());
-      console.log(`Loaded ${doctorsList.length} unique doctors`);
-
-      setDoctors(doctorsList);
-      setFilteredDoctors(doctorsList);
-      setDoctorsLoaded(true);
-    } catch (error) {
-      console.error("Error loading doctors:", error);
-    } finally {
-      setIsLoading(false);
-    }
+    unsubscribeDoctorsRef.current = unsub;
   };
 
   // Watch appointments for status changes (doctor actions like accept/reject/complete)
@@ -483,7 +497,7 @@ const Book_Appointment: React.FC = () => {
           rating: doctorData.rating || 4.0,
           reviews: doctorData.reviews || 0,
           region: doctorData.region || "Centre",
-          city: doctorData.city || "Unknown City",
+          subdivision: doctorData.subdivision || doctorData.town || "",
           address: doctorData.address || "Unknown Address",
           consultationFee: doctorData.consultationFee || 5000,
           languages: doctorData.languages || ["English", "French"],
@@ -1104,25 +1118,16 @@ const Book_Appointment: React.FC = () => {
     return specialtyIcons[specialty] || <IonIcon icon={medical} />;
   };
 
-  // Initialize with some sample doctors if collection is empty - FIXED: Prevent duplicate initialization
-  const initializeSampleDoctors = async () => {
-    try {
-      const doctorsCollection = collection(db, "doctors");
-      const snapshot = await getDocs(doctorsCollection);
-
-      console.log(
-        "Doctors collection already has data, skipping initialization",
-      );
-      loadDoctors();
-    } catch (error) {
-      console.error("Error initializing sample doctors:", error);
-    }
-  };
-
-  // Call this function once to initialize sample data - FIXED: Use proper dependency array
+  // Subscribe to the doctors collection and clean up on unmount.
   useEffect(() => {
-    initializeSampleDoctors();
-  }, []); // Empty dependency array ensures this runs only once
+    loadDoctors();
+    return () => {
+      if (unsubscribeDoctorsRef.current) {
+        unsubscribeDoctorsRef.current();
+        unsubscribeDoctorsRef.current = null;
+      }
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // If a doctorId is provided in the URL query string, preselect that doctor
   const routerLocation = useLocation();
@@ -1141,8 +1146,8 @@ const Book_Appointment: React.FC = () => {
     if (appointmentId) {
       (async () => {
         try {
-          // Ensure doctors loaded so getDoctorById can use local cache
-          if (!doctorsLoaded) await loadDoctors();
+          // Doctors are loaded via the real-time onSnapshot listener started on
+          // mount; getDoctorById can use the local cache once it's populated.
 
           const appointmentRef = doc(db, "appointments", appointmentId);
           const appointmentSnap = await getDoc(appointmentRef);
@@ -1190,12 +1195,10 @@ const Book_Appointment: React.FC = () => {
     }
 
     if (doctorId) {
-      // load doctors list if not loaded yet, then fetch specific doctor
+      // Doctors are loaded via the real-time onSnapshot listener started on
+      // mount; getDoctorById can use the local cache once it's populated.
       (async () => {
         try {
-          if (!doctorsLoaded) {
-            await loadDoctors();
-          }
           const docObj = await getDoctorById(doctorId);
           if (docObj) {
             setSelectedDoctor(docObj);
@@ -1234,7 +1237,7 @@ const Book_Appointment: React.FC = () => {
       result = result.filter((doctor) => {
         const name = (doctor.name || "").toLowerCase();
         const spec = (doctor.specialization || "").toLowerCase();
-        const city = (doctor.city || "").toLowerCase();
+        const city = (doctor.subdivision || "").toLowerCase();
         return name.includes(q) || spec.includes(q) || city.includes(q);
       });
     }
@@ -1518,7 +1521,7 @@ const Book_Appointment: React.FC = () => {
                     <IonSearchbar
                       value={searchQuery}
                       onIonInput={(e) => setSearchQuery(e.detail.value!)}
-                      placeholder="Search doctors by name, specialty, or city"
+                      placeholder="Search doctors by name, specialty, or subdivision"
                       className="doctor-search"
                     />
 
@@ -1616,7 +1619,7 @@ const Book_Appointment: React.FC = () => {
                                   <div className="detail-item-d">
                                     <IonIcon icon={location} />
                                     <span>
-                                      {doctor.city}, {doctor.region}
+                                      {doctor.subdivision}, {doctor.region}
                                     </span>
                                   </div>
                                   <div className="detail-item-d">
@@ -1782,7 +1785,7 @@ const Book_Appointment: React.FC = () => {
                                     <div className="detail-item-d">
                                       <IonIcon icon={location} />
                                       <span>
-                                        {appointment.doctor.city},{" "}
+                                        {appointment.doctor.subdivision},{" "}
                                         {appointment.doctor.region}
                                       </span>
                                     </div>
@@ -1933,7 +1936,7 @@ const Book_Appointment: React.FC = () => {
                             </span>
                             <span className="doc-row-label">Location</span>
                             <span className="doc-row-value">
-                              {selectedAppointment.doctor.city},{" "}
+                              {selectedAppointment.doctor.subdivision},{" "}
                               {selectedAppointment.doctor.region}
                             </span>
                           </div>
@@ -2157,7 +2160,7 @@ const Book_Appointment: React.FC = () => {
                       </span>
                       <span className="doc-row-label">Location</span>
                       <span className="doc-row-value">
-                        {selectedDoctor.address}, {selectedDoctor.city},{" "}
+                        {selectedDoctor.address}, {selectedDoctor.subdivision},{" "}
                         {selectedDoctor.region}
                       </span>
                     </div>

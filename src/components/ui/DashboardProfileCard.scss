@@ -1,0 +1,92 @@
+/**
+ * Profile summary card shared by the patient, doctor and admin dashboards.
+ * Uses the project's `--hc-*` design tokens with sensible fallbacks so it looks
+ * consistent in both light and dark themes.
+ */
+.dpc {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 12px 12px 0;
+  padding: 18px 18px;
+  border-radius: 20px;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      130% 150% at 100% 0%,
+      rgba(var(--ion-color-primary-rgb), 0.16) 0%,
+      transparent 58%
+    ),
+    var(--hc-surface, var(--ion-card-background, #ffffff));
+}
+
+.dpc__avatar-ring {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  overflow: hidden;
+
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--hc-surface, #ffffff);
+  }
+}
+
+.dpc__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.dpc__role {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ion-color-primary);
+}
+
+.dpc__name {
+  margin: 3px 0 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--ion-text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dpc__subtitle {
+  margin: 3px 0 0;
+  font-size: 0.82rem;
+  line-height: 1.3;
+  color: var(--hc-text-muted, #64748b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Inside a container that already provides its own padding/gap (doctor and
+   admin workspaces), the card should not add extra outer spacing. */
+.dpc--flush {
+  margin: 0;
+}
+
+@media (max-width: 380px) {
+  .dpc {
+    gap: 12px;
+    padding: 16px 14px;
+  }
+
+  .dpc__avatar-ring {
+    width: 48px;
+    height: 48px;
+  }
+}

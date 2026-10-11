@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router";
 import {
   IonContent,
   IonHeader,
@@ -61,6 +62,18 @@ import {
   removeOutline,
   peopleOutline,
   chevronDownOutline,
+  eyeOutline,
+  saveOutline,
+  refreshOutline,
+  alertCircleOutline,
+  listOutline,
+  clipboardOutline,
+  pulseOutline,
+  searchOutline,
+  linkOutline,
+  informationCircleOutline,
+  pencilOutline,
+  createOutline,
 } from "ionicons/icons";
 import {
   PDFDownloadLink,
@@ -125,6 +138,27 @@ interface Diagnosis {
   prescriptions: Prescription[];
   createdAt?: string;
   updatedAt?: string;
+}
+
+/** A lab result enriched with the id of its parent diagnosis document,
+ *  used to write edits back to the correct Firestore record. */
+interface LabResultWithParent extends LabResult {
+  diagnosisId: string;
+}
+
+/** Snapshot of the appointment this diagnosis is being created for.
+ *  Fetched from Firestore when ?appointmentId= is present in the URL. */
+interface AppointmentContext {
+  id: string;
+  patientId: string;
+  patientName: string;
+  date: string;
+  time: string;
+  service: string;
+  reason: string;
+  symptoms: string;
+  type: string;
+  status: string;
 }
 
 // PDF Styles
@@ -458,8 +492,29 @@ const PrescriptionPDF: React.FC<{
   </Document>
 );
 
+// ── Step header ───────────────────────────────────────────────────────────────
+/** A numbered step header with an icon and label, used to guide the doctor
+ *  through the form in a clear visual sequence. */
+const StepHeader: React.FC<{
+  step: number;
+  icon: string;
+  label: string;
+  badge?: number;
+}> = ({ step, icon, label, badge }) => (
+  <div className="diag-step-header">
+    <span className="diag-step-number">{step}</span>
+    <IonIcon icon={icon} className="diag-step-icon" />
+    <span className="diag-step-label">{label}</span>
+    {badge !== undefined && badge > 0 && (
+      <IonBadge color="primary" className="diag-step-badge">{badge}</IonBadge>
+    )}
+  </div>
+);
+
 // Main Doctor Diagnoses Page Component
 const DoctorDiagnoses: React.FC = () => {
+  const location = useLocation();
+
   const [currentDoctor, setCurrentDoctor] = useState<Doctor>({
     name: "Dr. Emmanuel Mbongo",
     specialty: "General Medicine",
@@ -473,9 +528,19 @@ const DoctorDiagnoses: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  /** The appointment this diagnosis is linked to (set when ?appointmentId= is in the URL). */
+  const [linkedAppointment, setLinkedAppointment] = useState<AppointmentContext | null>(null);
+  const [appointmentLoading, setAppointmentLoading] = useState(false);
+
+  /** When set, the form is in edit mode for this saved diagnosis id. */
+  const [editingDiagnosisId, setEditingDiagnosisId] = useState<string | null>(null);
+
+  /** When set, the lab result form is editing this saved lab result. */
+  const [editingLabResult, setEditingLabResult] = useState<LabResultWithParent | null>(null);
+
   // New states for existing diagnoses and lab results
   const [existingDiagnoses, setExistingDiagnoses] = useState<Diagnosis[]>([]);
-  const [existingLabResults, setExistingLabResults] = useState<LabResult[]>([]);
+  const [existingLabResults, setExistingLabResults] = useState<LabResultWithParent[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
   const [diagnosisForm, setDiagnosisForm] = useState<
@@ -516,6 +581,78 @@ const DoctorDiagnoses: React.FC = () => {
   const [previewDiagnosis, setPreviewDiagnosis] = useState<Diagnosis | null>(
     null
   );
+
+  // ── Appointment-linked auto-fill ─────────────────────────────────────────
+  // When the page is opened with ?appointmentId=xxx (e.g. from the Create
+  // Diagnosis button on an appointment card), fetch that appointment from
+  // Firestore, pre-select the patient, and seed the form with context clues
+  // so the doctor doesn't have to retype information they already reviewed.
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const appointmentId = params.get("appointmentId");
+    if (!appointmentId) return;
+
+    const fetchLinkedAppointment = async () => {
+      setAppointmentLoading(true);
+      try {
+        const apptSnap = await getDoc(doc(db, "appointments", appointmentId));
+        if (!apptSnap.exists()) return;
+
+        const data = apptSnap.data();
+
+        // Build the context banner object
+        const ctx: AppointmentContext = {
+          id: apptSnap.id,
+          patientId: data.patientId || "",
+          patientName: data.patientName || "Unknown Patient",
+          date: typeof data.date === "string" ? data.date : data.date?.toDate?.()?.toLocaleDateString("en-CM") ?? "N/A",
+          time: typeof data.time === "string" ? data.time : data.time?.toDate?.()?.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) ?? "N/A",
+          service: data.service || "General Checkup",
+          reason: data.reason || "",
+          symptoms: data.symptoms || "",
+          type: data.type || "",
+          status: data.status || "accepted",
+        };
+        setLinkedAppointment(ctx);
+
+        // Auto-fill the diagnosis date from the appointment date
+        setDiagnosisForm((prev) => ({
+          ...prev,
+          date: data.date && typeof data.date !== "string"
+            ? data.date?.toDate?.()?.toISOString() ?? new Date().toISOString()
+            : new Date().toISOString(),
+        }));
+
+        // Auto-select the patient if they exist in the patients list
+        // (patients list may still be loading, so we also store patientId
+        //  and let the patients-list effect pick it up)
+        if (data.patientId) {
+          const patientSnap = await getDoc(doc(db, "patients", data.patientId));
+          if (patientSnap.exists()) {
+            const pd = patientSnap.data();
+            const autoPatient: Patient = {
+              id: patientSnap.id,
+              name: pd.name || `${pd.firstName ?? ""} ${pd.lastName ?? ""}`.trim() || ctx.patientName,
+              age: pd.age ?? 0,
+              gender: pd.gender ?? "",
+              phone: pd.phone ?? "",
+              email: pd.email,
+              medicalRecordNumber: pd.medicalRecordNumber ?? patientSnap.id,
+              lastVisit: pd.lastVisit,
+            };
+            setSelectedPatient(autoPatient);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching linked appointment:", err);
+      } finally {
+        setAppointmentLoading(false);
+      }
+    };
+
+    fetchLinkedAppointment();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
 
   // Fetch only patients who have booked an appointment with this doctor
   useEffect(() => {
@@ -606,11 +743,13 @@ const DoctorDiagnoses: React.FC = () => {
 
         setExistingDiagnoses(diagnosesData);
 
-        // Extract all lab results from diagnoses
-        const allLabResults: LabResult[] = [];
+        // Extract all lab results from diagnoses, enriched with their parent diagnosisId
+        const allLabResults: LabResultWithParent[] = [];
         diagnosesData.forEach((diagnosis) => {
           if (diagnosis.labResults && diagnosis.labResults.length > 0) {
-            allLabResults.push(...diagnosis.labResults);
+            diagnosis.labResults.forEach((lr) =>
+              allLabResults.push({ ...lr, diagnosisId: diagnosis.id })
+            );
           }
         });
         setExistingLabResults(allLabResults);
@@ -743,6 +882,132 @@ const DoctorDiagnoses: React.FC = () => {
     });
   };
 
+  /**
+   * Load a saved lab result into the lab form for editing.
+   */
+  const handleEditLabResult = (labResult: LabResultWithParent) => {
+    setEditingLabResult(labResult);
+    setLabResultForm({
+      name: labResult.name,
+      date: labResult.date,
+      status: labResult.status,
+      results: { ...labResult.results },
+      notes: labResult.notes ?? "",
+    });
+    // Scroll to the lab result form section
+    const content = document.querySelector("ion-content.diag-content") as HTMLIonContentElement | null;
+    content?.scrollToTop(300);
+  };
+
+  /**
+   * Save an edited lab result back into its parent diagnosis document.
+   * Replaces the matching entry in the labResults array by id.
+   */
+  const handleSaveLabResultEdit = async () => {
+    if (!editingLabResult) return;
+    if (!labResultForm.name) {
+      setAlertMessage("Please enter a lab test name");
+      setShowAlert(true);
+      return;
+    }
+
+    setSaving(true);
+    try {
+      // Fetch the parent diagnosis to get its current labResults array
+      const parentSnap = await getDoc(doc(db, "diagnoses", editingLabResult.diagnosisId));
+      if (!parentSnap.exists()) throw new Error("Parent diagnosis not found");
+
+      const parentData = parentSnap.data() as Diagnosis;
+      const updatedLabResults = parentData.labResults.map((lr) =>
+        lr.id === editingLabResult.id
+          ? {
+              ...lr,
+              name: labResultForm.name,
+              date: labResultForm.date,
+              status: labResultForm.status,
+              results: labResultForm.results,
+              notes: labResultForm.notes,
+            }
+          : lr
+      );
+
+      await updateDoc(doc(db, "diagnoses", editingLabResult.diagnosisId), {
+        labResults: updatedLabResults,
+        updatedAt: new Date().toISOString(),
+      });
+
+      setAlertMessage("Lab result updated successfully!");
+      setShowAlert(true);
+      setEditingLabResult(null);
+
+      // Reset lab form
+      setLabResultForm({
+        name: "",
+        date: new Date().toISOString(),
+        status: "completed",
+        results: {},
+        notes: "",
+      });
+      setCurrentResultKey("");
+      setCurrentResultValue("");
+
+      // Refresh the patient history so the updated result shows immediately
+      if (selectedPatient) {
+        const user = auth.currentUser;
+        if (user) {
+          const diagnosesQuery = query(
+            collection(db, "diagnoses"),
+            where("patientId", "==", selectedPatient.id),
+            where("doctorId", "==", user.uid),
+            orderBy("createdAt", "desc")
+          );
+          const diagnosesSnapshot = await getDocs(diagnosesQuery);
+          const diagnosesData = diagnosesSnapshot.docs.map((d) => ({
+            id: d.id,
+            ...d.data(),
+          })) as Diagnosis[];
+          setExistingDiagnoses(diagnosesData);
+          const allLabResults: LabResultWithParent[] = [];
+          diagnosesData.forEach((diagnosis) => {
+            if (diagnosis.labResults?.length) {
+              diagnosis.labResults.forEach((lr) =>
+                allLabResults.push({ ...lr, diagnosisId: diagnosis.id })
+              );
+            }
+          });
+          setExistingLabResults(allLabResults);
+        }
+      }
+    } catch (error) {
+      console.error("Error updating lab result:", error);
+      setAlertMessage("Error updating lab result");
+      setShowAlert(true);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  /**
+   * Load a saved diagnosis into the form for editing.
+   * Scrolls the user back up to the form area automatically.
+   */
+  const handleEditDiagnosis = (diagnosis: Diagnosis) => {
+    setEditingDiagnosisId(diagnosis.id);
+    setDiagnosisForm({
+      date: diagnosis.date,
+      doctor: diagnosis.doctor,
+      condition: diagnosis.condition,
+      description: diagnosis.description,
+      status: diagnosis.status,
+      labResults: diagnosis.labResults,
+      prescriptions: diagnosis.prescriptions,
+    });
+    setPreviewDiagnosis(null);
+    // Scroll to the top of the content so the form is visible
+    const content = document.querySelector("ion-content.diag-content") as HTMLIonContentElement | null;
+    content?.scrollToTop(300);
+  };
+
   const handlePreviewDiagnosis = () => {
     if (!selectedPatient) {
       setAlertMessage("Please select a patient first");
@@ -781,22 +1046,36 @@ const DoctorDiagnoses: React.FC = () => {
 
     setSaving(true);
     try {
-      const diagnosisData = {
-        ...previewDiagnosis,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        doctorId: auth.currentUser?.uid,
-      };
-
-      // Save to diagnoses collection
-      const docRef = await addDoc(collection(db, "diagnoses"), diagnosisData);
+      if (editingDiagnosisId) {
+        // ── Edit mode: update the existing document ──────────────────
+        const updatedData = {
+          ...previewDiagnosis,
+          updatedAt: new Date().toISOString(),
+          doctorId: auth.currentUser?.uid,
+          ...(linkedAppointment ? { appointmentId: linkedAppointment.id } : {}),
+        };
+        await updateDoc(doc(db, "diagnoses", editingDiagnosisId), updatedData);
+        setEditingDiagnosisId(null);
+        setAlertMessage("Diagnosis updated successfully!");
+      } else {
+        // ── New diagnosis: add a new document ────────────────────────
+        const diagnosisData = {
+          ...previewDiagnosis,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          doctorId: auth.currentUser?.uid,
+          // Persist the appointment link so both sides can cross-reference
+          ...(linkedAppointment ? { appointmentId: linkedAppointment.id } : {}),
+        };
+        await addDoc(collection(db, "diagnoses"), diagnosisData);
+        setAlertMessage("Diagnosis saved successfully!");
+      }
 
       // Update patient's last visit
       await updateDoc(doc(db, "patients", selectedPatient.id), {
         lastVisit: new Date().toISOString(),
       });
 
-      setAlertMessage("Diagnosis saved successfully!");
       setShowAlert(true);
       handleResetForm();
 
@@ -836,6 +1115,9 @@ const DoctorDiagnoses: React.FC = () => {
       prescriptions: [],
     });
     setPreviewDiagnosis(null);
+    setLinkedAppointment(null);
+    setEditingDiagnosisId(null);
+    setEditingLabResult(null);
   };
 
   // Helper function to get status color
@@ -869,11 +1151,83 @@ const DoctorDiagnoses: React.FC = () => {
       </IonHeader>
       <IonContent fullscreen className="diag-content">
         <IonGrid className="diag-grid">
+
+          {/* ── Appointment context banner ──────────────────────────────
+               Shown when the doctor arrives from an appointment card.
+               Tells them which appointment this diagnosis is for and
+               pre-fills the form — they can still edit everything. */}
+          {appointmentLoading && (
+            <IonRow>
+              <IonCol size="12">
+                <div className="diag-appt-banner diag-appt-banner--loading">
+                  <LoadingHelix size={20} />
+                  <span>Loading appointment details…</span>
+                </div>
+              </IonCol>
+            </IonRow>
+          )}
+
+          {linkedAppointment && !appointmentLoading && (
+            <IonRow>
+              <IonCol size="12">
+                <div className="diag-appt-banner">
+                  <div className="diag-appt-banner__icon">
+                    <IonIcon icon={linkOutline} />
+                  </div>
+                  <div className="diag-appt-banner__body">
+                    <p className="diag-appt-banner__label">
+                      Creating diagnosis for appointment
+                    </p>
+                    <p className="diag-appt-banner__title">
+                      {linkedAppointment.patientName}
+                      {linkedAppointment.service && (
+                        <span className="diag-appt-banner__service">
+                          {" · "}{linkedAppointment.service}
+                        </span>
+                      )}
+                    </p>
+                    <div className="diag-appt-banner__meta">
+                      {linkedAppointment.date && linkedAppointment.date !== "N/A" && (
+                        <span>
+                          <IonIcon icon={calendarOutline} />
+                          {linkedAppointment.date}
+                          {linkedAppointment.time && linkedAppointment.time !== "N/A" && (
+                            <> · {linkedAppointment.time}</>
+                          )}
+                        </span>
+                      )}
+                      {linkedAppointment.status && (
+                        <IonBadge color={
+                          linkedAppointment.status === "completed" ? "primary" :
+                          linkedAppointment.status === "accepted" ? "success" : "medium"
+                        }>
+                          {linkedAppointment.status}
+                        </IonBadge>
+                      )}
+                    </div>
+                    {(linkedAppointment.reason || linkedAppointment.symptoms) && (
+                      <div className="diag-appt-banner__hints">
+                        <IonIcon icon={informationCircleOutline} />
+                        <span>
+                          {[
+                            linkedAppointment.reason && `Reason: ${linkedAppointment.reason}`,
+                            linkedAppointment.symptoms && `Symptoms: ${linkedAppointment.symptoms}`,
+                          ].filter(Boolean).join(" · ")}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </IonCol>
+            </IonRow>
+          )}
+
+          {/* ── Step 1: Select Patient ──────────────────────────────────── */}
           <IonRow>
             <IonCol size="12">
-              <IonCard>
+              <IonCard className="diag-card diag-card--patient">
                 <IonCardHeader className="diagnoses">
-                  <IonCardTitle>Select Patient</IonCardTitle>
+                  <StepHeader step={1} icon={peopleOutline} label="Select Patient" />
                 </IonCardHeader>
                 <IonCardContent className="diagnoses">
                   {loading ? (
@@ -883,33 +1237,44 @@ const DoctorDiagnoses: React.FC = () => {
                     </div>
                   ) : selectedPatient ? (
                     <div className="selected-patient">
-                      <IonItem>
-                        <IonAvatar slot="start">
-                          <IonIcon icon={personOutline} size="large" />
-                        </IonAvatar>
-                        <IonLabel>
+                      <div className="diag-patient-card">
+                        <div className="diag-patient-avatar">
+                          <IonIcon icon={personOutline} />
+                        </div>
+                        <div className="diag-patient-info">
                           <h2>{selectedPatient.name}</h2>
-                          <p>
-                            {selectedPatient.gender}, {selectedPatient.age}{" "}
-                            years
+                          <p className="diag-patient-meta">
+                            <span>{selectedPatient.gender}</span>
+                            <span className="diag-meta-dot">·</span>
+                            <span>{selectedPatient.age} yrs</span>
+                            <span className="diag-meta-dot">·</span>
+                            <span>MRN: {selectedPatient.medicalRecordNumber}</span>
                           </p>
-                          <p>MRN: {selectedPatient.medicalRecordNumber}</p>
-                        </IonLabel>
-                      </IonItem>
-                      <IonButton
-                        expand="block"
-                        fill="outline"
-                        onClick={() => setShowPatientModal(true)}
-                        className="ion-margin-top"
-                      >
-                        Change Patient
-                      </IonButton>
+                          {selectedPatient.lastVisit && (
+                            <p className="diag-patient-last-visit">
+                              <IonIcon icon={timeOutline} />
+                              Last visit: {new Date(selectedPatient.lastVisit).toLocaleDateString("en-CM")}
+                            </p>
+                          )}
+                        </div>
+                        <IonButton
+                          fill="outline"
+                          size="small"
+                          className="diag-change-btn"
+                          onClick={() => setShowPatientModal(true)}
+                        >
+                          Change
+                        </IonButton>
+                      </div>
                     </div>
                   ) : (
                     <div className="no-patient-selected">
-                      <IonIcon icon={peopleOutline} size="large" />
-                      <p>No patient selected</p>
+                      <div className="diag-empty-icon">
+                        <IonIcon icon={peopleOutline} />
+                      </div>
+                      <p>No patient selected yet</p>
                       <IonButton onClick={() => setShowPatientModal(true)}>
+                        <IonIcon icon={searchOutline} slot="start" />
                         Select Patient
                       </IonButton>
                     </div>
@@ -921,24 +1286,30 @@ const DoctorDiagnoses: React.FC = () => {
 
           {selectedPatient && (
             <>
-              {/* Existing Diagnoses and Lab Results Section */}
+              {/* ── Step 2: Patient History ──────────────────────────────── */}
               <IonRow>
                 <IonCol size="12">
-                  <IonCard>
+                  <IonCard className="diag-card">
                     <IonCardHeader className="diagnoses">
-                      <IonCardTitle>Patient History</IonCardTitle>
+                      <StepHeader
+                        step={2}
+                        icon={clipboardOutline}
+                        label="Patient History"
+                        badge={existingDiagnoses.length + existingLabResults.length}
+                      />
                     </IonCardHeader>
                     <IonCardContent className="diagnoses">
                       {loadingHistory ? (
                         <div className="loading-container">
-                      <LoadingHelix size={40} />
-                      <IonText className="ion-text-center ion-padding"><p>Loading patient history...</p></IonText>
-                    </div>
+                          <LoadingHelix size={40} />
+                          <IonText className="ion-text-center ion-padding"><p>Loading patient history...</p></IonText>
+                        </div>
                       ) : (
-                        <IonAccordionGroup>
+                        <IonAccordionGroup className="diag-accordion-group">
                           {/* Existing Diagnoses Accordion */}
-                          <IonAccordion value="diagnoses">
-                            <IonItem slot="header" color="light">
+                          <IonAccordion value="diagnoses" className="diag-accordion">
+                            <IonItem slot="header" className="diag-accordion-header">
+                              <IonIcon icon={medicalOutline} slot="start" className="diag-accordion-icon" />
                               <IonLabel>
                                 <h2>Previous Diagnoses</h2>
                                 <p>
@@ -949,7 +1320,7 @@ const DoctorDiagnoses: React.FC = () => {
                                 {existingDiagnoses.length}
                               </IonBadge>
                             </IonItem>
-                            <div slot="content">
+                            <div slot="content" className="diag-accordion-content">
                               {existingDiagnoses.length > 0 ? (
                                 <IonList>
                                   {existingDiagnoses.map((diagnosis) => (
@@ -1016,6 +1387,15 @@ const DoctorDiagnoses: React.FC = () => {
                                           </IonButton>
                                         )}
                                       </PDFDownloadLink>
+                                      <IonButton
+                                        size="small"
+                                        fill="outline"
+                                        color="primary"
+                                        onClick={() => handleEditDiagnosis(diagnosis)}
+                                        aria-label="Edit diagnosis"
+                                      >
+                                        <IonIcon icon={pencilOutline} />
+                                      </IonButton>
                                     </IonItem>
                                   ))}
                                 </IonList>
@@ -1030,8 +1410,9 @@ const DoctorDiagnoses: React.FC = () => {
                           </IonAccordion>
 
                           {/* Existing Lab Results Accordion */}
-                          <IonAccordion value="labResults">
-                            <IonItem slot="header" color="light">
+                          <IonAccordion value="labResults" className="diag-accordion">
+                            <IonItem slot="header" className="diag-accordion-header">
+                              <IonIcon icon={flaskOutline} slot="start" className="diag-accordion-icon" />
                               <IonLabel>
                                 <h2>Lab Results History</h2>
                                 <p>
@@ -1042,7 +1423,7 @@ const DoctorDiagnoses: React.FC = () => {
                                 {existingLabResults.length}
                               </IonBadge>
                             </IonItem>
-                            <div slot="content">
+                            <div slot="content" className="diag-accordion-content">
                               {existingLabResults.length > 0 ? (
                                 <IonList>
                                   {existingLabResults.map((labResult) => (
@@ -1104,6 +1485,15 @@ const DoctorDiagnoses: React.FC = () => {
                                           </IonButton>
                                         )}
                                       </PDFDownloadLink>
+                                      <IonButton
+                                        size="small"
+                                        fill="outline"
+                                        color="secondary"
+                                        onClick={() => handleEditLabResult(labResult)}
+                                        aria-label="Edit lab result"
+                                      >
+                                        <IonIcon icon={pencilOutline} />
+                                      </IonButton>
                                     </IonItem>
                                   ))}
                                 </IonList>
@@ -1123,12 +1513,41 @@ const DoctorDiagnoses: React.FC = () => {
                 </IonCol>
               </IonRow>
 
-              {/* New Diagnosis Form Section */}
+              {/* ── Steps 3–5: Form + Preview ────────────────────────────── */}
               <IonRow>
+                {/* Left column: form */}
                 <IonCol size="12" size-md="6">
-                  <IonCard>
+
+                  {/* ── Edit-mode banner ──────────────────────────────────
+                       Shown whenever editingDiagnosisId is set so the doctor
+                       always knows they are modifying a saved record, not
+                       creating a new one. */}
+                  {editingDiagnosisId && (
+                    <div className="diag-edit-banner">
+                      <IonIcon icon={createOutline} className="diag-edit-banner__icon" />
+                      <div className="diag-edit-banner__body">
+                        <span className="diag-edit-banner__label">Editing saved diagnosis</span>
+                        <span className="diag-edit-banner__hint">
+                          Changes will overwrite the existing record once you save.
+                        </span>
+                      </div>
+                      <IonButton
+                        fill="clear"
+                        size="small"
+                        color="medium"
+                        onClick={handleResetForm}
+                        className="diag-edit-banner__cancel"
+                        aria-label="Cancel editing"
+                      >
+                        <IonIcon icon={closeOutline} slot="icon-only" />
+                      </IonButton>
+                    </div>
+                  )}
+
+                  {/* Step 3: Diagnosis */}
+                  <IonCard className="diag-card">
                     <IonCardHeader className="diagnoses">
-                      <IonCardTitle>New Diagnosis Information</IonCardTitle>
+                      <StepHeader step={3} icon={pulseOutline} label="Diagnosis Information" />
                     </IonCardHeader>
                     <IonCardContent className="diagnoses">
                       <IonItem>
@@ -1186,11 +1605,42 @@ const DoctorDiagnoses: React.FC = () => {
                     </IonCardContent>
                   </IonCard>
 
-                  <IonCard>
+                  {/* Step 4: Lab Results */}
+                  <IonCard className="diag-card">
                     <IonCardHeader className="diagnoses">
-                      <IonCardTitle>Lab Results</IonCardTitle>
+                      <StepHeader
+                        step={4}
+                        icon={flaskOutline}
+                        label="Lab Results"
+                        badge={diagnosisForm.labResults.length || undefined}
+                      />
                     </IonCardHeader>
                     <IonCardContent className="diagnoses">
+                      {editingLabResult && (
+                        <div className="diag-edit-banner diag-edit-banner--secondary">
+                          <IonIcon icon={createOutline} className="diag-edit-banner__icon" />
+                          <div className="diag-edit-banner__body">
+                            <span className="diag-edit-banner__label">Editing saved lab result</span>
+                            <span className="diag-edit-banner__hint">
+                              "{editingLabResult.name}" — changes overwrite the existing record.
+                            </span>
+                          </div>
+                          <IonButton
+                            fill="clear"
+                            size="small"
+                            color="medium"
+                            onClick={() => {
+                              setEditingLabResult(null);
+                              setLabResultForm({ name: "", date: new Date().toISOString(), status: "completed", results: {}, notes: "" });
+                              setCurrentResultKey("");
+                              setCurrentResultValue("");
+                            }}
+                            aria-label="Cancel lab result edit"
+                          >
+                            <IonIcon icon={closeOutline} slot="icon-only" />
+                          </IonButton>
+                        </div>
+                      )}
                       <IonItem>
                         <IonLabel position="stacked">Test Name</IonLabel>
                         <IonInput
@@ -1230,7 +1680,10 @@ const DoctorDiagnoses: React.FC = () => {
                       </IonItem>
 
                       <div className="form-section">
-                        <h4>Test Results</h4>
+                        <h4>
+                          <IonIcon icon={listOutline} />
+                          Test Results
+                        </h4>
                         <IonItem>
                           <IonLabel position="stacked">Parameter</IonLabel>
                           <IonInput
@@ -1253,8 +1706,10 @@ const DoctorDiagnoses: React.FC = () => {
                         </IonItem>
                         <IonButton
                           expand="block"
+                          fill="outline"
                           onClick={handleAddResultValue}
                           size="small"
+                          className="diag-add-btn"
                         >
                           <IonIcon icon={addOutline} slot="start" />
                           Add Result
@@ -1265,13 +1720,16 @@ const DoctorDiagnoses: React.FC = () => {
                             <h5>Current Results:</h5>
                             {Object.entries(labResultForm.results).map(
                               ([key, value]) => (
-                                <IonItem key={key}>
+                                <IonItem key={key} className="diag-result-row">
                                   <IonLabel>
-                                    {key}: {value}
+                                    <span className="diag-result-key">{key}</span>
+                                    <span className="diag-result-sep">:</span>
+                                    <span className="diag-result-val">{value}</span>
                                   </IonLabel>
                                   <IonButton
                                     fill="clear"
                                     color="danger"
+                                    slot="end"
                                     onClick={() => handleRemoveResultValue(key)}
                                   >
                                     <IonIcon icon={removeOutline} />
@@ -1298,16 +1756,33 @@ const DoctorDiagnoses: React.FC = () => {
                         />
                       </IonItem>
 
-                      <IonButton expand="block" onClick={handleAddLabResult}>
-                        <IonIcon icon={addOutline} slot="start" />
-                        Add Lab Result
+                      <IonButton
+                        expand="block"
+                        onClick={editingLabResult ? handleSaveLabResultEdit : handleAddLabResult}
+                        disabled={saving}
+                        className="diag-section-cta"
+                      >
+                        {saving ? (
+                          <LoadingHelix size={18} />
+                        ) : (
+                          <>
+                            <IonIcon icon={editingLabResult ? saveOutline : addOutline} slot="start" />
+                            {editingLabResult ? "Update Lab Result" : "Add Lab Result to Diagnosis"}
+                          </>
+                        )}
                       </IonButton>
                     </IonCardContent>
                   </IonCard>
 
-                  <IonCard>
+                  {/* Step 5: Prescriptions */}
+                  <IonCard className="diag-card">
                     <IonCardHeader className="diagnoses">
-                      <IonCardTitle>Prescriptions</IonCardTitle>
+                      <StepHeader
+                        step={5}
+                        icon={documentTextOutline}
+                        label="Prescriptions"
+                        badge={diagnosisForm.prescriptions.length || undefined}
+                      />
                     </IonCardHeader>
                     <IonCardContent className="diagnoses">
                       <IonItem>
@@ -1405,16 +1880,18 @@ const DoctorDiagnoses: React.FC = () => {
                         />
                       </IonItem>
 
-                      <IonButton expand="block" onClick={handleAddPrescription}>
+                      <IonButton expand="block" onClick={handleAddPrescription} className="diag-section-cta">
                         <IonIcon icon={addOutline} slot="start" />
-                        Add Prescription
+                        Add Prescription to Diagnosis
                       </IonButton>
                     </IonCardContent>
                   </IonCard>
 
+                  {/* Action buttons */}
                   <div className="action-buttons">
-                    <IonButton expand="block" onClick={handlePreviewDiagnosis}>
-                      Preview Diagnosis
+                    <IonButton expand="block" onClick={handlePreviewDiagnosis} className="diag-btn-preview">
+                      <IonIcon icon={eyeOutline} slot="start" />
+                      {editingDiagnosisId ? "Preview Changes" : "Preview Diagnosis"}
                     </IonButton>
                     {previewDiagnosis && (
                       <IonButton
@@ -1422,34 +1899,45 @@ const DoctorDiagnoses: React.FC = () => {
                         color="success"
                         onClick={handleSaveDiagnosis}
                         disabled={saving}
+                        className="diag-btn-save"
                       >
                         {saving ? (
                           <LoadingHelix size={18} />
                         ) : (
-                          "Save Diagnosis"
+                          <>
+                            <IonIcon icon={saveOutline} slot="start" />
+                            {editingDiagnosisId ? "Update Diagnosis" : "Save Diagnosis"}
+                          </>
                         )}
                       </IonButton>
                     )}
                     <IonButton
                       expand="block"
+                      fill="outline"
                       color="medium"
                       onClick={handleResetForm}
+                      className="diag-btn-reset"
                     >
-                      Reset Form
+                      <IonIcon icon={refreshOutline} slot="start" />
+                      {editingDiagnosisId ? "Cancel Edit" : "Reset Form"}
                     </IonButton>
                   </div>
                 </IonCol>
 
+                {/* Right column: preview + current items */}
                 <IonCol size="12" size-md="6">
-                  <IonCard>
+                  <IonCard className="diag-card diag-card--preview">
                     <IonCardHeader className="diagnoses">
-                      <IonCardTitle>Preview</IonCardTitle>
+                      <StepHeader step={6} icon={eyeOutline} label="Preview" />
                     </IonCardHeader>
                     <IonCardContent className="diagnoses">
                       {previewDiagnosis ? (
                         <>
                           <div className="preview-section">
-                            <h3>Patient Information</h3>
+                            <h3>
+                              <IonIcon icon={personOutline} />
+                              Patient Information
+                            </h3>
                             <p>
                               <strong>Name:</strong> {selectedPatient.name}
                             </p>
@@ -1466,7 +1954,10 @@ const DoctorDiagnoses: React.FC = () => {
                           </div>
 
                           <div className="preview-section">
-                            <h3>Diagnosis</h3>
+                            <h3>
+                              <IonIcon icon={pulseOutline} />
+                              Diagnosis
+                            </h3>
                             <p>
                               <strong>Condition:</strong>{" "}
                               {previewDiagnosis.condition}
@@ -1478,7 +1969,10 @@ const DoctorDiagnoses: React.FC = () => {
                               ).toLocaleDateString("en-CM")}
                             </p>
                             <p>
-                              <strong>Status:</strong> {previewDiagnosis.status}
+                              <strong>Status:</strong>{" "}
+                              <IonBadge color={getStatusColor(previewDiagnosis.status)}>
+                                {previewDiagnosis.status}
+                              </IonBadge>
                             </p>
                             <p>
                               <strong>Description:</strong>{" "}
@@ -1489,6 +1983,7 @@ const DoctorDiagnoses: React.FC = () => {
                           {previewDiagnosis.labResults.length > 0 && (
                             <div className="preview-section">
                               <h3>
+                                <IonIcon icon={flaskOutline} />
                                 Lab Results (
                                 {previewDiagnosis.labResults.length})
                               </h3>
@@ -1501,7 +1996,10 @@ const DoctorDiagnoses: React.FC = () => {
                                     <strong>Test:</strong> {labResult.name}
                                   </p>
                                   <p>
-                                    <strong>Status:</strong> {labResult.status}
+                                    <strong>Status:</strong>{" "}
+                                    <IonBadge color={getStatusColor(labResult.status)}>
+                                      {labResult.status}
+                                    </IonBadge>
                                   </p>
                                   <PDFDownloadLink
                                     document={
@@ -1519,6 +2017,7 @@ const DoctorDiagnoses: React.FC = () => {
                                     {({ loading }) => (
                                       <IonButton
                                         size="small"
+                                        fill="outline"
                                         disabled={loading}
                                       >
                                         {loading ? (
@@ -1543,6 +2042,7 @@ const DoctorDiagnoses: React.FC = () => {
                           {previewDiagnosis.prescriptions.length > 0 && (
                             <div className="preview-section">
                               <h3>
+                                <IonIcon icon={documentTextOutline} />
                                 Prescriptions (
                                 {previewDiagnosis.prescriptions.length})
                               </h3>
@@ -1576,6 +2076,7 @@ const DoctorDiagnoses: React.FC = () => {
                                       {({ loading }) => (
                                         <IonButton
                                           size="small"
+                                          fill="outline"
                                           disabled={loading}
                                         >
                                           {loading ? (
@@ -1598,7 +2099,7 @@ const DoctorDiagnoses: React.FC = () => {
                             </div>
                           )}
 
-                          <div className="preview-section">
+                          <div className="preview-section preview-section--download">
                             <PDFDownloadLink
                               document={
                                 <DiagnosisPDF
@@ -1640,24 +2141,34 @@ const DoctorDiagnoses: React.FC = () => {
                     </IonCardContent>
                   </IonCard>
 
+                  {/* Current items summary */}
                   {(diagnosisForm.labResults.length > 0 ||
                     diagnosisForm.prescriptions.length > 0) && (
-                    <IonCard>
+                    <IonCard className="diag-card diag-card--summary">
                       <IonCardHeader className="diagnoses">
-                        <IonCardTitle>Current Items</IonCardTitle>
+                        <div className="diag-step-header">
+                          <IonIcon icon={checkmarkCircleOutline} className="diag-summary-check" />
+                          <span className="diag-step-label">Added to This Diagnosis</span>
+                        </div>
                       </IonCardHeader>
                       <IonCardContent className="diagnoses">
                         {diagnosisForm.labResults.length > 0 && (
                           <div className="current-items">
                             <h4>
+                              <IonIcon icon={flaskOutline} />
                               Lab Results: {diagnosisForm.labResults.length}
                             </h4>
                             <IonList>
                               {diagnosisForm.labResults.map((labResult) => (
-                                <IonItem key={labResult.id}>
+                                <IonItem key={labResult.id} className="diag-summary-item">
+                                  <IonIcon icon={flaskOutline} slot="start" color="secondary" />
                                   <IonLabel>
                                     <h3>{labResult.name}</h3>
-                                    <p>{labResult.status}</p>
+                                    <p>
+                                      <IonBadge color={getStatusColor(labResult.status)}>
+                                        {labResult.status}
+                                      </IonBadge>
+                                    </p>
                                   </IonLabel>
                                 </IonItem>
                               ))}
@@ -1668,13 +2179,15 @@ const DoctorDiagnoses: React.FC = () => {
                         {diagnosisForm.prescriptions.length > 0 && (
                           <div className="current-items">
                             <h4>
+                              <IonIcon icon={documentTextOutline} />
                               Prescriptions:{" "}
                               {diagnosisForm.prescriptions.length}
                             </h4>
                             <IonList>
                               {diagnosisForm.prescriptions.map(
                                 (prescription) => (
-                                  <IonItem key={prescription.id}>
+                                  <IonItem key={prescription.id} className="diag-summary-item">
+                                    <IonIcon icon={medicalOutline} slot="start" color="tertiary" />
                                     <IonLabel>
                                       <h3>{prescription.medication}</h3>
                                       <p>{prescription.dosage}</p>
@@ -1694,7 +2207,7 @@ const DoctorDiagnoses: React.FC = () => {
           )}
         </IonGrid>
 
-        {/* Patient Selection Modal */}
+        {/* ── Patient Selection Modal ────────────────────────────────────── */}
         <IonModal
           isOpen={showPatientModal}
           onDidDismiss={() => setShowPatientModal(false)}
@@ -1763,7 +2276,7 @@ const DoctorDiagnoses: React.FC = () => {
           </IonContent>
         </IonModal>
 
-<MessageBox
+        <MessageBox
           isOpen={showAlert}
           title="Notification"
           message={alertMessage}

@@ -1,0 +1,560 @@
+/* LocationMap.css */
+
+.location-map-wrapper {
+  position: relative;
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
+.location-map-leaflet {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+}
+
+/* ── Popup ──────────────────────────────────────────────────────────────────── */
+
+.loc-popup {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 120px;
+  font-family: inherit;
+}
+
+.loc-popup-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 4px;
+  border: 2px solid #e5e7eb;
+}
+
+.loc-popup strong {
+  font-size: 14px;
+  color: #111827;
+}
+
+.loc-popup-role {
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 9999px;
+  padding: 1px 8px;
+}
+
+.loc-popup-doctor  { background: #dbeafe; color: #1d4ed8; }
+.loc-popup-patient { background: #dcfce7; color: #15803d; }
+.loc-popup-admin   { background: #f3e8ff; color: #7c3aed; }
+.loc-popup-self    { background: #fee2e2; color: #b91c1c; }
+
+.loc-popup-time {
+  font-size: 10px;
+  color: #9ca3af;
+}
+
+/* ── Legend ─────────────────────────────────────────────────────────────────── */
+
+.location-map-legend {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(4px);
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 11px;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.legend-item { font-weight: 600; }
+.legend-doctor  { color: #1d4ed8; }
+.legend-patient { color: #15803d; }
+.legend-admin   { color: #7c3aed; }
+.legend-self    { color: #b91c1c; }
+
+/* ── Location tracking widget card ──────────────────────────────────────────── */
+
+.location-tracking-card {
+  border-radius: 16px !important;
+  margin: 12px 0 !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08) !important;
+}
+
+.location-tracking-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.location-tracking-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.location-tracking-title ion-icon {
+  color: #3b82f6;
+  font-size: 20px;
+}
+
+.location-status-chip {
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 9999px;
+  padding: 2px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.location-status-chip.active {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.location-status-chip.inactive {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.location-status-chip::before {
+  content: "●";
+  font-size: 8px;
+}
+
+.location-tracking-controls {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.location-tracking-controls ion-button {
+  flex: 1;
+  min-width: 120px;
+}
+
+.location-error-banner {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #9a3412;
+  margin-bottom: 8px;
+}
+
+.location-permission-denied {
+  text-align: center;
+  padding: 24px 16px;
+  color: #6b7280;
+}
+
+.location-permission-denied ion-icon {
+  font-size: 40px;
+  color: #d1d5db;
+  display: block;
+  margin: 0 auto 8px;
+}
+
+.location-permission-denied p {
+  font-size: 13px;
+  margin: 0;
+}
+
+.location-online-count {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.location-online-count strong {
+  color: #111827;
+}
+
+/* ── Town name display ───────────────────────────────────────────────────────── */
+
+.location-town-display {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 0 4px;
+}
+
+.location-town-pin {
+  font-size: 22px;
+  color: #3b82f6;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.location-town-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.location-town-name {
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: -0.3px;
+  line-height: 1.2;
+}
+
+.location-division {
+  font-size: 13px;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.location-subdivision {
+  font-size: 12px;
+  font-weight: 400;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.location-coords {
+  font-size: 11px;
+  color: #d1d5db;
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}
+
+/* ── Weather section (inside location-tracking-card) ────────────────────────── */
+
+.weather-section {
+  margin-top: 4px;
+}
+
+.weather-divider {
+  height: 1px;
+  background: #f0f0f0;
+  margin: 12px 0;
+}
+
+.weather-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.weather-loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #e5e7eb;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: weather-spin 0.75s linear infinite;
+}
+
+@keyframes weather-spin {
+  to { transform: rotate(360deg); }
+}
+
+.weather-loading-text {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.weather-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.weather-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.weather-icon {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  margin: -6px -4px;
+}
+
+.weather-temp-block {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.weather-temp {
+  font-size: 28px;
+  font-weight: 800;
+  color: #111827;
+  letter-spacing: -1px;
+  line-height: 1;
+}
+
+.weather-desc {
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.weather-details {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+.weather-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4b5563;
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 3px 8px;
+}
+
+.weather-detail-icon {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.weather-refresh-btn {
+  align-self: flex-start;
+  background: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  margin-top: 2px;
+}
+
+.weather-refresh-btn:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.weather-refresh-btn:active {
+  background: #e5e7eb;
+}
+
+/* ── Dark mode overrides ─────────────────────────────────────────────────────── */
+
+@media (prefers-color-scheme: dark) {
+  /* Card */
+  .location-tracking-card {
+    --ion-card-background: #1e2130;
+  }
+
+  /* Header title */
+  .location-tracking-title {
+    color: #f1f5f9;
+  }
+
+  /* Status chips */
+  .location-status-chip.active {
+    background: rgba(21, 128, 61, 0.25);
+    color: #4ade80;
+  }
+  .location-status-chip.inactive {
+    background: rgba(255, 255, 255, 0.08);
+    color: #94a3b8;
+  }
+
+  /* Error banner */
+  .location-error-banner {
+    background: rgba(154, 52, 18, 0.18);
+    border-color: rgba(254, 215, 170, 0.25);
+    color: #fb923c;
+  }
+
+  /* Town display */
+  .location-town-name {
+    color: #f1f5f9;
+  }
+  .location-division {
+    color: #cbd5e1;
+  }
+  .location-subdivision {
+    color: #94a3b8;
+  }
+  .location-coords {
+    color: #64748b;
+  }
+
+  /* Permission denied */
+  .location-permission-denied {
+    color: #64748b;
+  }
+  .location-permission-denied ion-icon {
+    color: #334155;
+  }
+
+  /* Online count */
+  .location-online-count {
+    color: #64748b;
+  }
+  .location-online-count strong {
+    color: #e2e8f0;
+  }
+
+  /* Weather section (inside location card) */
+  .weather-divider {
+    background: rgba(255, 255, 255, 0.08);
+  }
+  .weather-temp {
+    color: #f1f5f9;
+  }
+  .weather-desc {
+    color: #94a3b8;
+  }
+  .weather-detail-item {
+    background: rgba(255, 255, 255, 0.06);
+    color: #cbd5e1;
+  }
+  .weather-refresh-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #94a3b8;
+  }
+  .weather-refresh-btn:hover {
+    background: rgba(255, 255, 255, 0.10);
+    color: #e2e8f0;
+  }
+  .weather-loading-text {
+    color: #64748b;
+  }
+
+  /* Map popup */
+  .loc-popup strong {
+    color: #f1f5f9;
+  }
+  .loc-popup-time {
+    color: #64748b;
+  }
+  .loc-popup-doctor  { background: rgba(29,  78, 216, 0.25); color: #93c5fd; }
+  .loc-popup-patient { background: rgba(21, 128,  61, 0.25); color: #86efac; }
+  .loc-popup-admin   { background: rgba(124, 58, 237, 0.25); color: #c4b5fd; }
+  .loc-popup-self    { background: rgba(185,  28,  28, 0.25); color: #fca5a5; }
+
+  /* Map legend */
+  .location-map-legend {
+    background: rgba(30, 33, 48, 0.90);
+    color: #e2e8f0;
+  }
+  .legend-doctor  { color: #93c5fd; }
+  .legend-patient { color: #86efac; }
+  .legend-admin   { color: #c4b5fd; }
+  .legend-self    { color: #fca5a5; }
+}
+
+/* ── Ionic body.dark variant ─────────────────────────────────────────────────── */
+
+body.dark .location-tracking-card {
+  --ion-card-background: #1e2130;
+}
+body.dark .location-tracking-title {
+  color: #f1f5f9;
+}
+body.dark .location-status-chip.active {
+  background: rgba(21, 128, 61, 0.25);
+  color: #4ade80;
+}
+body.dark .location-status-chip.inactive {
+  background: rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+}
+body.dark .location-error-banner {
+  background: rgba(154, 52, 18, 0.18);
+  border-color: rgba(254, 215, 170, 0.25);
+  color: #fb923c;
+}
+body.dark .location-town-name {
+  color: #f1f5f9;
+}
+body.dark .location-division {
+  color: #cbd5e1;
+}
+body.dark .location-subdivision {
+  color: #94a3b8;
+}
+body.dark .location-coords {
+  color: #64748b;
+}
+body.dark .location-permission-denied {
+  color: #64748b;
+}
+body.dark .location-permission-denied ion-icon {
+  color: #334155;
+}
+body.dark .location-online-count {
+  color: #64748b;
+}
+body.dark .location-online-count strong {
+  color: #e2e8f0;
+}
+body.dark .weather-divider {
+  background: rgba(255, 255, 255, 0.08);
+}
+body.dark .weather-temp {
+  color: #f1f5f9;
+}
+body.dark .weather-desc {
+  color: #94a3b8;
+}
+body.dark .weather-detail-item {
+  background: rgba(255, 255, 255, 0.06);
+  color: #cbd5e1;
+}
+body.dark .weather-refresh-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+}
+body.dark .weather-refresh-btn:hover {
+  background: rgba(255, 255, 255, 0.10);
+  color: #e2e8f0;
+}
+body.dark .weather-loading-text {
+  color: #64748b;
+}
+body.dark .loc-popup strong {
+  color: #f1f5f9;
+}
+body.dark .loc-popup-time {
+  color: #64748b;
+}
+body.dark .loc-popup-doctor  { background: rgba(29,  78, 216, 0.25); color: #93c5fd; }
+body.dark .loc-popup-patient { background: rgba(21, 128,  61, 0.25); color: #86efac; }
+body.dark .loc-popup-admin   { background: rgba(124, 58, 237, 0.25); color: #c4b5fd; }
+body.dark .loc-popup-self    { background: rgba(185,  28,  28, 0.25); color: #fca5a5; }
+body.dark .location-map-legend {
+  background: rgba(30, 33, 48, 0.90);
+  color: #e2e8f0;
+}
+body.dark .legend-doctor  { color: #93c5fd; }
+body.dark .legend-patient { color: #86efac; }
+body.dark .legend-admin   { color: #c4b5fd; }
+body.dark .legend-self    { color: #fca5a5; }

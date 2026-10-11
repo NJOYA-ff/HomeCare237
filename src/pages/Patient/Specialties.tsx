@@ -97,6 +97,7 @@ const SpecialtiesPage: React.FC = () => {
           if (
             data.isEnabled === false ||
             data.isVerified === false ||
+            data.isAvailable === false ||
             data.status === "inactive" ||
             data.status === "pending"
           ) {

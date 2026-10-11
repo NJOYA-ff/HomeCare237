@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Primary brand colour — used as the notification icon accent / LED colour.
+        Matches --ion-color-primary (#2563eb) from variables.css.
+    -->
+    <color name="notification_color">#2563EB</color>
+
+    <!-- App primary colours (used by AppTheme / splash) -->
+    <color name="colorPrimary">#2563EB</color>
+    <color name="colorPrimaryDark">#1D4ED8</color>
+    <color name="colorAccent">#3B82F6</color>
+
+    <!-- Splash / window background -->
+    <color name="colorBackground">#FFFFFF</color>
+</resources>

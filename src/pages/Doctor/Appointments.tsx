@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useHistory } from "react-router";
 import {
   IonContent,
   IonHeader,
@@ -39,6 +40,7 @@ import {
   call,
   informationCircle,
   person,
+  documentTextOutline,
 } from "ionicons/icons";
 import {
   collection,
@@ -137,6 +139,7 @@ interface Appointment {
 }
 
 const Appointments: React.FC = () => {
+  const history = useHistory();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [filteredAppointments, setFilteredAppointments] = useState<
     Appointment[]
@@ -1248,6 +1251,21 @@ const Appointments: React.FC = () => {
                             >
                               <IonIcon icon={checkmarkCircle} slot="start" />
                               Mark as completed
+                            </IonButton>
+                          </IonCol>
+                        )}
+                        {(appointment.status === "accepted" || appointment.status === "completed") && (
+                          <IonCol size="12">
+                            <IonButton
+                              color="secondary"
+                              expand="block"
+                              fill="outline"
+                              onClick={() =>
+                                history.push(`/doc/diagnoses?appointmentId=${appointment.id}`)
+                              }
+                            >
+                              <IonIcon icon={documentTextOutline} slot="start" />
+                              Create Diagnosis
                             </IonButton>
                           </IonCol>
                         )}

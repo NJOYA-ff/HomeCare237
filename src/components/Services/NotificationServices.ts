@@ -9,9 +9,21 @@ import {
   ScheduleOptions,
 } from "@capacitor/local-notifications";
 import { App } from "@capacitor/app";
+import { Capacitor } from "@capacitor/core";
 import { isPlatform } from "@ionic/react";
 import { getAuth } from "firebase/auth";
 import { doc, setDoc, getFirestore } from "firebase/firestore";
+
+/**
+ * The channel ID must match:
+ *  - strings.xml  → default_notification_channel_id
+ *  - AndroidManifest meta-data → firebase_messaging_default_notification_channel_id
+ *  - capacitor.config.ts → LocalNotifications.smallIcon
+ */
+const CHANNEL_ID   = "homecare237_default";
+const CHANNEL_NAME = "HomeCare237 Notifications";
+const SMALL_ICON   = "ic_notification";   // @mipmap/ic_notification
+const ICON_COLOR   = "#2563EB";           // brand primary
 
 export interface NotificationPayload {
   title: string;
@@ -31,23 +43,46 @@ class NotificationService {
     if (this.isInitialized) return;
 
     try {
-      // Request permissions
       if (isPlatform("hybrid")) {
+        // ── 1. Create the local-notification channel (Android 8+, API 26+) ──
+        // Must be done BEFORE scheduling any notifications, and before
+        // requesting push permission, so FCM background messages land here too.
+        if (Capacitor.getPlatform() === "android") {
+          try {
+            await LocalNotifications.createChannel({
+              id:          CHANNEL_ID,
+              name:        CHANNEL_NAME,
+              description: "Appointment reminders, medication alerts, and health updates.",
+              importance:  5,          // IMPORTANCE_HIGH → shows heads-up notification
+              visibility:  1,          // VISIBILITY_PUBLIC
+              sound:       "beep.wav",
+              vibration:   true,
+              lights:      true,
+              lightColor:  ICON_COLOR,
+            });
+            console.log("[NotificationService] Notification channel created:", CHANNEL_ID);
+          } catch (channelErr) {
+            // Channel may already exist — not fatal
+            console.warn("[NotificationService] createChannel:", channelErr);
+          }
+        }
+
+        // ── 2. Request push notification permission ──────────────────────────
         const permission = await PushNotifications.requestPermissions();
 
         if (permission.receive === "granted") {
-          // Register with Apple/Google to receive push via FCM
+          // Register with FCM (Android) / APNs (iOS) to get a push token
           await PushNotifications.register();
-
-          // Set up listeners
           this.setupListeners();
+        } else {
+          console.warn("[NotificationService] Push permission not granted:", permission.receive);
         }
       }
 
       this.isInitialized = true;
-      console.log("Notification service initialized");
+      console.log("[NotificationService] Initialized");
     } catch (error) {
-      console.error("Error initializing notifications:", error);
+      console.error("[NotificationService] Initialization error:", error);
     }
   }
 
@@ -170,11 +205,11 @@ class NotificationService {
     if (localStorage.getItem("hc_notifications") === "false") return;
 
     try {
-      // Request permission for local notifications
+      // Request permission for local notifications (needed on Android 13+ and iOS)
       const permission = await LocalNotifications.requestPermissions();
 
       if (permission.display !== "granted") {
-        console.warn("Local notification permission not granted");
+        console.warn("[NotificationService] Local notification permission not granted");
         return;
       }
 
@@ -184,22 +219,33 @@ class NotificationService {
       const options: ScheduleOptions = {
         notifications: [
           {
-            id: notification.id || Date.now(),
-            title: notification.title,
-            body: notification.body,
-            extra: notification.data || {},
-            schedule: { at: new Date(Date.now() + 1000) },
-            sound: soundEnabled ? "beep.wav" : undefined,
-            attachments: undefined,
+            id:           notification.id ?? Date.now(),
+            title:        notification.title,
+            body:         notification.body,
+            extra:        notification.data ?? {},
+            schedule:     { at: new Date(Date.now() + 500) },
+            sound:        soundEnabled ? "beep.wav" : undefined,
+            // ── Android-specific fields ──────────────────────────────────
+            // smallIcon: the white-on-transparent drawable from mipmap-*
+            smallIcon:    SMALL_ICON,
+            // iconColor: accent colour behind the small icon in the shade
+            iconColor:    ICON_COLOR,
+            // channelId: must match the channel created in initialize()
+            channelId:    CHANNEL_ID,
+            // largeIcon: show the round launcher icon as the large icon
+            // (this is the full-colour app logo visible in the expanded view)
+            largeIcon:    "ic_launcher_round",
+            // ────────────────────────────────────────────────────────────
+            attachments:  undefined,
             actionTypeId: "",
           },
         ],
       };
 
       await LocalNotifications.schedule(options);
-      console.log("Local notification scheduled");
+      console.log("[NotificationService] Local notification scheduled:", notification.title);
     } catch (error) {
-      console.error("Error scheduling local notification:", error);
+      console.error("[NotificationService] Error scheduling local notification:", error);
     }
   }
 
@@ -223,20 +269,21 @@ class NotificationService {
     return pending.notifications;
   }
 
-  // Cancel all notifications
+  // Cancel all pending local notifications
   async cancelAllNotifications(): Promise<void> {
     try {
-      // Retrieve pending notifications and cancel them by id
       const pending = await LocalNotifications.getPending();
-      const ids = (pending.notifications || []).map((n: any) =>
-        typeof n.id === "number" ? n.id : Number(n.id)
-      );
+      if (!pending.notifications?.length) return;
 
-      if (ids.length > 0) {
-        await LocalNotifications.cancel({ notifications: ids });
-      }
+      // LocalNotifications.cancel() expects { notifications: [{ id: number }] }
+      // NOT { notifications: [number] } — that was the previous bug.
+      await LocalNotifications.cancel({
+        notifications: pending.notifications.map((n) => ({
+          id: typeof n.id === "number" ? n.id : Number(n.id),
+        })),
+      });
     } catch (error) {
-      console.error("Error cancelling notifications:", error);
+      console.error("[NotificationService] Error cancelling notifications:", error);
     }
   }
 

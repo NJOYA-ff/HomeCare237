@@ -632,17 +632,20 @@ ion-modal {
     }
 
     .action-buttons {
+      display: flex;
+      flex-direction: row;
+      gap: 10px;
       margin-top: 24px;
 
       ion-button {
-        margin-bottom: 12px;
+        flex: 1;
+        margin: 0;
         --border-radius: 12px;
         font-weight: 500;
         height: 48px;
 
-        ion-icon {
+        svg {
           margin-right: 8px;
-          font-size: 1.1rem;
         }
       }
     }
@@ -1030,11 +1033,34 @@ ion-modal {
   width: 100%;
 }
 
+// Dropdown select used for specialization (inside .profile-specialty)
+.profile-edit-select {
+  --padding-start: 0;
+  --padding-end: 0;
+  font-size: 0.93rem;
+  color: var(--ion-text-color);
+  border-bottom: 1px solid var(--ion-color-light-shade);
+  margin: 4px 0;
+  width: 100%;
+}
+
+// Compact number input inside the stats row
+.stat-edit-input {
+  --padding-start: 2px;
+  --padding-end: 2px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-align: center;
+  width: 56px;
+  border-bottom: 1px solid var(--ion-color-primary);
+}
+
 .languages-edit {
   width: 100%;
 }
 
-.language-input {
+// Dropdown select used for adding languages
+.language-select {
   --padding-start: 0;
   --padding-end: 0;
   font-size: 0.93rem;
@@ -1574,15 +1600,85 @@ body.dark {
   }
   .workspace-profile-nudge {
     display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 16px;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 16px 10px;
     border: 1px solid var(--ion-color-step-150, var(--ion-color-light-shade));
-    border-inline-start: 3px solid var(--ion-color-primary);
     border-radius: 12px;
-    background: rgba(var(--ion-color-primary-rgb), 0.12);
-    > ion-icon { color: var(--ion-color-primary); font-size: 1.25rem; }
-    p { flex: 1; margin: 0; font-size: 0.8125rem; }
+    background: rgba(var(--ion-color-primary-rgb), 0.07);
+
+    // ── Header row: message + dismiss button ─────────────────────────────
+    .profile-nudge-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      p {
+        flex: 1;
+        margin: 0;
+        font-size: 0.8125rem;
+        color: var(--ion-text-color);
+        line-height: 1.4;
+      }
+
+      ion-button {
+        --color: var(--ion-color-medium);
+        --padding-start: 4px;
+        --padding-end: 4px;
+        min-height: 28px;
+        flex-shrink: 0;
+      }
+    }
+
+    // ── Progress bar ─────────────────────────────────────────────────────
+    .profile-nudge-progress {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .profile-nudge-track {
+      flex: 1;
+      height: 7px;
+      border-radius: 4px;
+      background: var(--ion-color-step-150, rgba(0, 0, 0, 0.1));
+      overflow: hidden;
+    }
+
+    .profile-nudge-fill {
+      height: 100%;
+      border-radius: 4px;
+      background: var(--ion-color-primary);
+      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .profile-nudge-pct {
+      flex-shrink: 0;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--ion-color-primary);
+      min-width: 32px;
+      text-align: right;
+    }
+
+    // ── Missing fields hint ───────────────────────────────────────────────
+    .profile-nudge-missing {
+      margin: 0;
+      font-size: 0.75rem;
+      color: var(--ion-color-medium);
+      line-height: 1.4;
+    }
+
+    // ── CTA link ─────────────────────────────────────────────────────────
+    .profile-nudge-cta {
+      align-self: flex-start;
+      --color: var(--ion-color-primary);
+      --padding-start: 0;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      min-height: 28px;
+      margin-top: 2px;
+    }
   }
 
   .workspace-metrics {
@@ -1591,47 +1687,105 @@ body.dark {
     gap: 16px;
 
     ion-button.metric-card {
-      --metric-color: var(--ion-color-primary);
-      --metric-soft: rgba(var(--ion-color-primary-rgb), 0.12);
       --background: var(--ion-card-background, var(--ion-background-color));
-      --background-hover: var(--ion-color-light);
-      --background-activated: var(--ion-color-light);
+      --background-hover: var(--ion-card-background, var(--ion-background-color));
+      --background-activated: var(--ion-card-background, var(--ion-background-color));
       --color: var(--ion-text-color);
-      --border-radius: 16px;
-      --border-width: 1px;
-      --border-style: solid;
-      --border-color: var(--ion-color-step-150, var(--ion-color-light-shade));
-      --padding-start: 20px;
-      --padding-end: 20px;
-      --padding-top: 22px;
-      --padding-bottom: 22px;
+      --border-radius: 18px;
+      --border-width: 0px;
+      --padding-start: 0;
+      --padding-end: 0;
+      --padding-top: 0;
+      --padding-bottom: 0;
       display: block;
       width: 100%;
       height: auto;
       min-width: 0;
-      min-height: 146px;
+      min-height: 0;
       margin: 0;
-      border-radius: 16px;
+      border-radius: 18px;
       background: transparent;
-      box-shadow: var(--ion-card-box-shadow, none);
+      box-shadow: none;
       text-align: start;
       transform: none;
-      transition: box-shadow 160ms ease;
-      &::part(native) { height: 100%; }
-      &.metric-blue { --metric-color: var(--ion-color-secondary); --metric-soft: rgba(var(--ion-color-secondary-rgb), 0.12); }
-      &.metric-amber { --metric-color: var(--ion-color-warning); --metric-soft: rgba(var(--ion-color-warning-rgb), 0.12); }
-      &.metric-violet { --metric-color: var(--ion-color-tertiary); --metric-soft: rgba(var(--ion-color-tertiary-rgb), 0.12); }
-      &.metric-teal { --metric-color: var(--ion-color-primary); --metric-soft: rgba(var(--ion-color-primary-rgb), 0.12); }
+      transition: transform 180ms ease;
+
+      &:hover, &:focus-visible {
+        transform: translateY(-2px);
+      }
+
+      &::part(native) {
+        height: 100%;
+        padding: 0;
+        border-radius: 18px;
+        overflow: hidden;
+      }
+
+      // Inner layout wrapper
+      .metric-inner {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        padding: 20px 20px 18px;
+        width: 100%;
+        background: var(--ion-card-background, var(--ion-background-color));
+      }
+
+      // Top row: icon pill
+      .metric-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .metric-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        background: var(--ion-color-step-50, var(--ion-color-light));
+        color: var(--ion-color-medium);
+        flex-shrink: 0;
+        svg { display: block; }
+      }
+
       .metric-copy {
         display: flex;
         flex-direction: column;
-        gap: 5px;
-        flex: 1;
+        gap: 3px;
         min-width: 0;
         white-space: normal;
-        span { font-size: 0.75rem; color: var(--ion-color-medium); font-weight: 500; line-height: 1.4; }
-        strong { font-size: clamp(1.5rem, 2.3vw, 2rem); font-weight: 700; line-height: 1.15; letter-spacing: -0.035em; font-variant-numeric: tabular-nums; }
-        small { color: var(--ion-color-medium); font-size: 0.6875rem; font-weight: 400; line-height: 1.4; }
+
+        // Label
+        span {
+          font-size: 0.7rem;
+          font-weight: 600;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          color: var(--ion-color-medium);
+          line-height: 1.4;
+        }
+
+        // Value
+        strong {
+          font-size: clamp(1.6rem, 2.4vw, 2.1rem);
+          font-weight: 800;
+          line-height: 1.1;
+          letter-spacing: -0.04em;
+          font-variant-numeric: tabular-nums;
+          color: var(--ion-text-color);
+        }
+
+        // Note
+        small {
+          font-size: 0.6875rem;
+          font-weight: 400;
+          color: var(--ion-color-medium);
+          line-height: 1.4;
+          margin-top: 2px;
+        }
       }
     }
   }
@@ -2282,9 +2436,7 @@ body.dark {
     .workspace-welcome { align-items: flex-start; flex-direction: column; gap: 20px; padding: 22px 18px; border-radius: 16px; }
     .workspace-date { width: 100%; padding: 14px 0 0; border: 0; border-top: 1px solid var(--ion-color-step-150, var(--ion-color-light-shade)); border-radius: 0; background: transparent; flex-shrink: 1; }
     .workspace-profile-nudge {
-      display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px 10px; padding: 12px;
-      > ion-button:first-of-type { grid-column: 2; justify-self: start; }
-      > ion-button:last-of-type { grid-column: 3; grid-row: 1; }
+      padding: 12px 14px 10px;
     }
     .workspace-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
     .workspace-metrics ion-button.metric-card { --padding-top: 16px; --padding-bottom: 16px; }

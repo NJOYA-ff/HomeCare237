@@ -58,7 +58,7 @@ interface Doctor {
   avatar?: string;
   rating?: number;
   region?: string;
-  city?: string;
+  subdivision?: string;
   licenseNumber?: string;
   yearsOfExperience?: number;
   isEnabled?: boolean; // explicit enable/disable flag
@@ -108,7 +108,7 @@ const Admin_DoctorAccounts: React.FC = () => {
             avatar: pickImageField(data),
             rating: data.rating,
             region: data.region,
-            city: data.city,
+            subdivision: data.subdivision || data.town || data.city || "",
             licenseNumber: data.licenseNumber,
             yearsOfExperience: data.yearsOfExperience,
             createdAt: data.createdAt,
@@ -137,7 +137,7 @@ const Admin_DoctorAccounts: React.FC = () => {
           d.name.toLowerCase().includes(term) ||
           d.email.toLowerCase().includes(term) ||
           (d.specialization || "").toLowerCase().includes(term) ||
-          (d.city || "").toLowerCase().includes(term)
+          (d.subdivision || "").toLowerCase().includes(term)
       );
     }
 
@@ -443,10 +443,10 @@ const Admin_DoctorAccounts: React.FC = () => {
                             {doctor.phone}
                           </span>
                         )}
-                        {(doctor.city || doctor.region) && (
+                        {(doctor.subdivision || doctor.region) && (
                           <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
                             <IonIcon icon={locationOutline} style={{ fontSize: 12 }} />
-                            {[doctor.city, doctor.region].filter(Boolean).join(", ")}
+                            {[doctor.subdivision, doctor.region].filter(Boolean).join(", ")}
                           </span>
                         )}
                         {doctor.rating !== undefined && (

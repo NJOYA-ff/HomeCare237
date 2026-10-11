@@ -1,6 +1,7 @@
 import { avatarColor } from "../../utils/avatarColor";
 import LoadingHelix from "../../components/LoadingHelix";
 import { useLocation } from "react-router-dom";
+import { assertMicPermission, MicPermissionDeniedError } from "../../utils/micPermission";
 import React, { useState, useRef, useEffect } from "react";
 import {
   IonContent,
@@ -34,6 +35,7 @@ import {
   useIonActionSheet,
   IonBackButton,
   IonFooter,
+  isPlatform,
 } from "@ionic/react";
 import { MessageBox } from "../../components/ui/MessageBox";
 import { useNotifications } from "../../context/NotificationContext";
@@ -91,7 +93,7 @@ interface Doctor {
   specialization: string;
   rating: number;
   reviews: number;
-  town: string;
+  subdivision: string;
   availability: string;
   image: string;
   languages: string[];
@@ -172,6 +174,7 @@ const Consult: React.FC = () => {
   const recordingIntervalRef = useRef<any>(null);
   const amplitudeIntervalRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const contentRef = useRef<HTMLIonContentElement>(null);
   const messageInputRef = useRef<HTMLIonTextareaElement>(null);
   const progressIntervalRef = useRef<any>(null);
@@ -254,8 +257,13 @@ const Consult: React.FC = () => {
     setIsCallModalOpen(true);
   };
 
-  // Take photo using Capacitor Camera and add as attachment
+  // Take photo using Capacitor Camera (native) or file picker (web)
   const handleTakePhoto = async () => {
+    if (!isPlatform("hybrid")) {
+      // Web fallback: trigger a hidden image file input
+      imageInputRef.current?.click();
+      return;
+    }
     try {
       const photo = await Camera.getPhoto({
         resultType: CameraResultType.DataUrl,
@@ -291,6 +299,23 @@ const Consult: React.FC = () => {
         color: "danger",
       });
     }
+  };
+
+  /** Web fallback: handles images selected via the hidden image file input */
+  const handleImageFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const objectUrl = URL.createObjectURL(file);
+    const attachment: Attachment = {
+      id: Math.random().toString(36).substring(7),
+      type: "image",
+      url: objectUrl,
+      name: file.name,
+      isPlaying: false,
+      currentTime: 0,
+    };
+    setAttachments((prev) => [...prev, attachment]);
+    if (imageInputRef.current) imageInputRef.current.value = "";
   };
   // Mock token generation - replace with your actual backend call
   const generateToken = async (roomName: string): Promise<string> => {
@@ -604,8 +629,8 @@ const Consult: React.FC = () => {
   const filteredDoctors = doctors
     .filter(
       (doctor) =>
-        doctor.name.toLowerCase().includes(searchText.toLowerCase()) ||
-        doctor.specialization.toLowerCase().includes(searchText.toLowerCase()),
+        (doctor.name || "").toLowerCase().includes(searchText.toLowerCase()) ||
+        (doctor.specialization || "").toLowerCase().includes(searchText.toLowerCase()),
     )
     .sort((a, b) => {
       const chatA = chatSessions.find((c) => c.doctorId === a.id);
@@ -702,7 +727,7 @@ const Consult: React.FC = () => {
         specialization: "HomeCare237 Support",
         rating: 5,
         reviews: 0,
-        town: "",
+        subdivision: "",
         availability: "Online",
         image: "",
         languages: [],
@@ -748,7 +773,7 @@ const Consult: React.FC = () => {
         specialization: "HomeCare237 Support",
         rating: 5,
         reviews: 0,
-        town: "",
+        subdivision: "",
         availability: "Online",
         image: "",
         languages: [],
@@ -911,6 +936,7 @@ const Consult: React.FC = () => {
   // Recording functions
   const startRecording = async () => {
     try {
+      await assertMicPermission();
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
       // Setup audio context for amplitude visualization
@@ -960,9 +986,15 @@ const Consult: React.FC = () => {
       }, 100);
     } catch (error) {
       console.error("Error starting recording:", error);
-      setAlertMessage(
-        "Microphone access is required for voice messages. Please allow microphone permissions and try again.",
-      );
+      if (error instanceof MicPermissionDeniedError) {
+        setAlertMessage(
+          "Microphone access was denied. Please enable microphone permission in your device Settings and try again.",
+        );
+      } else {
+        setAlertMessage(
+          "Microphone access is required for voice messages. Please allow microphone permissions and try again.",
+        );
+      }
       setShowAlert(true);
     }
   };
@@ -1434,7 +1466,7 @@ const Consult: React.FC = () => {
                   className="initials-avatar header-avatar-c"
                   style={{ background: avatarColor(selectedDoctor.name) }}
                 >
-                  {selectedDoctor.name
+                  {(selectedDoctor.name || "")
                     .split(" ")
                     .map((p: string) => p[0])
                     .join("")
@@ -1553,7 +1585,7 @@ const Consult: React.FC = () => {
                         className="initials-avatar wa-avatar"
                         style={{ background: avatarColor(doctor.name) }}
                       >
-                        {doctor.name
+                        {(doctor.name || "")
                           .split(" ")
                           .map((p: string) => p[0])
                           .join("")
@@ -1575,7 +1607,7 @@ const Consult: React.FC = () => {
                       </div>
                       <div className="wa-meta">
                         {doctor.specialization}
-                        {doctor.town ? ` · ${doctor.town}` : ""}
+                        {doctor.subdivision ? ` · ${doctor.subdivision}` : ""}
                       </div>
                       <div className="wa-bottom">
                         <span className="wa-preview">{lastMsg}</span>
@@ -1600,7 +1632,7 @@ const Consult: React.FC = () => {
                       className="initials-avatar typing-avatar"
                       style={{ background: avatarColor(selectedDoctor.name) }}
                     >
-                      {selectedDoctor.name
+                      {(selectedDoctor.name || "")
                         .split(" ")
                         .map((p: string) => p[0])
                         .join("")
@@ -1630,6 +1662,14 @@ const Consult: React.FC = () => {
           accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
           multiple
           onChange={handleFileSelect}
+        />
+        {/* Web fallback for camera — used when not running on native Android/iOS */}
+        <input
+          type="file"
+          ref={imageInputRef}
+          style={{ display: "none" }}
+          accept="image/*"
+          onChange={handleImageFileSelect}
         />
 
         <IonModal

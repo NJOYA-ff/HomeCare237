@@ -866,6 +866,91 @@ ion-card:active {
   border-radius: 50%;
 }
 
+/* ── Profile-completion nudge banner ──────────────────────────────────── */
+.pd-profile-nudge {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 12px 0;
+  padding: 12px 16px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(var(--ion-color-primary-rgb), 0.22);
+  background: rgba(var(--ion-color-primary-rgb), 0.07);
+
+  // ── Header row: message + dismiss button ─────────────────────────────
+  .pd-profile-nudge-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    p {
+      flex: 1;
+      margin: 0;
+      font-size: 0.8125rem;
+      color: var(--ion-text-color);
+      line-height: 1.45;
+    }
+
+    ion-button {
+      --color: var(--ion-color-medium);
+      --padding-start: 4px;
+      --padding-end: 4px;
+      min-height: 28px;
+      flex-shrink: 0;
+    }
+  }
+
+  // ── Progress bar ─────────────────────────────────────────────────────
+  .pd-profile-nudge-progress {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .pd-profile-nudge-track {
+    flex: 1;
+    height: 7px;
+    border-radius: 4px;
+    background: rgba(var(--ion-color-primary-rgb), 0.15);
+    overflow: hidden;
+  }
+
+  .pd-profile-nudge-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: var(--ion-color-primary);
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .pd-profile-nudge-pct {
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--ion-color-primary);
+    min-width: 32px;
+    text-align: right;
+  }
+
+  // ── Missing fields hint ───────────────────────────────────────────────
+  .pd-profile-nudge-missing {
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--ion-color-medium);
+    line-height: 1.4;
+  }
+
+  // ── CTA link ─────────────────────────────────────────────────────────
+  .pd-profile-nudge-cta {
+    align-self: flex-start;
+    --color: var(--ion-color-primary);
+    --padding-start: 0;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    min-height: 28px;
+    margin-top: 2px;
+  }
+}
+
 /* Patient homepage style inspired by reference mockup */
 .dashboard-patient {
   --background: linear-gradient(180deg, #edf0ff 0%, #f8f9ff 100%);
@@ -920,6 +1005,7 @@ ion-card:active {
   padding: 0 10px 0 12px;
   background: var(--ion-background-color);
   border: 1px solid var(--ion-border-color);
+  position: relative; // needed for the pseudo cursor
 }
 
 .home-search-wrap ion-icon {
@@ -937,10 +1023,65 @@ ion-card:active {
   font-size: 14px;
 }
 
+// Blinking cursor — shown only when the input is empty (--typing modifier)
+// and the input is not focused (focus removes it via sibling selector below)
+@keyframes home-search-cursor-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+.home-search-wrap--typing::after {
+  content: "|";
+  position: absolute;
+  // align with where the placeholder text starts (icon 17px + gap 8px + left pad 12px)
+  left: calc(12px + 17px + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: var(--ion-color-primary, #3b82f6);
+  pointer-events: none;
+  animation: home-search-cursor-blink 0.8s step-end infinite;
+  // hide cursor once user focuses the input
+}
+
+// Remove the fake cursor when the input is focused
+.home-search-wrap--typing:focus-within::after {
+  display: none;
+}
+
 .home-search-wrap ion-button {
   --padding-start: 6px;
   --padding-end: 6px;
   --color: var(--ion-color-primary);
+}
+
+// Primary pill button that opens the specialist dropdown
+.home-search-dropdown-btn {
+  --background: var(--ion-color-primary);
+  --background-hover: var(--ion-color-primary-shade);
+  --background-activated: var(--ion-color-primary-shade);
+  --color: #ffffff;
+  --border-radius: 999px;
+  --padding-start: 10px;
+  --padding-end: 10px;
+  --padding-top: 0;
+  --padding-bottom: 0;
+  --box-shadow: 0 2px 8px rgba(var(--ion-color-primary-rgb), 0.35);
+  height: 30px;
+  min-width: 30px;
+  flex-shrink: 0;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+  &:active {
+    transform: scale(0.93);
+  }
+
+  .material-symbols-outlined {
+    font-size: 16px;
+    line-height: 1;
+    color: #ffffff;
+    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+  }
 }
 
 .home-section-head {
@@ -1216,8 +1357,9 @@ body.dark {
     color: #e3e6ff;
   }
 
-  .home-search-wrap ion-button {
-    --color: var(--ion-color-primary-tint);
+  .home-search-dropdown-btn {
+    --color: #ffffff;
+    --box-shadow: 0 2px 10px rgba(var(--ion-color-primary-rgb), 0.45);
   }
 
   .home-section-head h3 {
@@ -1958,6 +2100,10 @@ body.dark {
 .dash-doc-btn--call {
   background: var(--ion-color-primary);
   color: var(--ion-color-primary-contrast);
+
+  svg {
+    color: #ffffff;
+  }
 }
 
 /* Message — surface-muted outline */
@@ -1965,6 +2111,10 @@ body.dark {
   background: var(--hc-surface-muted);
   color: var(--ion-color-primary);
   border: 1px solid var(--hc-border-strong);
+
+  svg {
+    color: var(--ion-color-primary);
+  }
 }
 
 /* ── End Available Doctors Card Section ───────────────────────────── */
@@ -2085,3 +2235,602 @@ body.dark {
 }
 
 /* ── End Map Preview Section ─────────────────────────────────────── */
+
+// ── YouTube Health Videos Section ─────────────────────────────────────────
+.yt-section-card {
+  margin: 0 0 12px;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+
+  ion-card-content {
+    padding: 16px;
+  }
+}
+
+// Header
+.yt-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.yt-section-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.yt-title-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--ion-color-primary);
+  color: #fff;
+  flex-shrink: 0;
+
+  svg {
+    color: #ffffff;
+  }
+}
+
+.yt-section-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ion-text-color);
+}
+
+.yt-africa-chip {
+  font-size: 11px;
+  font-weight: 600;
+  height: 22px;
+  --color: var(--ion-color-primary);
+  --border-color: var(--ion-color-primary);
+}
+
+// Search
+.yt-search-form {
+  margin-bottom: 14px;
+}
+
+.yt-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--ion-color-light, #f4f5f8);
+  border-radius: 10px;
+  padding: 0 10px;
+  height: 38px;
+}
+
+.yt-search-icon {
+  color: var(--ion-color-medium);
+  flex-shrink: 0;
+}
+
+.yt-search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 13px;
+  color: var(--ion-text-color);
+  min-width: 0;
+
+  &::placeholder { color: var(--ion-color-medium); }
+}
+
+.yt-search-clear {
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  color: var(--ion-color-primary);
+  display: flex;
+  align-items: center;
+}
+
+.yt-search-btn {
+  --border-radius: 8px;
+  --padding-start: 10px;
+  --padding-end: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+// Skeleton
+.yt-skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.yt-skeleton-item {
+  display: flex;
+  gap: 10px;
+}
+
+.yt-skeleton-thumb {
+  width: 120px;
+  min-width: 120px;
+  height: 68px;
+  border-radius: 8px;
+}
+
+.yt-skeleton-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 4px;
+}
+
+// Error
+.yt-error {
+  text-align: center;
+  padding: 16px 0;
+  color: var(--ion-color-medium);
+  font-size: 13px;
+
+  p { margin: 0 0 10px; }
+}
+
+// Video list — horizontal scroll row
+.yt-video-list {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: visible;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 8px;
+
+  // Hide scrollbar visually but keep it functional
+  &::-webkit-scrollbar { height: 4px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: var(--ion-color-light-shade); border-radius: 2px; }
+}
+
+.yt-video-item {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: 260px;
+  scroll-snap-align: start;
+  border-radius: 12px;
+  background: var(--ion-card-background, var(--ion-background-color));
+  border: 1px solid var(--ion-color-light, #f4f5f8);
+  overflow: hidden;
+}
+
+// Thumbnail card (click to open modal)
+.yt-player-wrap {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%;
+  background: #000;
+  flex-shrink: 0;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.yt-player {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+  object-fit: cover;
+}
+
+.yt-play-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.25);
+  transition: background 0.2s;
+
+  .yt-player-wrap:hover & { background: rgba(0, 0, 0, 0.4); }
+}
+
+.yt-play-btn-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--ion-color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 3px; // optical center for play icon
+  box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  transition: transform 0.15s;
+
+  .yt-player-wrap:hover & { transform: scale(1.08); }
+}
+
+.yt-duration {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  background: rgba(0, 0, 0, 0.78);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+}
+
+// ── Video player modal ───────────────────────────────────────
+.yt-modal {
+  --height: 90%;
+  --border-radius: 16px 16px 0 0;
+
+  .yt-modal-title {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  // Close button Fi icon → primary color (clear button, no background)
+  ion-toolbar ion-buttons ion-button svg {
+    color: var(--ion-color-primary);
+  }
+}
+
+.yt-modal-content {
+  --background: var(--ion-background-color);
+}
+
+.yt-modal-player-wrap {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%;
+  background: #000;
+}
+
+.yt-modal-player {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.yt-modal-info {
+  padding: 14px 16px 24px;
+}
+
+.yt-modal-video-title {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ion-text-color);
+  line-height: 1.4;
+}
+
+// Info block
+.yt-info {
+  flex: 1;
+  padding: 10px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.yt-info-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.yt-channel {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ion-color-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.yt-ext-link {
+  color: var(--ion-color-primary);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.yt-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ion-text-color);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.yt-stats-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.yt-stat {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  color: var(--ion-color-medium);
+  font-weight: 500;
+
+  svg {
+    color: var(--ion-color-primary);
+    flex-shrink: 0;
+  }
+}
+
+.yt-description {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--ion-color-medium);
+  line-height: 1.5;
+}
+
+.yt-expand-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ion-color-primary);
+  cursor: pointer;
+  margin-top: 2px;
+}
+
+// Action buttons (like, dislike, share)
+.yt-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.yt-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--ion-color-light, #f4f5f8);
+  border: none;
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ion-color-primary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+
+  svg {
+    color: var(--ion-color-primary);
+    flex-shrink: 0;
+  }
+
+  &:active { opacity: 0.7; }
+
+  &.yt-action-btn--active {
+    background: rgba(var(--ion-color-primary-rgb), 0.12);
+    color: var(--ion-color-primary);
+
+    svg {
+      color: var(--ion-color-primary);
+    }
+  }
+}
+
+// Horizontal infinite-scroll indicator (sits as last flex child inside .yt-video-list)
+.yt-infinite-scroll {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 64px;
+  min-height: 100%;
+  align-self: stretch;
+
+  // Override Ionic's default block positioning so it flows inline
+  position: static !important;
+}
+
+// ── Comment panel ────────────────────────────────────────────────────────────
+.yt-comment-panel {
+  margin-top: 16px;
+  border-top: 1px solid var(--ion-color-light, #f0f0f0);
+  padding-top: 14px;
+}
+
+.yt-comment-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ion-text-color);
+
+  svg {
+    color: var(--ion-color-primary);
+    flex-shrink: 0;
+  }
+}
+
+.yt-comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 220px;
+  overflow-y: auto;
+  margin-bottom: 12px;
+  padding-right: 2px;
+
+  &::-webkit-scrollbar { width: 3px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: var(--ion-color-light-shade); border-radius: 2px; }
+}
+
+.yt-comment-empty {
+  font-size: 12px;
+  color: var(--ion-color-medium);
+  text-align: center;
+  padding: 12px 0;
+  margin: 0;
+}
+
+.yt-comment-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.yt-comment-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--ion-color-primary);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.yt-comment-body {
+  flex: 1;
+  background: var(--ion-color-light, #f4f5f8);
+  border-radius: 0 12px 12px 12px;
+  padding: 7px 10px;
+}
+
+.yt-comment-author {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ion-color-primary);
+  display: block;
+  margin-bottom: 2px;
+}
+
+.yt-comment-text {
+  font-size: 13px;
+  color: var(--ion-text-color);
+  margin: 0 0 3px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.yt-comment-time {
+  font-size: 10px;
+  color: var(--ion-color-medium);
+}
+
+// Input row
+.yt-comment-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--ion-color-light, #f4f5f8);
+  border-radius: 999px;
+  padding: 4px 4px 4px 14px;
+}
+
+.yt-comment-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 13px;
+  color: var(--ion-text-color);
+  min-width: 0;
+
+  &::placeholder { color: var(--ion-color-medium); }
+}
+
+.yt-comment-send-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: var(--ion-color-primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.15s, transform 0.15s;
+
+  svg {
+    color: #ffffff;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  &:not(:disabled):active {
+    transform: scale(0.90);
+  }
+}
+
+// Dark mode
+@media (prefers-color-scheme: dark) {
+  .yt-search-wrap {
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .yt-action-btn {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--ion-color-primary);
+
+    svg {
+      color: var(--ion-color-primary);
+    }
+  }
+
+  .yt-video-item {
+    border-bottom-color: rgba(255, 255, 255, 0.07);
+  }
+
+  .yt-comment-panel {
+    border-top-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .yt-comment-body {
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .yt-comment-input-row {
+    background: rgba(255, 255, 255, 0.06);
+  }
+}

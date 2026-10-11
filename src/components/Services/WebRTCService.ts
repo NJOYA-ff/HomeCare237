@@ -1,5 +1,6 @@
 // src/services/WebRTCService.ts
 import { Subject } from "rxjs";
+import { assertMicPermission, MicPermissionDeniedError } from "../../utils/micPermission";
 
 export interface WebRTCUser {
   id: string;
@@ -41,6 +42,7 @@ export class WebRTCService {
       this.setupPeerConnectionListeners();
 
       // Get local media
+      await assertMicPermission();
       this.localStream = await navigator.mediaDevices.getUserMedia({
         video: true,
         audio: true,
@@ -53,6 +55,10 @@ export class WebRTCService {
         this.peerConnection!.addTrack(track, this.localStream!);
       });
     } catch (error) {
+      if (error instanceof MicPermissionDeniedError) {
+        console.error("[WebRTCService] Microphone permission denied:", error);
+        throw error;
+      }
       console.error("Error initializing WebRTC:", error);
       throw error;
     }

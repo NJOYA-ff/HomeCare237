@@ -44,7 +44,7 @@
  * edges, which is why `.sc-art-svg` preserves the slice at its natural aspect
  * rather than letting it letterbox.
  */
-import React, { useEffect, useId, useMemo, useState } from "react";
+import React, { useId, useMemo } from "react";
 
 import type { ShowcaseArtId } from "../../data/servicesShowcase";
 import { buildSceneMarkup } from "./buildSceneMarkup";
@@ -101,6 +101,14 @@ const OPERATOR_LOGOS = [
 interface ShowcaseArtProps {
   /** Which illustration to show. */
   art: ShowcaseArtId;
+  /**
+   * When true, adds the `.animated` class so the Storyset layers begin their
+   * staggered draw-in. Driven by the parent (FirstRunShowcase) once the Ionic
+   * page transition has finished, so the art starts at the same moment as the
+   * ripple and the Framer Motion entrances rather than on its own independent
+   * timer.
+   */
+  ready: boolean;
 }
 
 /**
@@ -123,28 +131,7 @@ const SCENE_ART: Record<ShowcaseArtId, string> = {
   wallet: mobilePaymentsArt,
 };
 
-/**
- * Beat between mount and the illustration's draw-in, in ms. Matches the delay in
- * ShowcaseRipple so the art and the ripple settle together rather than in two
- * separate waves.
- */
-const ANIMATE_AFTER_MS = 1000;
-
-/**
- * Whether this user has asked for less motion.
- *
- * Read once per mount rather than tracked, because it cannot change without a
- * reload of the OS setting and React would otherwise re-run every layer's
- * animation if it did. Guarding in JS as well as in CSS is deliberate: CSS alone
- * would still mount the keyframes and then cancel them, and the media query
- * cannot reach the inline `--sc-layer-i` stagger.
- */
-const prefersReducedMotion = (): boolean =>
-  typeof window !== "undefined" &&
-  typeof window.matchMedia === "function" &&
-  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-const ShowcaseArt: React.FC<ShowcaseArtProps> = ({ art }) => {
+const ShowcaseArt: React.FC<ShowcaseArtProps> = ({ art, ready }) => {
   /* React's useId is stable across renders and unique per mounted instance,
    * which is exactly the property the id namespacing needs: two decks mounted
    * at once get different prefixes, so neither can resolve the other's layers.
@@ -158,36 +145,18 @@ const ShowcaseArt: React.FC<ShowcaseArtProps> = ({ art }) => {
   const { viewBox, inner } = useMemo(() => buildSceneMarkup(SCENE_ART[art], uid), [art, uid]);
 
   /* THE VENDOR'S OWN CONTRACT. Storyset's illustrations animate when a class
-   * named `animated` is present on the root <svg>, which is what the usual
-   * static-page snippet toggles:
+   * named `animated` is present on the root <svg>. The `ready` prop is driven
+   * by the parent (FirstRunShowcase) once the Ionic page transition ends, so
+   * the art starts at the same moment as the ripple and Framer Motion entrances
+   * rather than each counting their own independent 1000ms timer.
    *
-   *     document.addEventListener('DOMContentLoaded', () =>
-   *       setTimeout(() => document.querySelector('svg').classList.add('animated'), 1000));
-   *
-   * Reproduced in React, and kept as a class rather than applied to the DOM node
-   * directly for three reasons. The artwork is inlined (see the header), so the
-   * selector is ours to choose and does not have to be `document.querySelector` —
-   * which would have matched ShowcaseRipple's <svg> first and animated the wrong
-   * element. A component-scoped class survives React re-renders, which a manual
-   * classList write would not. And under prefers-reduced-motion the timer is
-   * never scheduled at all, so the layers are never animated and never left
-   * mid-entrance.
-   *
-   * The timer lives in an effect with its own clearTimeout because this mounts
-   * and unmounts with the deck: a user who taps straight through the six slides
-   * unmounts the art within the second, and an uncleared timer would set state
-   * on a gone component. */
-  const [animated, setAnimated] = useState(false);
-
-  useEffect(() => {
-    if (prefersReducedMotion()) return;
-    const timer = window.setTimeout(() => setAnimated(true), ANIMATE_AFTER_MS);
-    return () => window.clearTimeout(timer);
-  }, []);
+   * Under prefers-reduced-motion the parent will never set ready=true, so the
+   * `.animated` class never arrives and the layers stay static — which is the
+   * correct outcome for a decorative flourish nobody asked for. */
 
   return (
     <svg
-      className={`sc-art-svg${animated ? " animated" : ""}`}
+      className={`sc-art-svg${ready ? " animated" : ""}`}
       viewBox={viewBox}
       /* Matches the source art's square canvas and bleeds like the old
          object-fit: cover did, rather than letterboxing. */

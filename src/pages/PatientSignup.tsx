@@ -1,7 +1,9 @@
 import LoadingHelix from "../components/LoadingHelix";
 import AuthShell from "../components/AuthShell";
 import { useSettings } from "../context/SettingsContext";
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import { useCameraCapture } from "../hooks/useCameraCapture";
+import { CameroonLocationSelect, type CameroonLocationValue } from "../components/CameroonLocationSelect";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   IonInput,
   IonItem,
@@ -34,6 +36,8 @@ import {
   FiHome,
   FiMapPin,
   FiCamera,
+  FiBriefcase,
+  FiGlobe,
 } from "react-icons/fi";
 import "./Page.scss";
 import { IoPersonCircleOutline } from "react-icons/io5";
@@ -52,8 +56,12 @@ type FormData = {
   password: string;
   confirmPassword: string;
   contact: string;
-  town: string;
+  region: string;
+  division: string;
+  subdivision: string;
   street: string;
+  language?: string;
+  occupation?: string;
 };
 
 interface FirebaseError {
@@ -126,7 +134,12 @@ const PatientSignup: React.FC = () => {
     message: "",
     color: "success" as "success" | "danger" | "warning",
   });
-  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Cascading location state
+  const [location, setLocation] = useState<CameroonLocationValue>({
+    region: "", division: "", subdivision: "",
+  });
+  const [locationError, setLocationError] = useState(false);
 
   // Register profilePhoto manually so we can keep a custom ref and onChange handler
   useEffect(() => {
@@ -195,9 +208,14 @@ const PatientSignup: React.FC = () => {
         age: Number(userData.age),
         sex: userData.sex,
         contact: userData.contact.trim(),
-        town: userData.town.trim(),
+        region: userData.region,
+        division: userData.division,
+        subdivision: userData.subdivision,
+        town: userData.subdivision, // keep for backward compat with location tracking
         street: userData.street.trim(),
         profilePhoto: profilePhotoURL,
+        language: userData.language || "",
+        occupation: userData.occupation?.trim() || "",
         role: "patient",
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -212,50 +230,38 @@ const PatientSignup: React.FC = () => {
     }
   };
 
-  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Validate file type
-      if (!file.type.startsWith("image/")) {
-        showToast(
-          t("err_invalid_image_type"),
-          "danger",
-        );
-        return;
-      }
+  const processImageFile = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      showToast(t("err_invalid_image_type"), "danger");
+      return;
+    }
+    if (file.size > VALIDATION.FILE.MAX_SIZE) {
+      showToast(t("err_image_too_large"), "danger");
+      return;
+    }
+    try {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
 
-      // Validate file size
-      if (file.size > VALIDATION.FILE.MAX_SIZE) {
-        showToast(t("err_image_too_large"), "danger");
-        return;
-      }
-
-      try {
-        // Create preview
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setPreviewImage(reader.result as string);
-        };
-        reader.readAsDataURL(file);
-
-        // Create a DataTransfer object to properly create FileList
-        const dataTransfer = new DataTransfer();
-        dataTransfer.items.add(file);
-
-        setValue("profilePhoto", dataTransfer.files);
-        await trigger("profilePhoto");
-      } catch (error) {
-        showToast(t("err_image_process_failed"), "danger");
-      }
-    } else {
-      setValue("profilePhoto", null);
-      setPreviewImage(null);
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(file);
+      setValue("profilePhoto", dataTransfer.files);
       await trigger("profilePhoto");
+    } catch (error) {
+      showToast(t("err_image_process_failed"), "danger");
     }
   };
 
+  const { fileInputRef: cameraFileInputRef, pickImage } = useCameraCapture({
+    onImage: processImageFile,
+    onError: (msg) => showToast(msg, "danger"),
+  });
+
   const triggerFileInput = () => {
-    fileInputRef.current?.click();
+    pickImage();
   };
 
   const onSubmit = async (data: FormData) => {
@@ -267,6 +273,17 @@ const PatientSignup: React.FC = () => {
       showToast(t("err_fix_form_errors"), "warning");
       return;
     }
+    // Validate location
+    if (!location.region) {
+      setLocationError(true);
+      showToast(t("err_region_required"), "warning");
+      return;
+    }
+    setLocationError(false);
+    // Inject location values into form data
+    data.region      = location.region;
+    data.division    = location.division;
+    data.subdivision = location.subdivision;
 
     setIsLoading(true);
     clearErrors();
@@ -402,8 +419,13 @@ const PatientSignup: React.FC = () => {
               <motion.div className="photo-upload-container">
                 <input
                   type="file"
-                  ref={fileInputRef}
-                  onChange={handleImageChange}
+                  ref={cameraFileInputRef}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) processImageFile(file);
+                    // reset so same file can be picked again
+                    e.target.value = "";
+                  }}
                   accept="image/*"
                   style={{ display: "none" }}
                 />
@@ -671,33 +693,25 @@ const PatientSignup: React.FC = () => {
                 )}
               </motion.div>
 
-              {/* Town */}
+              {/* Location — Region / Division / Subdivision */}
               <motion.div custom={7} variants={itemVariants}>
-                <IonItem className="form-item" lines="full">
-                  <FiMapPin className="input-icon" />
-                  <IonInput
-                    type="text"
-                    placeholder={t("field_town")}
-                    {...register("town", {
-                      required: t("err_town_required"),
-                      minLength: {
-                        value: VALIDATION.TOWN.MIN_LENGTH,
-                        message: t("err_min_chars", {
-                          min: VALIDATION.TOWN.MIN_LENGTH,
-                        }),
-                      },
-                      maxLength: {
-                        value: VALIDATION.TOWN.MAX_LENGTH,
-                        message: t("err_max_chars", {
-                          max: VALIDATION.TOWN.MAX_LENGTH,
-                        }),
-                      },
-                    })}
-                  />
-                </IonItem>
-                {errors.town && (
+                <CameroonLocationSelect
+                  value={location}
+                  onChange={(val) => { setLocation(val); setLocationError(false); }}
+                  itemClassName="form-item"
+                  regionError={locationError}
+                  labels={{
+                    region:           t("field_region"),
+                    division:         t("field_division"),
+                    subdivision:      t("field_subdivision"),
+                    selectRegion:     t("field_select_region"),
+                    selectDivision:   t("field_select_division"),
+                    selectSubdivision: t("field_select_subdivision"),
+                  }}
+                />
+                {locationError && (
                   <IonText color="danger" className="error-text">
-                    <p>{errors.town.message}</p>
+                    <p>{t("err_region_required")}</p>
                   </IonText>
                 )}
               </motion.div>
@@ -731,6 +745,37 @@ const PatientSignup: React.FC = () => {
                     <p>{errors.street.message}</p>
                   </IonText>
                 )}
+              </motion.div>
+
+              {/* Language (optional) */}
+              <motion.div custom={9} variants={itemVariants}>
+                <IonItem className="form-item" lines="full">
+                  <FiGlobe className="input-icon" />
+                  <IonSelect
+                    placeholder={t("field_language_optional")}
+                    interface="popover"
+                    {...register("language")}
+                  >
+                    {[
+                      "English", "French", "Fulfulde", "Ewondo", "Bassa",
+                      "Duala", "Beti", "Pidgin English", "Arabic", "Hausa",
+                    ].map((lang) => (
+                      <IonSelectOption key={lang} value={lang}>{lang}</IonSelectOption>
+                    ))}
+                  </IonSelect>
+                </IonItem>
+              </motion.div>
+
+              {/* Occupation (optional) */}
+              <motion.div custom={10} variants={itemVariants}>
+                <IonItem className="form-item" lines="full">
+                  <FiBriefcase className="input-icon" />
+                  <IonInput
+                    type="text"
+                    placeholder={t("field_occupation_optional")}
+                    {...register("occupation")}
+                  />
+                </IonItem>
               </motion.div>
 
               {/* Root error */}

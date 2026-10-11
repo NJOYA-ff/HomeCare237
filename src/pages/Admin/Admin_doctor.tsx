@@ -55,7 +55,7 @@ import {
 
 import {
   collection,
-  addDoc,
+  setDoc,
   updateDoc,
   deleteDoc,
   doc,
@@ -369,18 +369,24 @@ const Admin_doctors: React.FC = () => {
 
       const user = userCredential.user;
 
-      // Create doctor record in Firestore
+      // Create doctor record in Firestore.
+      // The document ID MUST be the Auth UID: sign-in looks the account up at
+      // doctors/{uid}, and firestore.rules identify a doctor the same way. An
+      // auto-generated ID here left the account unable to sign in. `role` is
+      // written explicitly so role detection never depends on the collection.
       const newDoctor = {
         ...doctorForm,
         email: authForm.email, // Use the email from auth form
         avatar: `https://ionicframework.com/docs/img/demos/avatar.svg`,
         rating: Math.floor(Math.random() * 2) + 4 + Math.random(), // Random rating between 4.0 and 5.0
         uid: user.uid, // Link to Firebase Auth UID
+        role: "doctor",
+        isActive: true,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
       };
 
-      await addDoc(doctorsCollection, newDoctor);
+      await setDoc(doc(db, "doctors", user.uid), newDoctor);
 
       presentToast({
         message: "Doctor account created successfully!",
@@ -452,17 +458,21 @@ const Admin_doctors: React.FC = () => {
 
       const user = userCredential.user;
 
-      // Create admin record in Firestore
+      // Create admin record in Firestore. Same reasoning as the doctor record
+      // above: the document ID must be the Auth UID and the role explicit, or
+      // the account cannot be found or authorised at sign-in.
       const newAdmin = {
         ...adminForm,
         email: authForm.email, // Use the email from auth form
         avatar: `https://ionicframework.com/docs/img/demos/avatar.svg`,
         uid: user.uid, // Link to Firebase Auth UID
+        role: "admin",
+        isActive: true,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
       };
 
-      await addDoc(adminsCollection, newAdmin);
+      await setDoc(doc(db, "admins", user.uid), newAdmin);
 
       presentToast({
         message: "Admin account created successfully!",
@@ -1211,7 +1221,7 @@ const Admin_doctors: React.FC = () => {
               <IonButton
                 color="medium"
                 onClick={closeModal}
-                fill="outline"
+                fill="solid"
                 className="action-button"
               >
                 Cancel

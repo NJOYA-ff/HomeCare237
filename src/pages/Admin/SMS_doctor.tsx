@@ -1,5 +1,6 @@
 import { avatarColor } from "../../utils/avatarColor";
 import React, { useState, useRef, useEffect } from "react";
+import { assertMicPermission, MicPermissionDeniedError } from "../../utils/micPermission";
 import {
   IonContent,
   IonHeader,
@@ -33,6 +34,7 @@ import {
   IonBackButton,
   IonFooter,
   IonBadge,
+  isPlatform,
 } from "@ionic/react";
 import { MessageBox } from "../../components/ui/MessageBox";
 import { useNotifications } from "../../context/NotificationContext";
@@ -90,7 +92,7 @@ interface Doctor {
   specialization: string;
   rating: number;
   reviews: number;
-  town: string;
+  subdivision: string;
   availability: string;
   image: string;
   languages: string[];
@@ -190,6 +192,7 @@ const SMS_doctor: React.FC = () => {
   const recordingIntervalRef = useRef<any>(null);
   const amplitudeIntervalRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const contentRef = useRef<HTMLIonContentElement>(null);
   const messageInputRef = useRef<HTMLIonTextareaElement>(null);
   const recordButtonRef = useRef<HTMLIonButtonElement>(null);
@@ -239,10 +242,21 @@ const SMS_doctor: React.FC = () => {
     try {
       const doctorsRef = collection(db, "doctors");
       const doctorsSnapshot = await getDocs(doctorsRef);
-      const doctorsData = doctorsSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Doctor[];
+      const doctorsData = doctorsSnapshot.docs.map((doc) => {
+        const data = (doc.data() ?? {}) as Record<string, any>;
+        return {
+          ...data,
+          id: doc.id,
+          name:
+            data.name ||
+            data.fullName ||
+            data.displayName ||
+            data.name1 ||
+            "Unknown Doctor",
+          specialization:
+            data.specialization || data.specialty || "General Practitioner",
+        };
+      }) as Doctor[];
       setDoctors(doctorsData);
     } catch (error) {
       console.error("Error loading doctors:", error);
@@ -455,11 +469,13 @@ const SMS_doctor: React.FC = () => {
   }, [messages, selectedChat]);
 
   const filteredDoctors = doctors
-    .filter(
-      (doctor) =>
-        doctor.name.toLowerCase().includes(searchText.toLowerCase()) ||
-        doctor.specialization.toLowerCase().includes(searchText.toLowerCase()),
-    )
+    .filter((doctor) => {
+      const term = searchText.toLowerCase();
+      return (
+        (doctor.name || "").toLowerCase().includes(term) ||
+        (doctor.specialization || "").toLowerCase().includes(term)
+      );
+    })
     .sort((a, b) => {
       const chatA = chatSessions.find((c) => c.doctorId === a.id);
       const chatB = chatSessions.find((c) => c.doctorId === b.id);
@@ -534,7 +550,12 @@ const SMS_doctor: React.FC = () => {
     }
   };
 
+  // Take photo using Capacitor Camera (native) or file picker (web)
   const handleTakePhoto = async () => {
+    if (!isPlatform("hybrid")) {
+      imageInputRef.current?.click();
+      return;
+    }
     try {
       const photo = await Camera.getPhoto({
         resultType: CameraResultType.DataUrl,
@@ -569,6 +590,23 @@ const SMS_doctor: React.FC = () => {
         color: "danger",
       });
     }
+  };
+
+  /** Web fallback: handles images selected via the hidden image file input */
+  const handleImageFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const objectUrl = URL.createObjectURL(file);
+    const attachment: Attachment = {
+      id: Math.random().toString(36).substring(7),
+      type: "image",
+      url: objectUrl,
+      name: file.name,
+      isPlaying: false,
+      currentTime: 0,
+    };
+    setAttachments((prev) => [...prev, attachment]);
+    if (imageInputRef.current) imageInputRef.current.value = "";
   };
 
   const handleSendMessage = async () => {
@@ -716,6 +754,7 @@ const SMS_doctor: React.FC = () => {
   // Recording functions
   const startRecording = async () => {
     try {
+      await assertMicPermission();
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
       // Setup audio context for amplitude visualization
@@ -765,9 +804,15 @@ const SMS_doctor: React.FC = () => {
       }, 100);
     } catch (error) {
       console.error("Error starting recording:", error);
-      setAlertMessage(
-        "Microphone access is required for voice messages. Please allow microphone permissions and try again.",
-      );
+      if (error instanceof MicPermissionDeniedError) {
+        setAlertMessage(
+          "Microphone access was denied. Please enable microphone permission in your device Settings and try again.",
+        );
+      } else {
+        setAlertMessage(
+          "Microphone access is required for voice messages. Please allow microphone permissions and try again.",
+        );
+      }
       setShowAlert(true);
     }
   };
@@ -1106,7 +1151,7 @@ const SMS_doctor: React.FC = () => {
                         {lastTime && <span className="wa-time">{lastTime}</span>}
                       </div>
                       <div className="wa-meta">
-                        {doctor.specialization}{doctor.town ? ` · ${doctor.town}` : ""}
+                        {doctor.specialization}{doctor.subdivision ? ` · ${doctor.subdivision}` : ""}
                       </div>
                       <div className="wa-bottom">
                         <span className="wa-preview">{lastMsg}</span>
@@ -1147,6 +1192,14 @@ const SMS_doctor: React.FC = () => {
           accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
           multiple
           onChange={handleFileSelect}
+        />
+        {/* Web fallback for camera — used when not running on native Android/iOS */}
+        <input
+          type="file"
+          ref={imageInputRef}
+          style={{ display: "none" }}
+          accept="image/*"
+          onChange={handleImageFileSelect}
         />
 
         <IonModal isOpen={showImageModal} onDidDismiss={() => setShowImageModal(false)} className="image-preview-modal">

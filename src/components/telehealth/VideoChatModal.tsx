@@ -1,5 +1,6 @@
 import LoadingHelix from "../LoadingHelix";
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { assertMicPermission, MicPermissionDeniedError } from "../../utils/micPermission";
 import {
   IonModal,
   IonContent,
@@ -243,6 +244,9 @@ export const VideoChatModal: React.FC<VideoChatModalProps> = ({
         return;
       }
 
+      // Guard: ensure microphone permission is not denied on Android/iOS
+      await assertMicPermission();
+
       // Get local media tracks
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
@@ -297,7 +301,11 @@ export const VideoChatModal: React.FC<VideoChatModalProps> = ({
           roomRef.current = null;
         }
         stopLocalTracks();
-        setError(err?.message || "Failed to connect to video call. Please check device permissions.");
+        if (err instanceof MicPermissionDeniedError) {
+          setError("Microphone access was denied. Please enable microphone permission in your device Settings, then try again.");
+        } else {
+          setError(err?.message || "Failed to connect to video call. Please check device permissions.");
+        }
       }
     } finally {
       if (attempt === connectAttemptRef.current) {
