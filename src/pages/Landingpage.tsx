@@ -47,7 +47,6 @@ const Landingpage: React.FC = () => {
   return (
     <IonPage>
       <IonContent fullscreen className="ob-content">
-       
 
         <IonGrid className="ob-grid">
           <IonRow className="ion-justify-content-center">

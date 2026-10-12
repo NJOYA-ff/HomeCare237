@@ -67,7 +67,9 @@ const AuthShell: React.FC<AuthShellProps> = ({
   return (
     <IonPage>
       <IonContent fullscreen className={className ? `auth-page ${className}` : "auth-page"}>
-    
+
+        {/* Backdrop */}
+        <div className="auth-canvas" aria-hidden="true" />
 
         <div className="auth-backrow">
           <GlassBackButton fallbackHref={backHref} label={backLabel} />

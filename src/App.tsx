@@ -281,7 +281,13 @@ class AuthService {
   }
 
   private async findUserInCollections(uid: string): Promise<User | null> {
-    const collections = ["patients", "doctors", "admins", "users"];
+    // Search order is intentionally admins → doctors → patients → users.
+    // A user found in `admins` must always be resolved as Admin, even if
+    // they also have a document in `doctors` or `patients` (e.g. an admin
+    // who previously signed up as a patient). Searching admins first ensures
+    // the highest-privilege collection wins, so an admin never ends up on
+    // the doctor or patient dashboard.
+    const collections = ["admins", "doctors", "patients", "users"];
 
     // Fast path: the document is keyed by the Auth UID — the format every
     // signup flow writes today.

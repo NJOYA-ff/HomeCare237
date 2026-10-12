@@ -6,7 +6,9 @@ import { IonButton, IonInput, IonItem, IonGrid, IonRow, IonCol, IonText } from "
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { FiMail, FiCheckCircle } from "react-icons/fi";
-import { authBackLabel, authBackTarget, roleLabel } from "../utils/authFlow";
+import { authBackLabel, authBackTarget } from "../utils/authFlow";
+import { authService } from "../App";
+import { getAuthErrorMessageT } from "../utils/authErrors";
 import "./Page.scss";
 
 type FormData = {
@@ -31,20 +33,15 @@ const AdminPasswordRecovery: React.FC = () => {
     setIsLoading(true);
     setErrorMessage("");
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    // Simulate error for demo purposes (remove in production)
-    if (data.email === "error@example.com") {
-      setErrorMessage(t("err_no_admin_account_email"));
+    try {
+      await authService.resetPassword(data.email);
+      setRecoverySent(true);
+      reset();
+    } catch (error: unknown) {
+      setErrorMessage(getAuthErrorMessageT(error, t));
+    } finally {
       setIsLoading(false);
-      return;
     }
-
-    console.log("Recovery email sent to:", data.email);
-    setIsLoading(false);
-    setRecoverySent(true);
-    reset();
   };
 
   const handleBackToLogin = () => {
@@ -56,7 +53,7 @@ const AdminPasswordRecovery: React.FC = () => {
     <AuthShell
       backHref={authBackTarget("admin", "recovery")}
       backLabel={authBackLabel("admin", "recovery", t)}
-      eyebrow={roleLabel("admin", t)}
+      eyebrow={t("funnel_admin")}
       title={
         recoverySent ? t("rec_check_inbox") : t("rec_title")
       }

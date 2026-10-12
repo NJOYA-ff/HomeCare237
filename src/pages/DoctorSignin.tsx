@@ -26,7 +26,6 @@ import { authService, UserRole } from "../App";
 import {
   authBackLabel,
   authBackTarget,
-  roleLabel,
 } from "../utils/authFlow";
 import { useHistory } from "react-router";
 
@@ -118,9 +117,9 @@ const DoctorSignin: React.FC = () => {
     <AuthShell
       backHref={authBackTarget("doctor", "signin")}
       backLabel={authBackLabel("doctor", "signin", t)}
-      eyebrow={roleLabel("doctor", t)}
+      eyebrow={t("funnel_doctor_or_admin")}
       title={t("funnel_welcome_back")}
-      subtitle={t("funnel_signin_doctor_sub")}
+      subtitle={t("funnel_signin_staff_sub")}
     >
       <form onSubmit={handleSubmit(onSubmit)}>
         <IonGrid>

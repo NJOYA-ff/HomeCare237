@@ -57,23 +57,6 @@ const Roleselect: React.FC = () => {
         />
       </div>
       <IonContent fullscreen className="welcome-content">
-        {/* <div className="background-gradient">
-       
-          <motion.div
-            className="circle circle-1"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 1.5, delay: 0.2 }}
-          />
-
-          <motion.div
-            className="circle circle-3"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 1.5, delay: 0.6 }}
-          />
-        </div> */}
-
         <IonGrid className="welcome-grid">
           <IonRow className="ion-justify-content-center">
             <IonCol size="12" className="ion-text-center">

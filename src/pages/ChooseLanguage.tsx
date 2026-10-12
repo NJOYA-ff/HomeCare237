@@ -1,8 +1,7 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { useHistory, useLocation } from "react-router-dom";
-import { IonIcon, IonSpinner } from "@ionic/react";
-import { motion } from "framer-motion";
-import { checkmark, globeOutline } from "ionicons/icons";
+import { IonIcon, IonSpinner, IonToggle } from "@ionic/react";
+import { globeOutline } from "ionicons/icons";
 
 import AuthShell from "../components/AuthShell";
 import { useSettings } from "../context/SettingsContext";
@@ -133,32 +132,28 @@ const ChooseLanguage: React.FC = () => {
       }
       title={t("lang_page_title")}
     >
-      <div className="lang-list" role="group" aria-label={t("lang_page_title")}>
-        {options.map((option, i) => {
-          const selected = language === option.code;
-          return (
-            <motion.button
-              key={option.code}
-              type="button"
-              className={`lang-card${selected ? " lang-card-on" : ""}`}
-              onClick={() => choose(option.code)}
-              aria-pressed={selected}
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.06 * i }}
-              whileTap={{ scale: 0.985 }}
-            >
-              <span className="lang-card-check" aria-hidden="true">
-                {selected ? <IonIcon icon={checkmark} /> : null}
-              </span>
-              <span className="lang-card-body">
-                {/* Single line: the endonym only. The sample sentence this used
-                    to render underneath is gone — see LangOption. */}
-                <span className="lang-card-native">{option.native}</span>
-              </span>
-            </motion.button>
-          );
-        })}
+      <div className="lang-toggle-wrap">
+        {/* Left label */}
+        <span
+          className={`lang-toggle-label${language === "en" ? " lang-toggle-label-on" : ""}`}
+          aria-hidden="true"
+        >
+          {options[0].native}
+        </span>
+
+        <IonToggle
+          checked={language === "fr"}
+          onIonChange={(e) => choose(e.detail.checked ? "fr" : "en")}
+          aria-label={t("lang_page_title")}
+        />
+
+        {/* Right label */}
+        <span
+          className={`lang-toggle-label${language === "fr" ? " lang-toggle-label-on" : ""}`}
+          aria-hidden="true"
+        >
+          {options[1].native}
+        </span>
       </div>
 
       <div className="lang-continue-row">

@@ -187,4 +187,37 @@ describe("DoctorSignin — admin access", () => {
       ).toBeInTheDocument();
     });
   });
+
+  it("shows a Doctor / Admin eyebrow — not a Doctor-only label", () => {
+    renderPage();
+    // The eyebrow chip must name both roles so an admin knows they are on the
+    // right page. "Doctor" alone would be confusing for an admin.
+    const eyebrow = screen.getByText(/Doctor\s*\/\s*Admin/i);
+    expect(eyebrow).toBeInTheDocument();
+  });
+
+  it("shows a staff subtitle — not a doctor-only patient-records message", () => {
+    renderPage();
+    // Must reference both roles or be role-neutral.
+    // The old doctor-only copy read "manage your appointments, consults and
+    // patient records", which excludes admins and signals the wrong audience.
+    const subtitle = screen.getByText(/Doctor or Admin credentials/i);
+    expect(subtitle).toBeInTheDocument();
+  });
+
+  it("links Forgot Password to the Doctor/Admin recovery page", () => {
+    renderPage();
+    // The Forgot Password button must NOT link to the doctor-only recovery
+    // route — admins need a recovery page that is labelled for them.
+    const btn = screen.getByText(/Forgot Password/i);
+    // The button is an IonButton with routerLink; in jsdom it renders as an
+    // <ion-button> custom element. Check the routerLink attribute directly.
+    const ionBtn = btn.closest("ion-button");
+    expect(ionBtn).not.toBeNull();
+    const link = ionBtn!.getAttribute("router-link") ?? ionBtn!.getAttribute("routerlink");
+    // Must route to a recovery page that is shared (Doctor_password_recovery
+    // is the real-Firebase-backed recovery shared by both roles).
+    expect(link).toMatch(/password_recovery/i);
+    expect(link).not.toMatch(/Patient/i);
+  });
 });

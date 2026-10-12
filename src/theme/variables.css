@@ -127,10 +127,10 @@
   /* The one funnel backdrop ramp (replaces three copies of the same 135deg
      gradient in Onboarding.css, WelcomePage.css and hc-auth.scss). */
   --hc-gradient-funnel: linear-gradient(
-    135deg,
-    var(--ion-color-primary-shade) 0%,
-    var(--ion-color-primary) 50%,
-    var(--ion-color-primary-tint) 100%
+    160deg,
+    #2563eb 0%,
+    #1d4ed8 50%,
+    #1e40af 100%
   );
 
   /* Glass ink — the white family used on the gradient. Expose the channel

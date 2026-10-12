@@ -2,7 +2,8 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
+    // ── Core auth helpers ────────────────────────────────────────────────────
+
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -11,6 +12,21 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
+    // isAdmin() checks two sources, in order:
+    //
+    //  1. Custom claim on the Firebase Auth token (set by your backend /
+    //     Cloud Function). Zero Firestore reads — fastest path.
+    //
+    //  2. A UID-keyed document in `admins`. Covers accounts provisioned by the
+    //     admin management UI (which writes the doc at admins/{uid}).
+    //
+    // NOTE: Legacy admin documents created with addDoc() have a *random* doc
+    // ID and the Auth UID only lives in a `uid` FIELD. Those accounts are
+    // handled by the special `allow list` rule on /admins below, which lets
+    // the app's where("uid","==",uid) query succeed. They cannot be detected
+    // here via exists() because the document ID is unknown — the app-layer
+    // findUserInCollections() resolves them, and once resolved the session
+    // carries the correct role for all subsequent requests.
     function isAdmin() {
       return isAuthenticated() && (
         request.auth.token.role == 'admin' ||
@@ -25,21 +41,30 @@ service cloud.firestore {
       );
     }
 
-    // Patients collection:
-    // - Authenticated users can create their own profile
-    // - Patients can read and update their own document
-    // - Doctors and Admins can view patient profiles for care & administration
+    // isStaff() — matches either doctors or admins. Used wherever either role
+    // should have the same access (e.g. reading patient records for care).
+    function isStaff() {
+      return isDoctor() || isAdmin();
+    }
+
+    // ── Patients ─────────────────────────────────────────────────────────────
+    //
+    //  - Authenticated users can create their own profile.
+    //  - Patients can read/update their own document.
+    //  - Doctors and Admins can read/update patient profiles for care.
+    //  - Only admins can delete patient records.
     match /patients/{patientId} {
       allow read: if isAuthenticated();
       allow create: if isOwner(patientId) || isAdmin();
-      allow update: if isOwner(patientId) || isDoctor() || isAdmin();
+      allow update: if isOwner(patientId) || isStaff();
       allow delete: if isAdmin();
     }
 
-    // Doctors collection:
-    // - Anyone authenticated can read verified doctor profiles (for booking/consults)
-    // - Doctors can update their own profile and availability
-    // - Admins can verify, enable, disable, or delete doctor accounts
+    // ── Doctors ──────────────────────────────────────────────────────────────
+    //
+    //  - Any authenticated user can browse verified doctor profiles.
+    //  - Doctors manage their own profile; admins manage all.
+    //  - Admins can verify, enable/disable, or delete doctor accounts.
     match /doctors/{doctorId} {
       allow read: if isAuthenticated();
       allow create: if isOwner(doctorId) || isAdmin();
@@ -47,28 +72,55 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // Admins collection:
-    // - Managed by verified admins (isAdmin()).
-    // - A signed-in user may also READ their own record:
-    //     • the UID-keyed document (current format — provable via
-    //       exists(.../admins/{auth.uid}) inside isAdmin()), or
-    //     • a legacy document whose `uid` FIELD equals their Auth UID.
-    //       Older builds created admin docs with addDoc(), so the document
-    //       ID is a random auto-ID and the Auth UID only lives in the
-    //       document. The field equality is exactly the constraint of the
-    //       sign-in fallback query, so the rules engine can prove it.
-    //       A user can only ever match their own record this way, so no
-    //       other admin's data becomes readable.
+    // ── Admins ───────────────────────────────────────────────────────────────
+    //
+    // Two document shapes exist in this collection:
+    //
+    //  • Modern  — document ID == Auth UID (written by current signup flow).
+    //  • Legacy  — document ID is a random auto-ID; Auth UID is in a `uid`
+    //              FIELD (written by old addDoc() calls).
+    //
+    // Sign-in flow for admins using the Doctor portal (DoctorSignin):
+    //  1. Firebase Auth succeeds with email/password.
+    //  2. App calls findUserInCollections(uid):
+    //     a. getDoc(admins/{uid})  → hits modern docs.
+    //     b. getDocs(where("uid","==",uid)) → hits legacy docs.
+    //        This query is validated by the `allow list` rule below, which
+    //        Firestore can prove because every doc returned satisfies
+    //        resource.data.uid == request.auth.uid.
+    //  3. resolveRole() returns UserRole.Admin (collection name wins).
+    //  4. assertRoleAccess([Doctor, Admin]) passes.
+    //  5. App routes to /admin/dashboard.
+    //
+    // Read access breakdown:
+    //  • get  (single-doc): isAdmin() or own UID-keyed doc, or legacy field match.
+    //  • list (collection query): isAdmin() or query filtered to own uid field.
+    //
+    // Write access: only existing admins can create / update / delete.
     match /admins/{adminId} {
-      allow read: if isAdmin() ||
+      allow get: if isAdmin() ||
+        (isAuthenticated() && (
+          adminId == request.auth.uid ||
+          resource.data.uid == request.auth.uid
+        ));
+
+      // The list rule must allow the legacy uid-field query:
+      //   getDocs(collection("admins"), where("uid","==",uid))
+      // Firestore rules can verify that every document the query could return
+      // satisfies resource.data.uid == request.auth.uid, so this is safe —
+      // a user can only ever retrieve their own record this way.
+      allow list: if isAdmin() ||
         (isAuthenticated() && resource.data.uid == request.auth.uid);
-      allow write: if isAdmin();
+
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
-    // Appointments collection:
-    // - Patients and Doctors involved in the appointment can read/update
-    // - Patients can create bookings
-    // - Admins can read/manage all appointments
+    // ── Appointments ─────────────────────────────────────────────────────────
+    //
+    //  - Patients and doctors involved in the appointment can read/update.
+    //  - Patients create bookings; admins manage all.
     match /appointments/{appointmentId} {
       allow read: if isAuthenticated() && (
         isAdmin() ||
@@ -89,18 +141,17 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // Diagnoses & Prescriptions collection:
-    // - Highly sensitive medical data
-    // - Patient can read their own diagnoses
-    // - Doctor can create and update diagnoses for their patients
-    // - Admins have clinical oversight
+    // ── Diagnoses & Prescriptions ────────────────────────────────────────────
+    //
+    //  Sensitive medical data: patients read their own; doctors create/update
+    //  for their patients; admins have clinical oversight.
     match /diagnoses/{diagnosisId} {
       allow read: if isAuthenticated() && (
         isAdmin() ||
         resource.data.patientId == request.auth.uid ||
         resource.data.doctorId == request.auth.uid
       );
-      allow create: if isAuthenticated() && (isDoctor() || isAdmin());
+      allow create: if isAuthenticated() && isStaff();
       allow update: if isAuthenticated() && (
         isAdmin() ||
         resource.data.doctorId == request.auth.uid
@@ -108,9 +159,10 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // Notifications:
-    // - Users can read and update (mark as read) their own notifications
-    // - Any authenticated user or Cloud Function can create a notification for another user
+    // ── Notifications ────────────────────────────────────────────────────────
+    //
+    //  Users read/update/delete their own; any authenticated user (or Cloud
+    //  Function running as an authenticated principal) can create one.
     match /notifications/{notificationId} {
       allow read, update, delete: if isAuthenticated() && (
         resource.data.recipientId == request.auth.uid ||
@@ -119,8 +171,7 @@ service cloud.firestore {
       allow create: if isAuthenticated();
     }
 
-    // Consultations & Messages (real-time chat):
-    // - Messages between doctor and patient
+    // ── Consultations & Messages (real-time chat) ────────────────────────────
     match /consultations/{consultationId} {
       allow read, write: if isAuthenticated();
 
@@ -133,65 +184,64 @@ service cloud.firestore {
       allow read, write: if isAuthenticated();
     }
 
-    // Medications tracker:
+    // ── Medications tracker ──────────────────────────────────────────────────
     match /medications/{medicationId} {
       allow read, write: if isAuthenticated() && (
         resource.data.patientId == request.auth.uid ||
         request.resource.data.patientId == request.auth.uid ||
-        isDoctor() ||
-        isAdmin()
+        isStaff()
       );
     }
 
-    // Patient Vitals:
+    // ── Patient Vitals ───────────────────────────────────────────────────────
     match /vitals/{vitalId} {
       allow read, write: if isAuthenticated() && (
         resource.data.patientId == request.auth.uid ||
         request.resource.data.patientId == request.auth.uid ||
-        isDoctor() ||
-        isAdmin()
+        isStaff()
       );
     }
 
-    // Call logs:
+    // ── Call logs ────────────────────────────────────────────────────────────
     match /callLogs/{logId} {
       allow read, write: if isAuthenticated();
     }
 
-    // Health units directory:
+    // ── Health units directory ───────────────────────────────────────────────
     match /health_units/{unitId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
 
-    // Articles / Education:
+    // ── Articles / Health Education ──────────────────────────────────────────
+    //
+    //  Public read so unauthenticated users can browse health tips; write is
+    //  restricted to staff (doctors publish articles, admins moderate).
     match /articles/{articleId} {
       allow read: if true;
-      allow write: if isAdmin() || isDoctor();
+      allow write: if isStaff();
     }
 
-    // FCM tokens:
+    // ── FCM tokens ───────────────────────────────────────────────────────────
     match /fcmTokens/{tokenId} {
       allow read, write: if isAuthenticated();
     }
 
-    // ── User Locations (real-time location tracking) ──────────────────────
+    // ── User Locations (real-time location sharing) ──────────────────────────
     //
     // Privacy model:
-    //  - A user can only WRITE their own location document (uid == document id).
-    //  - Any authenticated user can READ locations where isSharing == true,
-    //    so patients can see nearby doctors, doctors see patients, and the
-    //    admin sees everyone.
-    //  - Admins can read any location document regardless of isSharing.
-    //  - No one can read a location that has isSharing == false unless they
-    //    are the owner or an admin.
-    //  - Users can delete their own document to fully remove location data
-    //    (right-to-be-forgotten / GDPR compliance).
+    //  - A user writes only their own document (uid == document id).
+    //  - Authenticated users can read locations where isSharing == true
+    //    (patients see nearby doctors, doctors see patients, admin sees all).
+    //  - Admins can read any location regardless of isSharing.
+    //  - A location with isSharing == false is invisible unless the reader is
+    //    the owner or an admin.
+    //  - Users can delete their own document (GDPR right-to-erasure).
     //
-    // Enforced fields on write (prevents spoofing):
-    //  - uid must equal the authenticated user's UID
-    //  - isSharing must be a boolean
-    //  - lat/lng must be numbers (basic geo-bounds check for Cameroon ±10°)
+    // Write validation (prevents spoofing):
+    //  - uid field must match the authenticated UID.
+    //  - isSharing must be a boolean.
+    //  - lat/lng must be numbers within valid geographic bounds.
     match /userLocations/{userId} {
       allow read: if isAuthenticated() && (
         isAdmin() ||

@@ -6,7 +6,7 @@ import { IonButton, IonInput, IonItem, IonGrid, IonRow, IonCol, IonText } from "
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { FiMail, FiCheckCircle } from "react-icons/fi";
-import { authBackLabel, authBackTarget, roleLabel } from "../utils/authFlow";
+import { authBackLabel, authBackTarget } from "../utils/authFlow";
 import "./Page.scss";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../firebaseconfig";
@@ -103,7 +103,7 @@ const DoctorPasswordRecovery: React.FC = () => {
     <AuthShell
       backHref={authBackTarget("doctor", "recovery")}
       backLabel={authBackLabel("doctor", "recovery", t)}
-      eyebrow={roleLabel("doctor", t)}
+      eyebrow={t("funnel_doctor_or_admin")}
       title={
         recoverySent ? t("rec_check_inbox") : t("rec_title")
       }
