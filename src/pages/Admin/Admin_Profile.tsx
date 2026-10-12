@@ -72,7 +72,7 @@ import {
 } from "firebase/storage";
 import { db, auth, storage } from "../../firebaseconfig";
 import "./Admin.scss";
-import { DEFAULT_AVATAR, handleImageError } from "../../utils/profileImageStorage";
+import { DEFAULT_AVATAR, getDocumentImageUrl, handleImageError } from "../../utils/profileImageStorage";
 import { authService, UserRole } from "../../App";
 import { useHistory } from "react-router";
 interface AdminData {
@@ -105,6 +105,7 @@ const Admin_Profile: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showAvatarOptions, setShowAvatarOptions] = useState(false);
+  const [resolvedAvatar, setResolvedAvatar] = useState("");
   const [showReauthModal, setShowReauthModal] = useState(false);
   const [reauthPassword, setReauthPassword] = useState("");
   const [toast, setToast] = useState({
@@ -171,12 +172,19 @@ const Admin_Profile: React.FC = () => {
 
     const unsubscribe = onSnapshot(
       adminRef,
-      (docSnap) => {
+      async (docSnap) => {
         if (docSnap.exists()) {
           const adminData = docSnap.data() as any;
           const processedData = processAdminData(adminData);
           setAdmin(processedData);
           setTempData(processedData);
+          // Resolve avatar: Firestore fields first, then Google/Auth photoURL
+          try {
+            const url = await getDocumentImageUrl(adminData);
+            setResolvedAvatar(url || user.photoURL || "");
+          } catch {
+            setResolvedAvatar(user.photoURL || "");
+          }
         } else {
           console.log("No admin data found");
         }
@@ -316,6 +324,7 @@ const Admin_Profile: React.FC = () => {
         photoURL: avatarURL,
       });
 
+      setResolvedAvatar(avatarURL);
       showToast("Profile picture updated successfully");
     } catch (error) {
       console.error("Error updating avatar:", error);
@@ -594,11 +603,11 @@ const Admin_Profile: React.FC = () => {
             <IonItem><IonLabel position="stacked">Current Password</IonLabel>
               <IonInput type="password" value={reauthPassword} onIonInput={(e) => setReauthPassword(e.detail.value!)} clearOnEdit={false} />
             </IonItem>
-            <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 10 }}>
-              <IonButton expand="block" color="primary" onClick={handleReauthSubmit} disabled={!reauthPassword || isLoading}>
+            <div style={{ marginTop: 20, display: "flex", flexDirection: "row", gap: 10 }}>
+              <IonButton expand="block" color="medium" onClick={closeReauthModal} style={{ flex: 1 }}>Cancel</IonButton>
+              <IonButton expand="block" color="primary" onClick={handleReauthSubmit} disabled={!reauthPassword || isLoading} style={{ flex: 1 }}>
                 {isLoading ? "Verifying..." : "Confirm"}
               </IonButton>
-              <IonButton expand="block" fill="outline" color="medium" onClick={closeReauthModal}>Cancel</IonButton>
             </div>
           </IonContent>
         </IonModal>
@@ -631,7 +640,7 @@ const Admin_Profile: React.FC = () => {
               style={{ cursor: isEditing ? "pointer" : "default" }}>
               <IonAvatar className="profile-avatar">
                 <img
-                  src={admin.avatar || DEFAULT_AVATAR}
+                  src={resolvedAvatar || DEFAULT_AVATAR}
                   onError={handleImageError}
                   alt="Avatar"
                 />

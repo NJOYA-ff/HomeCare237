@@ -90,8 +90,8 @@ export const translations: Record<Language, Record<string, string>> = {
     funnel_signup_patient_sub: "A few details and you can book a doctor from anywhere in Cameroon.",
     funnel_signin_patient_sub: "Sign in to book appointments, message your doctor and track your care.",
     funnel_signin_doctor_sub: "Sign in to manage your appointments, consults and patient records.",
-    funnel_signin_staff_sub: "Sign in with your Doctor or Admin credentials.",
-    funnel_doctor_or_admin: "Doctor / Admin",
+    funnel_signin_staff_sub: "Sign in with your Doctor credentials.",
+    funnel_doctor_or_admin: "Doctor",
     funnel_join_as_doctor: "Join as a doctor",
     funnel_complete_registration: "Complete Registration",
     funnel_doctor_review_note: "Your profile is reviewed by an administrator before you go live.",
@@ -613,8 +613,8 @@ export const translations: Record<Language, Record<string, string>> = {
       "Connectez-vous pour réserver des rendez-vous, écrire à votre médecin et suivre vos soins.",
     funnel_signin_doctor_sub:
       "Connectez-vous pour gérer vos rendez-vous, vos consultations et les dossiers de vos patients.",
-    funnel_signin_staff_sub: "Connectez-vous avec vos identifiants Médecin ou Administrateur.",
-    funnel_doctor_or_admin: "Médecin / Admin",
+    funnel_signin_staff_sub: "Connectez-vous avec vos identifiants Médecin.",
+    funnel_doctor_or_admin: "Médecin",
     funnel_join_as_doctor: "Rejoindre en tant que médecin",
     funnel_complete_registration: "Terminer l'inscription",
     funnel_doctor_review_note:
