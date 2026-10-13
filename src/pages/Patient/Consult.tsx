@@ -2,7 +2,7 @@ import { avatarColor } from "../../utils/avatarColor";
 import LoadingHelix from "../../components/LoadingHelix";
 import { useLocation } from "react-router-dom";
 import { assertMicPermission, MicPermissionDeniedError } from "../../utils/micPermission";
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   IonContent,
   IonHeader,
@@ -36,6 +36,7 @@ import {
   IonBackButton,
   IonFooter,
   isPlatform,
+  type BackButtonEvent,
 } from "@ionic/react";
 import { MessageBox } from "../../components/ui/MessageBox";
 import { useNotifications } from "../../context/NotificationContext";
@@ -83,6 +84,8 @@ import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { onAuthStateChanged } from "firebase/auth";
 import VideoChatModal from "./VideoChat";
 import AudioCallModal from "./AudioCallModal";
+import { getConsultationRoomName } from "../../utils/consultationRoom";
+import { useTwilioVoicePresence } from "../../components/hooks/useTwilioVoicePresence";
 import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
 import { Capacitor } from "@capacitor/core";
 
@@ -200,6 +203,7 @@ const Consult: React.FC = () => {
   const [presentActionSheet] = useIonActionSheet();
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [roomToken, setRoomToken] = useState<string>("");
+  const [videoRoomName, setVideoRoomName] = useState<string>("");
   const [isCallModalOpen, setIsCallModalOpen] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("+237 57252109");
   const [contactName, setContactName] = useState("John Doe");
@@ -317,18 +321,27 @@ const Consult: React.FC = () => {
     setAttachments((prev) => [...prev, attachment]);
     if (imageInputRef.current) imageInputRef.current.value = "";
   };
-  // Mock token generation - replace with your actual backend call
-  const generateToken = async (roomName: string): Promise<string> => {
-    // In a real app, call your backend API
-    // For now, return a mock token (this won't actually work without a real backend)
-    return "mock-token-" + Date.now();
-  };
+  // Register for in-app Twilio Voice so doctors can reach this patient
+  useTwilioVoicePresence(
+    "patient",
+    currentUser?.uid,
+    Boolean(currentUser?.uid),
+  );
 
   const startVideoCall = async () => {
     try {
-      const roomName = `room-${Date.now()}`;
-      const token = await generateToken(roomName);
-      setRoomToken(token);
+      if (!currentUser?.uid || !selectedDoctor?.id) {
+        console.error("Cannot start video call without patient and doctor ids");
+        return;
+      }
+      // Stable room shared with the doctor (Doc_Consult uses the same helper)
+      const roomName = getConsultationRoomName(
+        currentUser.uid,
+        selectedDoctor.id,
+      );
+      setVideoRoomName(roomName);
+      // Empty token → VideoChatModal fetches a real JWT from /api/twilio/video-token
+      setRoomToken("");
       setIsVideoModalOpen(true);
     } catch (error) {
       console.error("Failed to start video call:", error);
@@ -1286,7 +1299,7 @@ const Consult: React.FC = () => {
     alert(`Initiating ${type} call with ${selectedDoctor?.name}`);
   };
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     setSelectedDoctor(null);
     setSelectedChat(null);
     setAttachments([]);
@@ -1294,7 +1307,23 @@ const Consult: React.FC = () => {
     setIsAdminChat(false);
     pauseAllAudio();
     setChatOpen(false);
-  };
+  }, [setChatOpen]);
+
+  // Device back closes the open chat thread first instead of leaving Consult
+  // (which previously left chatOpen/hide-tabs stuck and hid the tab bar).
+  useEffect(() => {
+    if (!selectedDoctor) return;
+
+    const onBack = (ev: Event) => {
+      const event = ev as BackButtonEvent;
+      event.detail.register(20, () => {
+        handleBack();
+      });
+    };
+
+    document.addEventListener("ionBackButton", onBack);
+    return () => document.removeEventListener("ionBackButton", onBack);
+  }, [selectedDoctor, handleBack]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -1740,9 +1769,14 @@ const Consult: React.FC = () => {
         </IonModal>
         <VideoChatModal
           isOpen={isVideoModalOpen}
-          onClose={() => setIsVideoModalOpen(false)}
-          roomName={`room-${Date.now()}`}
+          onClose={() => {
+            setIsVideoModalOpen(false);
+            setVideoRoomName("");
+            setRoomToken("");
+          }}
+          roomName={videoRoomName}
           token={roomToken}
+          callerName={selectedDoctor?.name}
         />
 
         <AudioCallModal

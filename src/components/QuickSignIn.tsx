@@ -18,7 +18,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { IonIcon, IonSpinner, IonText } from "@ionic/react";
+import { IonIcon, IonText } from "@ionic/react";
 import {
   fingerPrintOutline,
   keypadOutline,
@@ -37,6 +37,7 @@ import {
 } from "../utils/BiometricAuthService";
 import { getQuickSignInErrorMessageT } from "../utils/authErrors";
 import { useSettings } from "../context/SettingsContext";
+import LoadingHelix from "./LoadingHelix";
 import "./QuickSignIn.css";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -309,7 +310,7 @@ const QuickSignIn: React.FC<QuickSignInProps> = ({
               {/* ── Loading ──────────────────────────────────────────── */}
               {view === "loading" && (
                 <div className="qs-loading">
-                  <IonSpinner name="crescent" />
+                  <LoadingHelix size={36} color="var(--qs-loading-color)" />
                   <span>{t("qs_signing_in")}</span>
                 </div>
               )}

@@ -114,7 +114,7 @@ function timeAgo(dateStr: string): string {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-const Articles: React.FC = () => {
+export default function Articles() {
   // Topic + search
   const [activeTopic, setActiveTopic]     = useState(HEALTH_TOPICS[0]);
   const [searchText,  setSearchText]      = useState("");
@@ -208,27 +208,34 @@ const Articles: React.FC = () => {
         const statsMap: Record<string, any> = {};
         (statsData.items || []).forEach((v: any) => { statsMap[v.id] = v; });
 
-        const items: YTVideo[] = (searchData.items as any[])
-          .filter((i) => i.id?.videoId)
-          .map((item) => {
-            const id = item.id.videoId as string;
-            const s  = statsMap[id];
-            return {
-              id,
-              title:        item.snippet.title,
-              description:  item.snippet.description || "",
-              thumbnail:    item.snippet.thumbnails?.medium?.url ||
-                            item.snippet.thumbnails?.default?.url || "",
-              channelTitle: item.snippet.channelTitle,
-              publishedAt:  item.snippet.publishedAt,
-              viewCount:    s?.statistics?.viewCount    || "0",
-              likeCount:    s?.statistics?.likeCount    || "0",
-              commentCount: s?.statistics?.commentCount || "0",
-              duration:     s?.contentDetails?.duration || "",
-            };
+        const seenIds = new Set<string>();
+        const items: YTVideo[] = [];
+        for (const item of searchData.items as any[]) {
+          const id = item?.id?.videoId as string | undefined;
+          if (!id || seenIds.has(id)) continue;
+          seenIds.add(id);
+          const s = statsMap[id];
+          items.push({
+            id,
+            title:        item.snippet.title,
+            description:  item.snippet.description || "",
+            thumbnail:    item.snippet.thumbnails?.medium?.url ||
+                          item.snippet.thumbnails?.default?.url || "",
+            channelTitle: item.snippet.channelTitle,
+            publishedAt:  item.snippet.publishedAt,
+            viewCount:    s?.statistics?.viewCount    || "0",
+            likeCount:    s?.statistics?.likeCount    || "0",
+            commentCount: s?.statistics?.commentCount || "0",
+            duration:     s?.contentDetails?.duration || "",
           });
+        }
 
-        setVideos((prev) => isFirstPage ? items : [...prev, ...items]);
+        // Drop IDs already shown when paginating (YouTube can repeat results)
+        setVideos((prev) => {
+          if (isFirstPage) return items;
+          const existing = new Set(prev.map((v) => v.id));
+          return [...prev, ...items.filter((v) => !existing.has(v.id))];
+        });
         const next = searchData.nextPageToken || null;
         setNextPage(next);
         setHasMore(!!next);
@@ -765,6 +772,4 @@ const Articles: React.FC = () => {
       </IonModal>
     </IonPage>
   );
-};
-
-export default Articles;
+}

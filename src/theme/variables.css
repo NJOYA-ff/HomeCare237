@@ -246,6 +246,41 @@ body.dark {
 html,
 body {
   font-family: var(--hc-font-sans);
+  /* Safe-area / overscroll / edge-to-edge system-bar regions paint this.
+     SafeAreaThemeSync keeps these vars locked to the visible page
+     (header top + tab/content bottom). */
+  background-color: var(
+    --hc-safe-area-color-top,
+    var(--hc-safe-area-color, var(--ion-background-color))
+  );
+  background-image: linear-gradient(
+    var(--hc-safe-area-color-top, var(--hc-safe-area-color, var(--ion-background-color)))
+      0%,
+    var(--hc-safe-area-color-top, var(--hc-safe-area-color, var(--ion-background-color)))
+      50%,
+    var(--hc-safe-area-color-bottom, var(--hc-safe-area-color, var(--ion-background-color)))
+      50%,
+    var(--hc-safe-area-color-bottom, var(--hc-safe-area-color, var(--ion-background-color)))
+      100%
+  );
+}
+
+#root,
+ion-app {
+  background-color: var(
+    --hc-safe-area-color-top,
+    var(--hc-safe-area-color, var(--ion-background-color))
+  );
+  background-image: linear-gradient(
+    var(--hc-safe-area-color-top, var(--hc-safe-area-color, var(--ion-background-color)))
+      0%,
+    var(--hc-safe-area-color-top, var(--hc-safe-area-color, var(--ion-background-color)))
+      50%,
+    var(--hc-safe-area-color-bottom, var(--hc-safe-area-color, var(--ion-background-color)))
+      50%,
+    var(--hc-safe-area-color-bottom, var(--hc-safe-area-color, var(--ion-background-color)))
+      100%
+  );
 }
 
 ion-card {

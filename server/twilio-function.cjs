@@ -11,14 +11,19 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const path = require("path");
 
-// Load .env from repository root
+// Load .env / .env.local from repository root (server-side secrets live here)
 try {
-  require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
+  const dotenv = require("dotenv");
+  const root = path.resolve(__dirname, "..");
+  dotenv.config({ path: path.join(root, ".env") });
+  dotenv.config({ path: path.join(root, ".env.local"), override: true });
 } catch (e) {
   // Rely on process.env
 }
 
 const app = express();
+// urlencoded needed for Twilio Voice webhooks (form-encoded POST body)
+app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 // CORS middleware
@@ -37,13 +42,25 @@ app.use((req, res, next) => {
 
 const PORT = process.env.PORT || 3400;
 
-// Twilio credentials
-const accountSid = process.env.TWILIO_ACCOUNT_SID || "";
-const apiKey = process.env.TWILIO_API_KEY || "";
-const apiSecret = process.env.TWILIO_API_SECRET || "";
-const authToken = process.env.TWILIO_AUTH_TOKEN || "";
-const twilioPhone = process.env.TWILIO_PHONE_NUMBER || "";
-const twimlAppSid = process.env.TWILIO_TWIML_APP_SID || "";
+/**
+ * Resolve Twilio credentials from .env.
+ * Prefer TWILIO_* (server-only). Fall back to legacy VITE_TWILIO_* so older
+ * .env files still work — but secrets must never be shipped to the browser.
+ */
+function envFirst(...keys) {
+  for (const key of keys) {
+    const value = process.env[key];
+    if (value && String(value).trim()) return String(value).trim();
+  }
+  return "";
+}
+
+const accountSid = envFirst("TWILIO_ACCOUNT_SID", "VITE_TWILIO_ACCOUNT_SID");
+const apiKey = envFirst("TWILIO_API_KEY", "VITE_TWILIO_API_KEY");
+const apiSecret = envFirst("TWILIO_API_SECRET", "VITE_TWILIO_API_SECRET");
+const authToken = envFirst("TWILIO_AUTH_TOKEN", "VITE_TWILIO_AUTH_TOKEN");
+const twilioPhone = envFirst("TWILIO_PHONE_NUMBER", "VITE_TWILIO_PHONE_NUMBER");
+const twimlAppSid = envFirst("TWILIO_TWIML_APP_SID", "VITE_TWILIO_TWIML_APP_SID");
 
 // Gemini AI credentials
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
@@ -84,43 +101,69 @@ function createTwilioClient() {
   );
 }
 
-// Helper: Twilio AccessToken Generator
+function isPlaceholder(value) {
+  if (!value) return true;
+  const v = String(value).toLowerCase();
+  return (
+    v.includes("xxxxxxxx") ||
+    v.startsWith("your_") ||
+    v === "changeme" ||
+    v === "placeholder"
+  );
+}
+
+// Helper: Twilio AccessToken Generator (Voice JWT + Video JWT)
 function generateAccessToken({ identity, room, type }) {
-  if (!accountSid) {
-    throw new Error("TWILIO_ACCOUNT_SID is required to generate access tokens");
+  if (!accountSid || isPlaceholder(accountSid)) {
+    throw new Error(
+      "TWILIO_ACCOUNT_SID is missing or still a placeholder. Set your real Account SID in .env"
+    );
   }
 
-  // Token signing key: prefer apiKey+apiSecret; fallback to accountSid+authToken
-  const signingKey = apiKey || accountSid;
-  const signingSecret = apiSecret || authToken;
+  // Access Tokens MUST be signed with an API Key SID (SK...) + API Secret
+  if (!apiKey || isPlaceholder(apiKey) || !apiSecret || isPlaceholder(apiSecret)) {
+    throw new Error(
+      "TWILIO_API_KEY and TWILIO_API_SECRET are required in .env to mint Voice/Video tokens"
+    );
+  }
 
-  if (!signingKey || !signingSecret) {
-    throw new Error("Twilio API Key/Secret or Account SID/Auth Token required");
+  if (!apiKey.startsWith("SK")) {
+    throw new Error("TWILIO_API_KEY must be an API Key SID starting with SK");
   }
 
   const twilio = require("twilio");
   const { AccessToken } = twilio.jwt;
   const { VideoGrant, VoiceGrant } = AccessToken;
 
-  const validIdentity = (identity && String(identity).trim()) || `user_${Date.now()}`;
-  const token = new AccessToken(accountSid, signingKey, signingSecret, {
+  const validIdentity =
+    (identity && String(identity).trim()) || `user_${Date.now()}`;
+  const token = new AccessToken(accountSid, apiKey, apiSecret, {
     identity: validIdentity,
     ttl: 3600,
   });
 
-  if (type === "video" || room) {
-    const videoGrant = new VideoGrant({
-      room: room || undefined,
-    });
-    token.addGrant(videoGrant);
-  }
+  const kind = type || (room ? "video" : "voice");
 
-  if (type === "voice" || !room) {
-    const voiceGrant = new VoiceGrant({
-      outgoingApplicationSid: twimlAppSid || undefined,
-      incomingAllow: true,
-    });
-    token.addGrant(voiceGrant);
+  if (kind === "video") {
+    token.addGrant(
+      new VideoGrant({
+        room: room || undefined,
+      })
+    );
+  } else if (kind === "voice") {
+    if (!twimlAppSid || isPlaceholder(twimlAppSid)) {
+      throw new Error(
+        "TWILIO_TWIML_APP_SID is required for Voice calls. Create a TwiML App whose Voice URL is POST /api/twilio/voice"
+      );
+    }
+    token.addGrant(
+      new VoiceGrant({
+        outgoingApplicationSid: twimlAppSid,
+        incomingAllow: true,
+      })
+    );
+  } else {
+    throw new Error(`Unsupported token type: ${kind}`);
   }
 
   return {
@@ -129,13 +172,39 @@ function generateAccessToken({ identity, room, type }) {
   };
 }
 
+/**
+ * Escape XML special characters for TwiML payloads.
+ */
+function escapeXml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
 // ── Health Check ─────────────────────────────────────────────────────────────
 app.get("/", (req, res) => {
+  const hasAccount = Boolean(accountSid && !isPlaceholder(accountSid));
+  const hasApiKey = Boolean(
+    apiKey && !isPlaceholder(apiKey) && apiSecret && !isPlaceholder(apiSecret)
+  );
+  const hasTwiml = Boolean(twimlAppSid && !isPlaceholder(twimlAppSid));
   res.json({
     ok: true,
     name: "HomeCare237 API Server",
     env: process.env.NODE_ENV || "development",
-    hasTwilio: Boolean(accountSid && (authToken || (apiKey && apiSecret))),
+    hasTwilio: hasAccount && hasApiKey,
+    twilio: {
+      accountSid: hasAccount,
+      apiKey: hasApiKey,
+      authToken: Boolean(authToken && !isPlaceholder(authToken)),
+      phoneNumber: Boolean(twilioPhone && !isPlaceholder(twilioPhone)),
+      twimlApp: hasTwiml,
+      voiceReady: hasAccount && hasApiKey && hasTwiml,
+      videoReady: hasAccount && hasApiKey,
+    },
     hasGemini: Boolean(GEMINI_API_KEY),
     timestamp: new Date().toISOString(),
   });
@@ -215,6 +284,60 @@ app.post("/api/twilio/voice-token", (req, res) => {
       success: false,
       error: err.message || "Failed to generate voice token",
     });
+  }
+});
+
+/**
+ * TwiML App Voice webhook — used by the Voice SDK for outbound dialing.
+ * Configure the TwiML App Voice Request URL to POST here.
+ *
+ * Params from Device.connect({ params: { To } }):
+ *  - phone number (E.164) → <Dial><Number>
+ *  - client:identity     → <Dial><Client>
+ *  - bare identity       → <Dial><Client> (doctor_… / patient_…)
+ */
+app.post("/api/twilio/voice", (req, res) => {
+  try {
+    const toRaw = (req.body && (req.body.To || req.body.to)) || "";
+    const to = String(toRaw).trim();
+
+    if (!to) {
+      res.type("text/xml");
+      return res.send(
+        '<?xml version="1.0" encoding="UTF-8"?><Response><Say>No destination was provided.</Say><Hangup/></Response>'
+      );
+    }
+
+    let dialTarget;
+    if (to.startsWith("client:")) {
+      dialTarget = `<Client>${escapeXml(to.slice("client:".length))}</Client>`;
+    } else if (/^\+?\d{8,15}$/.test(to.replace(/[\s()-]/g, ""))) {
+      const number = to.startsWith("+") ? to : `+${to.replace(/\D/g, "")}`;
+      dialTarget = `<Number>${escapeXml(number)}</Number>`;
+    } else {
+      // Treat as in-app Voice client identity (e.g. doctor_uid / patient_uid)
+      dialTarget = `<Client>${escapeXml(to)}</Client>`;
+    }
+
+    const callerIdAttr =
+      twilioPhone && !isPlaceholder(twilioPhone)
+        ? ` callerId="${escapeXml(twilioPhone)}"`
+        : "";
+
+    const twiml =
+      `<?xml version="1.0" encoding="UTF-8"?>` +
+      `<Response><Dial${callerIdAttr}>${dialTarget}</Dial></Response>`;
+
+    res.type("text/xml");
+    return res.send(twiml);
+  } catch (err) {
+    console.error("/api/twilio/voice error:", err);
+    res.type("text/xml");
+    return res
+      .status(500)
+      .send(
+        '<?xml version="1.0" encoding="UTF-8"?><Response><Say>Call setup failed.</Say><Hangup/></Response>'
+      );
   }
 });
 
@@ -556,10 +679,15 @@ app.get("/api/youtube/search", async (req, res) => {
       statsMap[v.id] = { statistics: v.statistics, contentDetails: v.contentDetails };
     });
 
-    const items = searchData.items.map((item) => {
-      const id = item.id.videoId;
+    // Deduplicate by video id — YouTube search can return the same id twice
+    const seenIds = new Set();
+    const items = [];
+    for (const item of searchData.items) {
+      const id = item.id && item.id.videoId;
+      if (!id || seenIds.has(id)) continue;
+      seenIds.add(id);
       const stats = statsMap[id] || {};
-      return {
+      items.push({
         id,
         title: item.snippet.title,
         description: item.snippet.description,
@@ -571,8 +699,8 @@ app.get("/api/youtube/search", async (req, res) => {
         likeCount: stats.statistics?.likeCount || "0",
         commentCount: stats.statistics?.commentCount || "0",
         duration: stats.contentDetails?.duration || "",
-      };
-    });
+      });
+    }
 
     return res.json({
       success: true,
@@ -587,12 +715,25 @@ app.get("/api/youtube/search", async (req, res) => {
 
 // Start Server
 app.listen(PORT, () => {
-  console.log(`[HomeCare237 API] Listening on http://localhost:${PORT}`);
-  console.log(
-    accountSid
-      ? "  ✓ Twilio services active (SMS & Voice/Video Tokens)"
-      : "  ! Twilio disabled (set TWILIO_ACCOUNT_SID in .env)"
+  const hasAccount = Boolean(accountSid && !isPlaceholder(accountSid));
+  const hasApiKey = Boolean(
+    apiKey && !isPlaceholder(apiKey) && apiSecret && !isPlaceholder(apiSecret)
   );
+  const hasTwiml = Boolean(twimlAppSid && !isPlaceholder(twimlAppSid));
+
+  console.log(`[HomeCare237 API] Listening on http://localhost:${PORT}`);
+  if (hasAccount && hasApiKey) {
+    console.log("  ✓ Twilio Video tokens ready (/api/twilio/video-token)");
+    console.log(
+      hasTwiml
+        ? "  ✓ Twilio Voice tokens ready (/api/twilio/token, /api/twilio/voice-token)"
+        : "  ! Twilio Voice needs TWILIO_TWIML_APP_SID (Voice URL → POST /api/twilio/voice)"
+    );
+  } else {
+    console.log(
+      "  ! Twilio disabled — set TWILIO_ACCOUNT_SID, TWILIO_API_KEY, TWILIO_API_SECRET in .env"
+    );
+  }
   console.log(
     GEMINI_API_KEY
       ? `  ✓ Gemini AI Health Education active (model: ${GEMINI_MODEL})`

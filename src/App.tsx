@@ -105,7 +105,8 @@ import Roleselect from "./pages/Roleselect";
 import Roleselect2 from "./pages/Roleselect2";
 import ChooseLanguage from "./pages/ChooseLanguage";
 import { db, auth } from "./firebaseconfig";
-import { useCloseApp } from "./components/hooks/useCloseApp";
+import AndroidBackHandler from "./components/AndroidBackHandler";
+import SafeAreaThemeSync from "./components/SafeAreaThemeSync";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -815,8 +816,6 @@ const App: React.FC = () => {
   // Prevent showing the lock screen multiple times for the same resume event.
   const lockShown = useRef(false);
 
-  // useCloseApp();
-
   useEffect(() => {
       console.log("App component mounted, checking auth state");
 
@@ -977,6 +976,10 @@ const App: React.FC = () => {
             FirstRunGate route below is never reached. */}
         <ShowcasePreview />
         <IonReactRouter>
+          <SafeAreaThemeSync />
+          {currentUser && (
+            <AndroidBackHandler role={currentUser.role} />
+          )}
           <Route path="/verify-prescription/:id" exact={true}>
             <VerifyPrescription />
           </Route>

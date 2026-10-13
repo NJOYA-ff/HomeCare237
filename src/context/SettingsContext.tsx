@@ -354,6 +354,21 @@ export const translations: Record<Language, Record<string, string>> = {
     fontSizeLarge: "Large",
     account: "Account",
     changePassword: "Change Password",
+    deleteAccount: "Delete Account",
+    deleteAccountDesc: "Permanently erase your account and personal data",
+    deleteAccountWarning:
+      "This permanently deletes your account, profile, and related personal data. Appointments linked to you are removed. This cannot be undone.",
+    deleteAccountPasswordLabel: "Enter your password to confirm",
+    deleteAccountPasswordRequired: "Password is required to delete your account.",
+    deleteAccountWrongPassword: "Incorrect password. Please try again.",
+    deleteAccountTooManyRequests: "Too many attempts. Please wait and try again.",
+    deleteAccountRecentLogin:
+      "For security, sign out, sign back in, then delete your account again.",
+    deleteAccountGoogleHint:
+      "You will be asked to confirm with Google before your account is deleted.",
+    deleteAccountConfirm: "Delete my account",
+    deleteAccountFailed: "Could not delete your account. Please try again.",
+    deleteAccountSuccess: "Your account has been deleted.",
     privacy: "Privacy",
     about: "About",
     version: "Version",
@@ -879,6 +894,24 @@ export const translations: Record<Language, Record<string, string>> = {
     fontSizeLarge: "Grande",
     account: "Compte",
     changePassword: "Changer le Mot de Passe",
+    deleteAccount: "Supprimer le compte",
+    deleteAccountDesc: "Effacer définitivement votre compte et vos données personnelles",
+    deleteAccountWarning:
+      "Cela supprime définitivement votre compte, votre profil et vos données personnelles associées. Les rendez-vous liés à vous sont retirés. Cette action est irréversible.",
+    deleteAccountPasswordLabel: "Entrez votre mot de passe pour confirmer",
+    deleteAccountPasswordRequired:
+      "Le mot de passe est requis pour supprimer votre compte.",
+    deleteAccountWrongPassword: "Mot de passe incorrect. Veuillez réessayer.",
+    deleteAccountTooManyRequests:
+      "Trop de tentatives. Veuillez patienter puis réessayer.",
+    deleteAccountRecentLogin:
+      "Pour des raisons de sécurité, déconnectez-vous, reconnectez-vous, puis supprimez à nouveau votre compte.",
+    deleteAccountGoogleHint:
+      "Vous devrez confirmer avec Google avant la suppression de votre compte.",
+    deleteAccountConfirm: "Supprimer mon compte",
+    deleteAccountFailed:
+      "Impossible de supprimer votre compte. Veuillez réessayer.",
+    deleteAccountSuccess: "Votre compte a été supprimé.",
     privacy: "Confidentialité",
     about: "À Propos",
     version: "Version",

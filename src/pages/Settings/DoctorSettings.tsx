@@ -21,6 +21,7 @@ import {
   IonButton,
   useIonToast,
 } from "@ionic/react";
+import { useHistory } from "react-router-dom";
 import { useMessageBox } from "../../components/ui/useMessageBox";
 import {
   languageOutline,
@@ -35,6 +36,7 @@ import {
   medkitOutline,
   cashOutline,
   checkmarkOutline,
+  trashOutline,
 } from "ionicons/icons";
 import { useSettings } from "../../context/SettingsContext";
 import {
@@ -44,8 +46,10 @@ import {
 } from "../../utils/BiometricAuthService";
 import PinSetupModal from "../../components/PinSetupModal";
 import PasswordResetModal from "../../components/PasswordResetModal";
+import DeleteAccountModal from "../../components/DeleteAccountModal";
 import { auth, db } from "../../firebaseconfig";
 import { aboutMessage } from "../../data/appCredits";
+import { authService } from "../../App";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import "../Settings/Settings.scss";
 
@@ -61,6 +65,7 @@ const DoctorSettings: React.FC = () => {
 
   const [presentToast] = useIonToast();
   const presentMessage = useMessageBox();
+  const history = useHistory();
 
   // Biometry
   const [bioAvailable, setBioAvailable] = useState(false);
@@ -72,6 +77,9 @@ const DoctorSettings: React.FC = () => {
 
   // Password reset modal
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+
+  // Account deletion modal
+  const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
 
   // Doctor-specific prefs
   const [isAvailable, setIsAvailable] = useState(false);
@@ -185,6 +193,19 @@ const DoctorSettings: React.FC = () => {
     }
     setPasswordModalOpen(true);
   }, [presentToast]);
+
+  const handleAccountDeleted = useCallback(() => {
+    // Navigate before clearing app auth state so the public sign-in route is
+    // ready when listeners unmount the authenticated settings tree.
+    presentToast({
+      message: t("deleteAccountSuccess"),
+      duration: 3000,
+      color: "medium",
+      position: "top",
+    });
+    history.push("/Doctor_signin");
+    authService.setUser(null);
+  }, [history, presentToast, t]);
 
   const handleAbout = useCallback(() => {
     presentMessage({
@@ -349,6 +370,13 @@ const DoctorSettings: React.FC = () => {
             <IonIcon icon={lockClosedOutline} slot="start" className="settings-icon" />
             <IonLabel>{t("changePassword")}</IonLabel>
           </IonItem>
+          <IonItem button detail onClick={() => setDeleteAccountOpen(true)}>
+            <IonIcon icon={trashOutline} slot="start" className="settings-icon settings-icon-danger" />
+            <IonLabel>
+              <h3>{t("deleteAccount")}</h3>
+              <p className="settings-desc">{t("deleteAccountDesc")}</p>
+            </IonLabel>
+          </IonItem>
           <IonItem button detail onClick={handleAbout}>
             <IonIcon icon={informationCircleOutline} slot="start" className="settings-icon" />
             <IonLabel>{t("about")}</IonLabel>
@@ -365,6 +393,13 @@ const DoctorSettings: React.FC = () => {
         isOpen={passwordModalOpen}
         email={auth.currentUser?.email ?? null}
         onDidDismiss={() => setPasswordModalOpen(false)}
+      />
+
+      <DeleteAccountModal
+        isOpen={deleteAccountOpen}
+        role="doctor"
+        onDidDismiss={() => setDeleteAccountOpen(false)}
+        onDeleted={handleAccountDeleted}
       />
     </IonPage>
   );

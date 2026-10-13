@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   IonTabs,
   IonTabBar,
@@ -19,7 +19,7 @@ import Medications from "../pages/Patient/Medications";
 import Vitals from "../pages/Patient/Vitals";
 import SOS from "../pages/Patient/SOS";
 import Timeline from "../pages/Patient/Timeline";
-import Articles from "../pages/Patient/Articles";
+import ArticlesPage from "../pages/Patient/Articles";
 import Receipts from "../pages/Patient/Receipts";
 import SettingsPage from "../pages/Settings/SettingsPage";
 import PatientSettings from "../pages/Settings/PatientSettings";
@@ -39,8 +39,20 @@ import { useSettings } from "../context/SettingsContext";
 
 const Tabs: React.FC = () => {
   const location = useLocation();
-  const { chatOpen } = useChatContext();
+  const { chatOpen, setChatOpen } = useChatContext();
   const { t } = useSettings();
+
+  const onConsult = location.pathname.startsWith("/patient/consult");
+  // Only hide while a chat thread is open on Consult. Hardware back can leave
+  // chatOpen stuck true after leaving the page; clear it whenever we leave.
+  const hideTabBar = chatOpen && onConsult;
+
+  useEffect(() => {
+    if (!onConsult) {
+      setChatOpen(false);
+      document.body.classList.remove("hide-tabs");
+    }
+  }, [onConsult, setChatOpen]);
 
   const tabPages = [
     { titleKey: "tabHome", url: "/patient/dashboard", icon: <MdSpaceDashboard size={18} />, tab: "home" },
@@ -73,13 +85,13 @@ const Tabs: React.FC = () => {
         <Route path="/patient/vitals" exact><Vitals /></Route>
         <Route path="/patient/sos" exact><SOS /></Route>
         <Route path="/patient/timeline" exact><Timeline /></Route>
-        <Route path="/patient/articles" exact><Articles /></Route>
+        <Route path="/patient/articles" exact><ArticlesPage /></Route>
         <Route path="/patient/receipts" exact><Receipts /></Route>
         {/* Catch-all: redirect any unmatched path (e.g. /landingpage after Google OAuth) */}
         <Redirect to="/patient/dashboard" />
       </IonRouterOutlet>
 
-      <IonTabBar slot="bottom" className="custom-tab-bar" style={chatOpen ? { display: "none" } : {}}>
+      <IonTabBar slot="bottom" className="custom-tab-bar" style={hideTabBar ? { display: "none" } : undefined}>
         {tabPages.map(({ url, icon, tab, titleKey }) => {
           const active = isTabActive(url);
           const label = t(titleKey);

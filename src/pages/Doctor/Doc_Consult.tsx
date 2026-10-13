@@ -80,6 +80,8 @@ import { onAuthStateChanged } from "firebase/auth";
 import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
 import VideoChatModal from "./VideoChat";
 import AudioCallModal from "./AudioCallModal";
+import { getConsultationRoomName } from "../../utils/consultationRoom";
+import { useTwilioVoicePresence } from "../../components/hooks/useTwilioVoicePresence";
 
 
 // Updated interfaces to match Consult component
@@ -196,6 +198,7 @@ const Doc_Consult: React.FC = () => {
   const [presentActionSheet] = useIonActionSheet();
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
   const [roomToken, setRoomToken] = useState<string>("");
+  const [videoRoomName, setVideoRoomName] = useState<string>("");
   const [isCallModalOpen, setIsCallModalOpen] = useState(false);
 
   const { sendLocalNotification } = useNotifications();
@@ -203,15 +206,26 @@ const Doc_Consult: React.FC = () => {
     setIsCallModalOpen(true);
   };
 
-  const generateToken = async (roomName: string): Promise<string> => {
-    return "mock-token-" + Date.now();
-  };
+  // Register for in-app Twilio Voice so patients can reach this doctor
+  useTwilioVoicePresence(
+    "doctor",
+    currentUser?.uid,
+    Boolean(currentUser?.uid),
+  );
 
   const startVideoCall = async () => {
     try {
-      const roomName = `room-${Date.now()}`;
-      const token = await generateToken(roomName);
-      setRoomToken(token);
+      const patientId =
+        selectedPatient?.userId || selectedPatient?.id || "";
+      if (!currentUser?.uid || !patientId) {
+        console.error("Cannot start video call without doctor and patient ids");
+        return;
+      }
+      // Stable room shared with the patient (Consult uses the same helper)
+      const roomName = getConsultationRoomName(currentUser.uid, patientId);
+      setVideoRoomName(roomName);
+      // Empty token → VideoChatModal fetches a real JWT from /api/twilio/video-token
+      setRoomToken("");
       setIsVideoModalOpen(true);
     } catch (error) {
       console.error("Failed to start video call:", error);
@@ -1131,7 +1145,22 @@ const Doc_Consult: React.FC = () => {
     setAttachments([]);
     setNewMessage("");
     pauseAllAudio();
+    window.document.body.classList.remove("hide-tabs");
   };
+
+  // Device back closes the open chat before popping the route.
+  useEffect(() => {
+    if (!selectedPatient) return;
+
+    const onBack = (ev: Event) => {
+      (ev as CustomEvent).detail.register(20, () => {
+        handleBack();
+      });
+    };
+
+    document.addEventListener("ionBackButton", onBack);
+    return () => document.removeEventListener("ionBackButton", onBack);
+  }, [selectedPatient]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -1635,9 +1664,14 @@ const Doc_Consult: React.FC = () => {
         </IonModal>
         <VideoChatModal
           isOpen={isVideoModalOpen}
-          onClose={() => setIsVideoModalOpen(false)}
-          roomName={`room-${Date.now()}`}
+          onClose={() => {
+            setIsVideoModalOpen(false);
+            setVideoRoomName("");
+            setRoomToken("");
+          }}
+          roomName={videoRoomName}
           token={roomToken}
+          callerName={selectedPatient?.name}
         />
 
         <AudioCallModal

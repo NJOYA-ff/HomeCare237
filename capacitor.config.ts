@@ -1,11 +1,19 @@
+/// <reference types="@capacitor-community/safe-area" />
 import type { CapacitorConfig } from "@capacitor/cli";
+
 const config: CapacitorConfig = {
   appId: "io.homecare237.starter",
   appName: "HomeCare237",
   webDir: "dist",
+  // Native window colour behind the WebView — kept in sync with the light
+  // app chrome. Runtime page colours are applied by SafeAreaThemeSync.
+  backgroundColor: "#ffffff",
   android: {
     backgroundColor: "#ffffff",
     allowMixedContent: true,
+  },
+  ios: {
+    backgroundColor: "#ffffff",
   },
   plugins: {
     SplashScreen: {
@@ -31,6 +39,14 @@ const config: CapacitorConfig = {
       smallIcon: "ic_notification",
       iconColor: "#488AFF",
       sound: "beep.wav",
+    },
+    // Edge-to-edge safe areas: initial bar content style (light icons on
+    // splash/brand). SafeAreaThemeSync updates this per route + theme.
+    SafeArea: {
+      statusBarStyle: "DARK",
+      navigationBarStyle: "DARK",
+      detectViewportFitCoverChanges: true,
+      initialViewportFitCover: true,
     },
     server: {
       androidScheme: "https",

@@ -52,24 +52,34 @@ service cloud.firestore {
     //  - Authenticated users can create their own profile.
     //  - Patients can read/update their own document.
     //  - Doctors and Admins can read/update patient profiles for care.
-    //  - Only admins can delete patient records.
+    //  - Owners can delete their own profile (self-service account deletion);
+    //    admins can delete any patient record.
     match /patients/{patientId} {
       allow read: if isAuthenticated();
       allow create: if isOwner(patientId) || isAdmin();
       allow update: if isOwner(patientId) || isStaff();
-      allow delete: if isAdmin();
+      allow delete: if isOwner(patientId) || isAdmin();
+
+      // Subcollections the patient app writes under the profile document
+      // (medications tracker, family members). Owner + staff can manage them;
+      // owner delete is required for account erasure.
+      match /{subcollection}/{docId} {
+        allow read, write: if isOwner(patientId) || isStaff();
+        allow delete: if isOwner(patientId) || isAdmin();
+      }
     }
 
     // ── Doctors ──────────────────────────────────────────────────────────────
     //
     //  - Any authenticated user can browse verified doctor profiles.
     //  - Doctors manage their own profile; admins manage all.
-    //  - Admins can verify, enable/disable, or delete doctor accounts.
+    //  - Owners can delete their own profile (self-service account deletion);
+    //    admins can verify, enable/disable, or delete doctor accounts.
     match /doctors/{doctorId} {
       allow read: if isAuthenticated();
       allow create: if isOwner(doctorId) || isAdmin();
       allow update: if isOwner(doctorId) || isAdmin();
-      allow delete: if isAdmin();
+      allow delete: if isOwner(doctorId) || isAdmin();
     }
 
     // ── Admins ───────────────────────────────────────────────────────────────
@@ -138,7 +148,14 @@ service cloud.firestore {
         resource.data.doctorId == request.auth.uid ||
         resource.data.doctorUserId == request.auth.uid
       );
-      allow delete: if isAdmin();
+      // Patients and doctors may erase their own bookings when deleting their
+      // account; admins retain full delete for moderation.
+      allow delete: if isAuthenticated() && (
+        isAdmin() ||
+        resource.data.patientId == request.auth.uid ||
+        resource.data.doctorId == request.auth.uid ||
+        resource.data.doctorUserId == request.auth.uid
+      );
     }
 
     // ── Diagnoses & Prescriptions ────────────────────────────────────────────

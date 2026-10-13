@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from "framer-motion";
 
 import { SHOWCASE_SERVICES } from "../../data/servicesShowcase";
 import { useSettings } from "../../context/SettingsContext";
+import appLogo from "../../pages/images/icon.png";
 import ShowcaseArt, { ShowcaseOperators } from "./ShowcaseArt";
 import ShowcaseRipple from "./ShowcaseRipple";
 import "./FirstRunShowcase.css";
@@ -187,6 +188,16 @@ const FirstRunShowcase: React.FC<FirstRunShowcaseProps> = ({ onDone }) => {
                   inert={!active}
                 >
                   <article className="sc-card">
+                    {/* Brand mark on every slide so the deck stays HomeCare237
+                        even while the illustration changes. Decorative: the
+                        slide's art wrapper already carries the accessible name. */}
+                    <img
+                      className="sc-card-logo"
+                      src={appLogo}
+                      alt=""
+                      aria-hidden="true"
+                      draggable={false}
+                    />
                     {/* The illustration, described once here for assistive tech.
                         The description lives on this wrapper rather than on the
                         <img> because ShowcaseArt renders decorative art with

@@ -319,6 +319,20 @@
   max-width: 38ch;
 }
 
+/* ── Brand mark ──
+ * Same icon as the landing / role-select funnel. Compact so it brands each
+ * slide without stealing height from the illustration. */
+.sc-card-logo {
+  display: block;
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 12px;
+  object-fit: contain;
+  border-radius: 12px;
+  pointer-events: none;
+  user-select: none;
+}
+
 /* ── Art ──
  * The scene is a fixed square so the card keeps its height from slide to slide
  * — the deck must not jump as the user advances. Sized in `cqi`/`min()` terms so
@@ -635,6 +649,12 @@
     font-size: 0.93rem;
   }
 
+  .sc-card-logo {
+    width: 44px;
+    height: 44px;
+    margin-bottom: 10px;
+  }
+
   .sc-card-art {
     margin-bottom: 16px;
   }
@@ -657,6 +677,13 @@
   .sc-card {
     padding-right: 22px;
     padding-left: 22px;
+  }
+
+  .sc-card-logo {
+    width: 36px;
+    height: 36px;
+    margin-bottom: 8px;
+    border-radius: 8px;
   }
 
   .sc-card-art {

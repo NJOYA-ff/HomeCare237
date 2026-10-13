@@ -14,9 +14,8 @@
     <meta name="format-detection" content="telephone=no" />
     <meta name="msapplication-tap-highlight" content="no" />
 
-    <!-- Brand + status-bar colors follow the app theme -->
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#2563eb" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f1117" />
+    <!-- Updated at runtime by SafeAreaThemeSync to match the active page -->
+    <meta name="theme-color" content="#2563eb" />
 
     <link rel="manifest" href="/manifest.json" />
 
@@ -31,13 +30,15 @@
     <!-- add to homescreen for ios -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="HomeCare237" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <!-- black-translucent: page colour paints under the status bar -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   </head>
   <body>
     <div id="root"></div>
     <script>
-      // Apply the persisted theme before the app renders to avoid a flash of
-      // the wrong palette. SettingsContext keeps this in sync afterwards.
+      // Apply the persisted theme + safe-area chrome before the app renders to
+      // avoid a flash of the wrong palette. SafeAreaThemeSync keeps both in
+      // sync afterwards (route + dark mode).
       (function () {
         try {
           var mode = localStorage.getItem("hc_darkMode") || "system";
@@ -45,10 +46,21 @@
             mode === "dark" ||
             (mode === "system" &&
               window.matchMedia("(prefers-color-scheme: dark)").matches);
+          // Default to app chrome (toolbar/tab). Auth routes swap to brand
+          // blue once SafeAreaThemeSync mounts — avoids a blue flash on
+          // cold-start into a logged-in dashboard.
+          var chrome = dark ? "#13151e" : "#ffffff";
           if (dark) {
             document.body.classList.add("dark");
             document.documentElement.classList.add("ion-palette-dark");
           }
+          document.documentElement.style.setProperty("--hc-safe-area-color", chrome);
+          document.documentElement.style.setProperty("--hc-safe-area-color-top", chrome);
+          document.documentElement.style.setProperty("--hc-safe-area-color-bottom", chrome);
+          document.documentElement.style.backgroundColor = chrome;
+          document.body.style.backgroundColor = chrome;
+          var themeMeta = document.querySelector('meta[name="theme-color"]');
+          if (themeMeta) themeMeta.setAttribute("content", chrome);
         } catch (e) {
           /* localStorage unavailable — SettingsContext will handle it */
         }

@@ -1,0 +1,57 @@
+#delete-account-modal {
+  --background: var(--ion-background-color, #fff);
+  --border-radius: 16px 16px 0 0;
+  --backdrop-opacity: 0.5;
+
+  ion-toolbar {
+    --background: var(--ion-color-light);
+    --border-color: var(--ion-color-light-shade);
+  }
+}
+
+.delete-account-warning {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  margin: 8px 0 18px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--ion-color-danger) 12%, transparent);
+  color: var(--ion-color-danger-shade, var(--ion-color-danger));
+
+  ion-icon {
+    flex-shrink: 0;
+    margin-top: 2px;
+    --hc-icon-size: 22px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--ion-text-color);
+  }
+}
+
+.delete-account-password-item {
+  --background: var(--ion-color-light, #f4f5f8);
+  border-radius: 12px;
+  margin-bottom: 12px;
+}
+
+.delete-account-google-hint {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ion-color-medium);
+}
+
+.delete-account-error {
+  margin: 8px 0 12px;
+  font-size: 13px;
+}
+
+.delete-account-confirm {
+  margin-top: 8px;
+  min-height: 44px;
+}

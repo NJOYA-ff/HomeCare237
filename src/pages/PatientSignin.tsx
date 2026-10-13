@@ -45,7 +45,7 @@ const PatientSignin: React.FC = () => {
         // Force redirect to ensure navigation
         switch (user.role) {
           case UserRole.Patient:
-            history.push("/patient/dashboard");
+            history.replace("/patient/dashboard");
             break;
 
         default:
@@ -91,7 +91,7 @@ const PatientSignin: React.FC = () => {
         UserRole.Patient
       );
       if (user) {
-        history.push("/patient/dashboard");
+        history.replace("/patient/dashboard");
       } else {
         setLoginError(t("err_quick_signin_failed"));
       }
@@ -264,7 +264,7 @@ const PatientSignin: React.FC = () => {
                           // Mobile → redirect flow, page navigates away, returns null.
                           const user = await authService.loginWithGoogle(UserRole.Patient);
                           if (user) {
-                            history.push("/patient/dashboard");
+                            history.replace("/patient/dashboard");
                           }
                         } catch (err: unknown) {
                           // Closing the Google popup is a normal user action, not

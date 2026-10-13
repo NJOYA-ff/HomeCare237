@@ -62,9 +62,9 @@ const DoctorSignin: React.FC = () => {
         // `default` branch — an unexpected role must never be funneled into
         // a dashboard it does not belong to.
         if (user.role === UserRole.Admin) {
-          history.push("/admin/dashboard");
+          history.replace("/admin/dashboard");
         } else if (user.role === UserRole.Doctor) {
-          history.push("/doc/dashboard");
+          history.replace("/doc/dashboard");
         }
       } else {
         setLoginError(t("err_login_failed"));
@@ -97,9 +97,9 @@ const DoctorSignin: React.FC = () => {
       if (user) {
         // Same strict role routing as the password path above — no default.
         if (user.role === UserRole.Admin) {
-          history.push("/admin/dashboard");
+          history.replace("/admin/dashboard");
         } else if (user.role === UserRole.Doctor) {
-          history.push("/doc/dashboard");
+          history.replace("/doc/dashboard");
         }
       } else {
         setLoginError(t("err_quick_signin_failed"));
@@ -280,9 +280,9 @@ const DoctorSignin: React.FC = () => {
                             // Strict role routing from the Firebase-loaded
                             // role — no default branch (see password path).
                             if (user.role === UserRole.Admin) {
-                              history.push("/admin/dashboard");
+                              history.replace("/admin/dashboard");
                             } else if (user.role === UserRole.Doctor) {
-                              history.push("/doc/dashboard");
+                              history.replace("/doc/dashboard");
                             }
                           }
                         } catch (err: unknown) {

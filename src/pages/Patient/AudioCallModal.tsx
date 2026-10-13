@@ -30,6 +30,7 @@ import {
 } from "firebase/firestore";
 import { twilioServiceAlternative } from "../../components/Services/twilioService";
 import { avatarColor } from "../../utils/avatarColor";
+import { getVoiceClientIdentity } from "../../utils/consultationRoom";
 import CallMessageBox from "../../components/telehealth/CallMessageBox";
 import useCallConnectTimeout from "../../components/hooks/useCallConnectTimeout";
 import "../../components/telehealth/AudioCallModal.scss";
@@ -192,9 +193,8 @@ const AudioCallModal: React.FC<AudioCallModalProps> = ({
   const initializeTwilio = async () => {
     const currentUser = auth.currentUser;
     if (!currentUser) throw new Error("Please log in to make a call");
-    const token = await twilioServiceAlternative.getCallToken(
-      `patient_${currentUser.uid}`,
-    );
+    const identity = getVoiceClientIdentity("patient", currentUser.uid);
+    const token = await twilioServiceAlternative.getCallToken(identity);
     await twilioServiceAlternative.initialize(token);
   };
 
@@ -245,9 +245,16 @@ const AudioCallModal: React.FC<AudioCallModalProps> = ({
       setError("");
       await createCallLog("initiated");
 
-      const connection = await twilioServiceAlternative.makeCall(
-        doctorInfo.contact,
-      );
+      // Prefer in-app Voice client identity; fall back to doctor's phone (PSTN)
+      const destination =
+        doctorId
+          ? getVoiceClientIdentity("doctor", doctorId)
+          : doctorInfo.contact;
+      if (!destination) {
+        throw new Error("Doctor has no dialable destination");
+      }
+
+      const connection = await twilioServiceAlternative.makeCall(destination);
       connection?.on("ringing", async () => {
         setCallStatus("ringing");
         await updateCallLog({ status: "ringing" });

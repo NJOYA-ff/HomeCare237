@@ -480,10 +480,14 @@ const PatientDashboard: React.FC = () => {
       const statsMap: Record<string, any> = {};
       (statsData.items || []).forEach((v: any) => { statsMap[v.id] = v; });
 
-      const items: YTVideo[] = searchData.items.map((item: any) => {
-        const id = item.id.videoId;
+      const seenIds = new Set<string>();
+      const items: YTVideo[] = [];
+      for (const item of searchData.items as any[]) {
+        const id = item?.id?.videoId as string | undefined;
+        if (!id || seenIds.has(id)) continue;
+        seenIds.add(id);
         const s = statsMap[id];
-        return {
+        items.push({
           id,
           title: item.snippet.title,
           description: item.snippet.description,
@@ -495,10 +499,15 @@ const PatientDashboard: React.FC = () => {
           likeCount: s?.statistics?.likeCount || "0",
           commentCount: s?.statistics?.commentCount || "0",
           duration: s?.contentDetails?.duration || "",
-        };
-      });
+        });
+      }
 
-      setYtVideos(prev => isLoadMore ? [...prev, ...items] : items);
+      // Also drop IDs already shown when paginating (YouTube can repeat results)
+      setYtVideos((prev) => {
+        if (!isLoadMore) return items;
+        const existing = new Set(prev.map((v) => v.id));
+        return [...prev, ...items.filter((v) => !existing.has(v.id))];
+      });
       setYtNextPage(searchData.nextPageToken || null);
     } catch (err: any) {
       setYtError("Could not load videos. Please try again.");
