@@ -22,7 +22,7 @@ VITE_API_BASE_URL=http://localhost:3400
 |---|---|
 | `TWILIO_ACCOUNT_SID` | Account that owns Voice/Video |
 | `TWILIO_API_KEY` + `TWILIO_API_SECRET` | Signing Voice & Video Access Tokens (required) |
-| `TWILIO_AUTH_TOKEN` | SMS REST API fallback |
+| `TWILIO_AUTH_TOKEN` | SMS REST API (preferred; restricted API keys often cannot send SMS) |
 | `TWILIO_PHONE_NUMBER` | Caller ID for outbound PSTN / SMS |
 | `TWILIO_TWIML_APP_SID` | Voice SDK outbound dialing (required for audio) |
 

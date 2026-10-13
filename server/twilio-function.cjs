@@ -75,7 +75,10 @@ const GEMINI_FALLBACK_MODELS = (
 const GEMINI_API_BASE =
   "https://generativelanguage.googleapis.com/v1beta/models";
 
-// Helper: Twilio REST Client
+// Helper: Twilio REST Client (SMS / Messaging).
+// Prefer Account SID + Auth Token. API keys used to mint Voice/Video Access
+// Tokens are often restricted and return 20008 / "does not have the
+// permissions to access this endpoint" on Messages.
 function createTwilioClient() {
   if (!accountSid) {
     throw new Error("TWILIO_ACCOUNT_SID is required");
@@ -88,16 +91,21 @@ function createTwilioClient() {
     throw new Error("Please install the twilio package: npm install twilio");
   }
 
-  if (apiKey && apiSecret) {
-    return new Twilio(apiKey, apiSecret, { accountSid });
-  }
-
-  if (authToken) {
+  if (authToken && !isPlaceholder(authToken)) {
     return new Twilio(accountSid, authToken);
   }
 
+  if (
+    apiKey &&
+    !isPlaceholder(apiKey) &&
+    apiSecret &&
+    !isPlaceholder(apiSecret)
+  ) {
+    return new Twilio(apiKey, apiSecret, { accountSid });
+  }
+
   throw new Error(
-    "No Twilio credentials found. Provide TWILIO_API_KEY+TWILIO_API_SECRET or TWILIO_ACCOUNT_SID+TWILIO_AUTH_TOKEN"
+    "No Twilio credentials found. Provide TWILIO_ACCOUNT_SID+TWILIO_AUTH_TOKEN (preferred for SMS) or TWILIO_API_KEY+TWILIO_API_SECRET"
   );
 }
 
@@ -343,6 +351,18 @@ app.post("/api/twilio/voice", (req, res) => {
 
 // ── Twilio SMS Endpoints ─────────────────────────────────────────────────────
 
+/** Normalize Cameroon/local numbers to E.164 for Twilio Messages. */
+function formatToE164(phone) {
+  if (!phone) return null;
+  let cleaned = String(phone).replace(/[^\d+]/g, "");
+  if (!cleaned) return null;
+  if (cleaned.startsWith("+")) return cleaned;
+  if (cleaned.startsWith("0")) cleaned = cleaned.substring(1);
+  if (cleaned.startsWith("237")) return `+${cleaned}`;
+  if (/^[23678]\d{7,8}$/.test(cleaned)) return `+237${cleaned}`;
+  return cleaned.startsWith("+") ? cleaned : `+${cleaned}`;
+}
+
 app.post("/api/twilio/send", async (req, res) => {
   try {
     const { to, body, appointmentId } = req.body || {};
@@ -359,11 +379,18 @@ app.post("/api/twilio/send", async (req, res) => {
         .json({ success: false, error: "TWILIO_PHONE_NUMBER not configured in .env" });
     }
 
+    const toE164 = formatToE164(to);
+    if (!toE164) {
+      return res
+        .status(400)
+        .json({ success: false, error: `Invalid 'To' Phone Number: ${to}` });
+    }
+
     const client = createTwilioClient();
     const message = await client.messages.create({
       body: body,
       from: twilioPhone,
-      to: to,
+      to: toE164,
     });
 
     return res.json({
@@ -407,11 +434,18 @@ app.post("/api/twilio/send-appointment-status", async (req, res) => {
       }
     })();
 
+    const toE164 = formatToE164(to);
+    if (!toE164) {
+      return res
+        .status(400)
+        .json({ success: false, error: `Invalid 'To' Phone Number: ${to}` });
+    }
+
     const client = createTwilioClient();
     const message = await client.messages.create({
       body: formattedBody,
       from: twilioPhone,
-      to,
+      to: toE164,
     });
 
     return res.json({

@@ -45,13 +45,22 @@ export const sendSMS = async (smsData: SMSData) => {
   const apiBase = readEnv("VITE_API_BASE_URL").replace(/\/+$/, "");
   const targetUrl = `${apiBase}/api/twilio/send`;
 
+  const formattedTo = validateAndFormatPhoneNumber(smsData.to);
+  if (!formattedTo) {
+    console.error("Twilio SMS skipped: invalid phone number", smsData.to);
+    return {
+      success: false,
+      error: `Invalid phone number format: ${smsData.to}`,
+    };
+  }
+
   try {
     const res = await fetch(targetUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(smsData),
+      body: JSON.stringify({ ...smsData, to: formattedTo }),
     });
 
     if (!res.ok) {
@@ -211,7 +220,7 @@ const validateAndFormatPhoneNumber = (phoneNumber: string): string | null => {
   if (!phoneNumber) return null;
 
   // Remove all non-digit characters except leading +
-  const cleaned = phoneNumber.replace(/[^\d+]/g, "");
+  let cleaned = phoneNumber.replace(/[^\d+]/g, "");
 
   // If it already starts with +, assume it's properly formatted
   if (cleaned.startsWith("+")) {
@@ -220,16 +229,20 @@ const validateAndFormatPhoneNumber = (phoneNumber: string): string | null => {
     return e164Regex.test(cleaned) ? cleaned : null;
   }
 
+  // Local numbers often stored with a leading trunk 0 (e.g. 0652…)
+  if (cleaned.startsWith("0")) {
+    cleaned = cleaned.substring(1);
+  }
+
   // If it starts with 237 (Cameroon), add + prefix
   if (cleaned.startsWith("237")) {
     const cameroonNumber = `+${cleaned}`;
-    // Cameroon numbers: +237 followed by 8 digits
+    // Cameroon national numbers are typically 8–9 digits after +237
     const cameroonRegex = /^\+237[23678]\d{7,8}$/;
     return cameroonRegex.test(cameroonNumber) ? cameroonNumber : null;
   }
 
-  // For other numbers without country code, you might want to handle differently
-  // For now, we'll assume Cameroon numbers without 237 prefix
+  // Assume Cameroon local mobile/landline without country code
   if (/^[23678]\d{7,8}$/.test(cleaned)) {
     return `+237${cleaned}`;
   }

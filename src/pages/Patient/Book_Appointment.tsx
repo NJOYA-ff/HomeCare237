@@ -753,7 +753,7 @@ const Book_Appointment: React.FC = () => {
       // Send SMS notification to the doctor (and optionally to patient)
       try {
         // doctor's phone is stored under `contact` in Firestore; fall back to `phone` if present
-        const doctorPhone = selectedDoctor.contact;
+        const doctorPhone = selectedDoctor.contact || selectedDoctor.phone;
         console.log(doctorPhone);
         // Helper to format patient display name
         const patientDisplay =
