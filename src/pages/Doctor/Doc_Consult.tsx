@@ -41,7 +41,7 @@ import {
   medical,
   close,
   play,
-  document,
+  document as documentIcon,
   image,
   pause,
   mic,
@@ -1268,7 +1268,7 @@ const Doc_Consult: React.FC = () => {
                             setShowDocumentModal(true);
                           }
                       }  >
-                          <IonIcon icon={document} size="large" />
+                          <IonIcon icon={documentIcon} size="large" />
                           <div className="attachment-details">
                             <IonLabel>{attachment.name}</IonLabel>
                             {isDoctor && (
@@ -1735,7 +1735,7 @@ const Doc_Consult: React.FC = () => {
 
                       {attachment.type === "document" && (
                         <>
-                          <IonIcon icon={document} className="document-icon" />
+                          <IonIcon icon={documentIcon} className="document-icon" />
                           <div className="attachment-info">
                             <IonText>{attachment.name}</IonText>
                             {attachment.uploadProgress !== undefined && (
