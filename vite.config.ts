@@ -2,11 +2,60 @@
 
 import legacy from "@vitejs/plugin-legacy";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defineConfig, Plugin } from "vite";
+import { spawn, ChildProcess } from "child_process";
+import path from "path";
+
+/**
+ * Vite plugin that starts the Twilio/API server alongside Vite dev server.
+ * Works with `npm run dev`, `ionic serve`, or plain `vite`.
+ * The server process is killed automatically when Vite exits.
+ */
+function apiServerPlugin(): Plugin {
+  let apiProcess: ChildProcess | null = null;
+
+  return {
+    name: "homecare237-api-server",
+    apply: "serve", // only active during dev, not build
+    configureServer() {
+      const serverPath = path.resolve(__dirname, "server/twilio-function.cjs");
+
+      console.log("[HomeCare237] Starting API server...");
+      apiProcess = spawn("node", [serverPath], {
+        stdio: "inherit",
+        shell: false,
+      });
+
+      apiProcess.on("error", (err) => {
+        console.error("[HomeCare237] API server failed to start:", err.message);
+      });
+
+      apiProcess.on("exit", (code) => {
+        if (code !== 0 && code !== null) {
+          console.error(`[HomeCare237] API server exited with code ${code}`);
+        }
+        apiProcess = null;
+      });
+
+      // Ensure the server is killed when Vite shuts down
+      const cleanup = () => {
+        if (apiProcess) {
+          console.log("[HomeCare237] Stopping API server...");
+          apiProcess.kill();
+          apiProcess = null;
+        }
+      };
+      process.on("exit", cleanup);
+      process.on("SIGINT", cleanup);
+      process.on("SIGTERM", cleanup);
+    },
+  };
+}
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
+    apiServerPlugin(),
     react(),
     process.env.VITE_LEGACY_BUILD === "true" && legacy(),
   ].filter(Boolean),

@@ -4,10 +4,11 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "dev": "concurrently --kill-others-on-fail \"npm run start:api\" \"vite\"",
+    "dev": "vite",
     "dev:web": "vite",
     "start:api": "node server/twilio-function.cjs",
     "build": "tsc && vite build",
+    "build:serve": "npm run build && npm run start:api",
     "preview": "vite preview",
     "test.e2e": "cypress run",
     "test.unit": "vitest",
