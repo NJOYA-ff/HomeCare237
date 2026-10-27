@@ -55,6 +55,8 @@ Patient and doctor join the same stable room name:
 `consult_<sortedPatientId>_<sortedDoctorId>`
 
 `VideoChatModal` requests a JWT from `/api/twilio/video-token` when opened.
+The Vite configuration starts the API automatically when using `ionic serve`
+and keeps its port separate from Ionic's Vite port.
 
 ## Run locally
 

@@ -13,6 +13,10 @@ import path from "path";
  */
 function apiServerPlugin(): Plugin {
   let apiProcess: ChildProcess | null = null;
+  // Ionic CLI sets PORT for Vite (normally 8100). Do not pass that value to
+  // the API child process, or it will try to bind Vite's port instead of the
+  // API port and `/api` requests will fail with connection refused.
+  const apiPort = process.env.API_PORT || "3400";
 
   return {
     name: "homecare237-api-server",
@@ -23,6 +27,10 @@ function apiServerPlugin(): Plugin {
       console.log("[HomeCare237] Starting API server...");
       apiProcess = spawn("node", [serverPath], {
         stdio: "inherit",
+        env: {
+          ...process.env,
+          PORT: apiPort,
+        },
         shell: false,
       });
 
@@ -97,7 +105,7 @@ export default defineConfig({
     // Proxy frontend `/api` calls to the local API server during development
     proxy: {
       "/api": {
-        target: "http://localhost:3400",
+        target: `http://localhost:${process.env.API_PORT || "3400"}`,
         changeOrigin: true,
         secure: false,
       },
