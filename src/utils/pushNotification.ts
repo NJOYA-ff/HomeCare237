@@ -41,7 +41,9 @@ export interface PushPayload {
 export async function sendPushNotification(payload: PushPayload): Promise<void> {
   const { recipientId, title, body, data = {} } = payload;
 
-  // 1. Persist to Firestore so the recipient receives it on any device
+  // 1. Persist to Firestore so the recipient receives it on any device.
+  //    The `fcmSent: false` flag is read by the sendFcmOnNotification Cloud
+  //    Function — it will set it to true once FCM delivery is attempted.
   try {
     await addDoc(collection(db, "notifications"), {
       recipientId,
@@ -50,6 +52,7 @@ export async function sendPushNotification(payload: PushPayload): Promise<void> 
       data,
       timestamp: serverTimestamp(),
       read: false,
+      fcmSent: false,
     });
   } catch (err) {
     console.warn("[pushNotification] Failed to write Firestore notification:", err);

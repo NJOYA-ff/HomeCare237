@@ -21,8 +21,7 @@ import {
   IonRow,
   IonCol,
   IonProgressBar,
-  IonFab,
-  IonFabButton,
+
   IonButtons,
   IonMenuButton,
   IonChip,
@@ -136,7 +135,6 @@ import {
   calendarOutline,
   pulseOutline,
   documentTextOutline,
-  chatbubbleEllipsesOutline,
   notificationsOutline,
   locationOutline,
   arrowDownCircle,
@@ -2014,25 +2012,25 @@ const PatientDashboard: React.FC = () => {
 
             {/* Chatbot */}
             <VoiceflowChat />
-            <IonFab
-              vertical="bottom"
-              horizontal="end"
-              slot="fixed"
-              style={{
-                // Push the FAB above the tab bar AND the device safe area
-                // (home indicator on iPhone, gesture bar on Android)
-                marginBottom: "calc(56px + env(safe-area-inset-bottom, 0px))",
-                marginRight: "env(safe-area-inset-right, 0px)",
-              }}
-            >
-              <IonFabButton
-                className="chatbot"
+
+            {/* Custom pill-shaped chatbot FAB */}
+            <div className="chatbot-pill-fab" style={{
+              bottom: "calc(56px + env(safe-area-inset-bottom, 0px) + 12px)",
+              right: "calc(12px + env(safe-area-inset-right, 0px))",
+            }}>
+              {/* Main pill button */}
+              <button
+                className="chatbot-pill-main"
                 aria-label="Open chat"
                 onClick={handleOpenChat}
               >
-                <IonIcon icon={chatbubbleEllipsesOutline} />
-              </IonFabButton>
-            </IonFab>
+                <img
+                  src="/logo_transparent_high_quality.png"
+                  alt="Chat"
+                  className="chatbot-pill-logo"
+                />
+              </button>
+            </div>
           </>
         )}
       </IonContent>

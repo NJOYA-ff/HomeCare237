@@ -40,21 +40,33 @@
              chance to handle it).
 
              firebase_messaging_default_notification_icon:
-               Must be a white-on-transparent drawable. ic_notification was
-               generated from the app logo for exactly this purpose.
+               MUST be a white-on-transparent drawable (NOT a mipmap).
+               ic_stat_health is the white health-cross icon from the
+               health_status_notification_icons pack, placed in drawable-*
+               density buckets.  Android 5+ uses only the alpha channel of
+               this image and tints it with the notification_color below,
+               so the icon must be purely white on a transparent background.
 
              firebase_messaging_default_notification_color:
-               The accent colour used behind the icon in the notification shade.
-               Matches the app's primary brand colour (#2563eb).
+               The accent colour rendered behind/around the icon in the
+               notification shade.  Matches the app primary brand colour
+               (#2563EB blue).  Defined in res/values/colors.xml.
 
              firebase_messaging_default_notification_channel_id:
                The channel that FCM uses for background-delivered notifications.
-               We create this channel in code (NotificationService.initialize)
-               so the user can configure it per-channel in device Settings.
+               We create this channel in NotificationService.initialize() so
+               the user can configure it per-channel in device Settings.
+
+             NOTE — large icon (full-colour app logo in expanded view):
+               The full-colour round launcher icon (@mipmap/ic_launcher_round)
+               is set as largeIcon at runtime in NotificationServices.ts.
+               It lives in mipmap-* which is correct for launcher/large icons.
+               Do NOT put the small status-bar icon in mipmap — it must be
+               in drawable-* so Android can apply the alpha-mask tinting.
         -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
-            android:resource="@mipmap/ic_notification" />
+            android:resource="@drawable/ic_stat_health" />
 
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_color"
@@ -75,6 +87,25 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!--
+                Required by @codetrix-studio/capacitor-google-auth (and Firebase
+                Auth on Android) so the Google Sign-In activity can return its
+                result to the app via an intent.
+
+                scheme: must be your reverse-DNS OAuth client ID:
+                  the web OAuth client ID reversed →
+                  com.googleusercontent.apps.770997904222-upkuve0qgasnfham5q31rc1qoj218vuv
+                host: must be "oauth2redirect" (exactly)
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="com.googleusercontent.apps.770997904222-upkuve0qgasnfham5q31rc1qoj218vuv"
+                    android:host="oauth2redirect" />
             </intent-filter>
 
         </activity>

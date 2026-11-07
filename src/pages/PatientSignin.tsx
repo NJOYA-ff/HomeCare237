@@ -260,18 +260,13 @@ const PatientSignin: React.FC = () => {
                         setIsLoading(true);
                         setLoginError("");
                         try {
-                          // Web → popup resolves immediately, returns user → navigate.
-                          // Mobile → redirect flow, page navigates away, returns null.
                           const user = await authService.loginWithGoogle(UserRole.Patient);
                           if (user) {
                             history.replace("/patient/dashboard");
                           }
                         } catch (err: unknown) {
-                          // Closing the Google popup is a normal user action, not
-                          // a failure — `getGoogleSignInErrorMessage` returns ""
-                          // for cancellations so we stay silent instead of
-                          // showing "Firebase: Error (auth/popup-closed-by-user)".
                           setLoginError(getGoogleSignInErrorMessageT(err, t));
+                        } finally {
                           setIsLoading(false);
                         }
                       }}

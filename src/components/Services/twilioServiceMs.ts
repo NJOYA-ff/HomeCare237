@@ -42,8 +42,8 @@ export interface SMSData {
 }
 
 export const sendSMS = async (smsData: SMSData) => {
-  const apiBase = readEnv("VITE_API_BASE_URL").replace(/\/+$/, "");
-  const targetUrl = `${apiBase}/api/twilio/send`;
+  const { getApiUrl } = await import("../../utils/apiBase");
+  const targetUrl = getApiUrl("/api/twilio/send");
 
   const formattedTo = validateAndFormatPhoneNumber(smsData.to);
   if (!formattedTo) {

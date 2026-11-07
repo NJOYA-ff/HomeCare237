@@ -135,10 +135,9 @@ const DoctorSignup: React.FC = () => {
         history.push("/doc/dashboard");
       }
     } catch (err: unknown) {
-      // Same treatment as the signin pages: a cancelled popup is silent, and
-      // any other failure shows mapped copy instead of the raw SDK string.
       const message = getGoogleSignInErrorMessage(err);
       if (message) showToast(message, "danger");
+    } finally {
       setIsGoogleLoading(false);
     }
   };

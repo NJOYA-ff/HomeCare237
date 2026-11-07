@@ -21,7 +21,6 @@ import {
   saveCredentials,
 } from "./utils/BiometricAuthService";
 import { App as CapApp } from "@capacitor/app";
-import { Capacitor } from "@capacitor/core";
 
 /* Core CSS required for Ionic components to work properly */
 import "@ionic/react/css/core.css";
@@ -114,8 +113,6 @@ import {
   sendPasswordResetEmail,
   GoogleAuthProvider,
   signInWithPopup,
-  signInWithRedirect,
-  getRedirectResult,
 } from "firebase/auth";
 import {
   collection,
@@ -397,6 +394,13 @@ class AuthService {
       this.notifyAuthStateListeners(user);
       console.log("Login successful, user role:", user.role);
 
+      // Remember which role signed in so the app can jump directly to this
+      // role's sign-in page on the next cold start instead of showing the
+      // landing page.
+      try {
+        localStorage.setItem("hc_last_role", user.role);
+      } catch { /* storage may be unavailable in some privacy modes */ }
+
       // Persist credentials so PIN/biometric quick sign-in works on next visit.
       // Failure to persist must never block a successful login.
       try {
@@ -447,214 +451,90 @@ class AuthService {
   }
 
   /**
-   * Sign in with Google.
+   * Sign in with Google — works on Android, iOS, and web.
    *
-   * Platform strategy:
-   *  - Web (browser)  → signInWithPopup: resolves immediately, no page reload,
-   *                     no redirect loop. Returns the signed-in user directly.
-   *  - Android / iOS  → signInWithRedirect: required inside Capacitor WebViews
-   *                     because popups are blocked. The result is picked up by
-   *                     handleGoogleRedirectResult() on the next app load.
+   * Android / iOS:
+   *   Uses @codetrix-studio/capacitor-google-auth (native system account picker).
+   *   Returns a Firebase credential — no redirect, no popup, no WebView OAuth.
+   *
+   * Web:
+   *   Uses signInWithPopup (unchanged, works fine in browser tabs).
    */
   async loginWithGoogle(expectedRole?: ExpectedRole): Promise<User | null> {
-    const platform = Capacitor.getPlatform(); // "web" | "android" | "ios"
-    const role = this.primaryRole(expectedRole);
+    const role         = this.primaryRole(expectedRole);
     const allowedRoles = this.roleList(expectedRole);
-    const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: "select_account" });
 
-    // ── Web: use popup — resolves in the same session, no reload ──────────
-    if (platform === "web") {
-      try {
-        const result = await signInWithPopup(auth, provider);
-        const firebaseUser = result.user;
-
-        let user = await this.findUserInCollections(firebaseUser.uid);
-
-        if (!user) {
-          if (role === UserRole.Admin) {
-            await signOut(auth);
-            throw new Error("Admin accounts must be created by an existing administrator.");
-          }
-          const collectionName = this.getCollectionName(role);
-          const newUserData = {
-            id: firebaseUser.uid,
-            name: firebaseUser.displayName || "User",
-            email: firebaseUser.email || "",
-            role,
-            profilePhoto: firebaseUser.photoURL || "",
-            createdAt: new Date(),
-            isActive: true,
-            ...(role === UserRole.Doctor
-              ? { isVerified: false, isEnabled: true, status: "pending" }
-              : {}),
-          };
-          await setDoc(doc(db, collectionName, firebaseUser.uid), newUserData);
-          user = {
-            id: firebaseUser.uid,
-            name: newUserData.name,
-            email: newUserData.email,
-            name1: newUserData.name,
-            email1: newUserData.email,
-            role,
-          };
-        }
-        this.assertRoleAccess(user, allowedRoles.length ? allowedRoles : role);
-
-        // ── Returning user: keep profilePhoto in sync with Google ──────────
-        // The doc already existed so the block above was skipped. If the user
-        // changed their Google profile picture since their last sign-in, the
-        // Firestore document still holds the old URL. Refresh it silently.
-        if (firebaseUser.photoURL) {
-          try {
-            const collectionName = this.getCollectionName(role);
-            await setDoc(
-              doc(db, collectionName, firebaseUser.uid),
-              { profilePhoto: firebaseUser.photoURL },
-              { merge: true },
-            );
-          } catch {
-            // Non-critical — dashboard will still load with the cached value.
-          }
-        }
-
-        this.currentUser = user;
-        this.notifyAuthStateListeners(user);
-
-        return user;
-      } catch (error) {
-        // Same reasoning as `login`: the popup already established a session, so
-        // a rejected role has to be torn down rather than left authenticated.
-        if (isRoleMismatchError(error)) {
-          await this.discardSession();
-        }
-        console.error("Google sign-in (popup) error:", error);
-        throw error;
-      }
-    }
-
-    // ── Android / iOS: use redirect — required in native WebViews ─────────
     try {
-      // Persist role and target dashboard so they survive the redirect
-      localStorage.setItem("google_signin_role", role);
-      localStorage.setItem(
-        "google_signin_roles",
-        JSON.stringify(allowedRoles.length ? allowedRoles : [role])
-      );
-      const dashboardPath =
-        role === UserRole.Doctor
-          ? "/doc/dashboard"
-          : role === UserRole.Admin
-          ? "/admin/dashboard"
-          : "/patient/dashboard";
-      localStorage.setItem("google_signin_redirect", dashboardPath);
-
-      await signInWithRedirect(auth, provider);
-      // Execution never reaches here — page navigates away
-      return null;
-    } catch (error) {
-      console.error(`Google sign-in (redirect / ${platform}) error:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Called once on app startup.  If the app was just returned from a Google
-   * OAuth redirect, this completes the sign-in and returns the user.
-   * Returns null if there is no pending redirect result.
-   * Also returns the intended dashboard path via localStorage key
-   * "google_signin_redirect" so the caller can navigate there.
-   */
-  async handleGoogleRedirectResult(): Promise<User | null> {
-    try {
-      const result = await getRedirectResult(auth);
-      if (!result) return null;
-
+      const { signInWithGoogle } = await import("./utils/googleAuth");
+      const result       = await signInWithGoogle();
       const firebaseUser = result.user;
-
-      // Retrieve the role the user had selected before the redirect
-      const storedRole = localStorage.getItem("google_signin_role") as UserRole | null;
-      const storedRolesRaw = localStorage.getItem("google_signin_roles");
-      const storedRoles = (() => {
-        try {
-          const parsed = storedRolesRaw ? JSON.parse(storedRolesRaw) : null;
-          return Array.isArray(parsed) ? (parsed as UserRole[]) : [];
-        } catch {
-          return [];
-        }
-      })();
-      localStorage.removeItem("google_signin_role");
-      localStorage.removeItem("google_signin_roles");
 
       let user = await this.findUserInCollections(firebaseUser.uid);
 
       if (!user) {
-        const role = storedRole ?? UserRole.Patient;
         if (role === UserRole.Admin) {
           await signOut(auth);
           throw new Error("Admin accounts must be created by an existing administrator.");
         }
         const collectionName = this.getCollectionName(role);
         const newUserData = {
-          id: firebaseUser.uid,
-          name: firebaseUser.displayName || "User",
-          email: firebaseUser.email || "",
+          id:           firebaseUser.uid,
+          name:         firebaseUser.displayName || "User",
+          email:        firebaseUser.email || "",
           role,
           profilePhoto: firebaseUser.photoURL || "",
-          createdAt: new Date(),
-          isActive: true,
+          createdAt:    new Date(),
+          isActive:     true,
           ...(role === UserRole.Doctor
             ? { isVerified: false, isEnabled: true, status: "pending" }
             : {}),
         };
         await setDoc(doc(db, collectionName, firebaseUser.uid), newUserData);
         user = {
-          id: firebaseUser.uid,
-          name: newUserData.name,
+          id:    firebaseUser.uid,
+          name:  newUserData.name,
           email: newUserData.email,
           name1: newUserData.name,
           email1: newUserData.email,
           role,
         };
       }
-      this.assertRoleAccess(user, storedRoles.length ? storedRoles : storedRole ?? undefined);
 
-      // ── Returning user: keep profilePhoto in sync with Google ──────────
+      this.assertRoleAccess(user, allowedRoles.length ? allowedRoles : role);
+
+      // Keep profile photo in sync with Google
       if (firebaseUser.photoURL) {
         try {
-          const collectionName = this.getCollectionName(storedRole ?? UserRole.Patient);
+          const col = this.getCollectionName(user.role);
           await setDoc(
-            doc(db, collectionName, firebaseUser.uid),
+            doc(db, col, firebaseUser.uid),
             { profilePhoto: firebaseUser.photoURL },
-            { merge: true },
+            { merge: true }
           );
-        } catch {
-          // Non-critical.
-        }
+        } catch { /* non-critical */ }
       }
 
       this.currentUser = user;
       this.notifyAuthStateListeners(user);
+      try { localStorage.setItem("hc_last_role", user.role); } catch { /* noop */ }
+      return user;
 
-      return this.currentUser;
     } catch (error) {
-      console.error("Google redirect result error:", error);
-      // Clear stale keys on error too
-      localStorage.removeItem("google_signin_role");
-      localStorage.removeItem("google_signin_roles");
-      localStorage.removeItem("google_signin_redirect");
-      // A role mismatch is the one failure the user must be told about: it means
-      // they opened the wrong portal. It used to be swallowed here along with
-      // every other error, so on Android/iOS (where Google uses a redirect) the
-      // app silently returned to the landing page with no explanation at all.
-      // Re-throwing lets the caller surface the message; the session is dropped
-      // so the rejected account is not left signed in.
       if (isRoleMismatchError(error)) {
         await this.discardSession();
-        throw error;
       }
-      return null;
+      console.error("Google sign-in error:", error);
+      throw error;
     }
+  }
+
+  /**
+   * No-op — the native Capacitor Google Auth plugin resolves synchronously,
+   * so there is no pending redirect result to pick up on startup.
+   * Kept for API compatibility with the startup check in App component.
+   */
+  async handleGoogleRedirectResult(): Promise<User | null> {
+    return null;
   }
 
   async signup(
@@ -699,6 +579,13 @@ class AuthService {
       this.currentUser = userData;
       this.notifyAuthStateListeners(userData);
       console.log("Signup successful, user role:", role);
+
+      // Remember role for the next cold start so the app opens directly
+      // on this role's sign-in page rather than the landing page.
+      try {
+        localStorage.setItem("hc_last_role", role);
+      } catch { /* storage may be unavailable */ }
+
       return this.currentUser;
     } catch (error) {
       console.error("Signup error:", error);
@@ -710,6 +597,10 @@ class AuthService {
     try {
       await signOut(auth);
       await clearCredentials();
+      // Wipe the remembered role so the next cold start goes to the landing
+      // page rather than directly to a sign-in page. This is the user's
+      // explicit "forget me" action.
+      try { localStorage.removeItem("hc_last_role"); } catch { /* noop */ }
       this.currentUser = null;
       this.notifyAuthStateListeners(null);
     } catch (error) {
@@ -801,8 +692,10 @@ export const authService = AuthService.getInstance();
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  // Path to redirect to after a Google OAuth redirect completes
-  const [googleRedirectPath, setGoogleRedirectPath] = useState<string | null>(null);
+  // Path to redirect to on startup:
+  //   • After a Google OAuth redirect → the user's dashboard
+  //   • Returning user (no session)   → their role's sign-in page
+  const [startupRedirect, setStartupRedirect] = useState<string | null>(null);
   // Message shown when a sign-in is refused because the account role doesn't
   // match the portal the user opened (e.g. a Patient using the Doctor page).
   const [authNotice, setAuthNotice] = useState<string | null>(null);
@@ -821,54 +714,45 @@ const App: React.FC = () => {
 
       const checkAuthState = async () => {
         try {
-          // First check if we're returning from a Google OAuth redirect
-          const redirectUser = await authService.handleGoogleRedirectResult();
-          if (redirectUser) {
-            // Determine the correct dashboard for this user's role
-          const pendingPath =
-            redirectUser.role === UserRole.Doctor
-              ? "/doc/dashboard"
-              : redirectUser.role === UserRole.Admin
-              ? "/admin/dashboard"
-              : "/patient/dashboard";
-          localStorage.removeItem("google_signin_redirect");
-          setCurrentUser(redirectUser);
-          setGoogleRedirectPath(pendingPath);
+          // ── No automatic login ─────────────────────────────────────────
+          // Firebase Auth persists sessions across app launches, so
+          // auth.currentUser would still hold the previous user. We always
+          // sign out so users must actively sign in each session.
+          //
+          // Convenience is preserved in two ways:
+          //  1. QuickSignIn on every sign-in page offers one-tap PIN/biometric.
+          //     endSession() only ends the Firebase session; the saved credential
+          //     survives and is wiped only by an explicit logout().
+          //  2. hc_last_role remembers which role signed in last, so we jump
+          //     directly to their sign-in page instead of the landing page.
+          await authService.endSession();
+
+          // ── Returning-user shortcut ────────────────────────────────────
+          const lastRole = (() => {
+            try { return localStorage.getItem("hc_last_role"); } catch { return null; }
+          })();
+
+          const signinRouteForRole: Record<string, string> = {
+            patient: "/Patient_signin",
+            doctor:  "/Doctor_signin",
+            admin:   "/Admin_signin",
+          };
+
+          const returnPath = lastRole && signinRouteForRole[lastRole]
+            ? signinRouteForRole[lastRole]
+            : null;
+
+          if (returnPath) {
+            setStartupRedirect(returnPath);
+          }
+
+          setCurrentUser(null);
+        } catch (error) {
+          console.error("Error checking auth state:", error);
+          setCurrentUser(null);
+        } finally {
           setLoading(false);
-          return;
         }
-
-        // ── No automatic login ───────────────────────────────────────────
-        // Firebase Auth persists sessions across app launches (Capacitor
-        // WebView storage on Android/iOS, localStorage in the browser), so
-        // `auth.currentUser` would still hold the previous user here and the
-        // app used to jump straight to their dashboard, never showing the
-        // login interface. HomeCare237 must always start on the public
-        // landing page instead: sign out any session restored from a
-        // previous launch so the login interface opens only when the user
-        // chooses to log in.
-        //
-        // Convenience is preserved by the QuickSignIn component on the
-        // sign-in pages: endSession() only ends the Firebase session, so the
-        // credential saved by the last login survives and the user gets
-        // one-tap PIN/biometric sign-in the next time they open a sign-in
-        // page. The credential is wiped only by an explicit logout().
-        await authService.endSession();
-
-        setCurrentUser(null);
-      } catch (error) {
-        console.error("Error checking auth state:", error);
-        // A role mismatch surfaced here comes from the Google *redirect* flow
-        // (Android/iOS): the user picked the wrong portal, came back, and the
-        // rejection is now re-thrown instead of being silently swallowed. Show
-        // it, otherwise the app lands on the landing page with no reason given.
-        if (isRoleMismatchError(error)) {
-          setAuthNotice((error as RoleMismatchError).message);
-        }
-        setCurrentUser(null);
-      } finally {
-        setLoading(false);
-      }
     };
 
     checkAuthState();
@@ -986,7 +870,13 @@ const App: React.FC = () => {
           {!currentUser ? (
             // Public routes - no user logged in
             <>
-              <Redirect exact from="/" to="/landingpage" />
+              {/*
+                 Startup redirect:
+                 • First-ever open (no hc_last_role)  → /landingpage (first-run gate)
+                 • Returning user (hc_last_role set)   → their role's sign-in page
+                 • Google OAuth redirect completed     → handled in the logged-in block
+              */}
+              <Redirect exact from="/" to={startupRedirect ?? "/landingpage"} />
               <Route path="/landingpage" exact={true}>
                 {/* Plays the first-run services showcase on a fresh install,
                     then redirects here. Lives on this route (not on "/") so a
@@ -1042,10 +932,6 @@ const App: React.FC = () => {
           ) : (
             // Protected routes - user is logged in
             <>
-              {/* After a Google OAuth redirect, push to the correct dashboard */}
-              {googleRedirectPath && (
-                <Redirect to={googleRedirectPath} />
-              )}
               {currentUser.role === UserRole.Patient && (
                 <>
                   {/* Patient Menu (Sidebar) */}

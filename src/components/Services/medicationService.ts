@@ -6,9 +6,20 @@
  *  - Deterministic local-notification ids
  *  - Scheduling / cancelling daily dose reminders (Capacitor LocalNotifications)
  *  - De-duplicating prescriptions the doctor already published
+ *
+ * Push notification strategy
+ * ──────────────────────────
+ * `scheduleDoseReminder` now ALSO writes a document to the Firestore
+ * `notifications` collection.  The `sendFcmOnNotification` Cloud Function
+ * picks that up and sends an FCM push to all of the user's registered
+ * devices/tokens.  This means medication reminders are delivered as true push
+ * notifications even when the app is in the background or the device was
+ * recently rebooted (where Capacitor local notifications may not fire).
  */
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { isPlatform } from "@ionic/react";
+import { getAuth } from "firebase/auth";
+import { addDoc, collection, serverTimestamp, getFirestore } from "firebase/firestore";
 
 export interface Medication {
   id: string;
@@ -59,6 +70,9 @@ const toHHMM = (time: string): string => {
  * Schedule a repeating daily local notification for a medication dose.
  * Repeats are only supported on native (iOS/Android); on web this is a no-op
  * so the PWA keeps working without the plugin.
+ *
+ * Also writes a Firestore notification document so the Cloud Function can
+ * forward the reminder as an FCM push to every device the user is signed in to.
  */
 export const scheduleDoseReminder = async (
   med: Medication,
@@ -71,13 +85,18 @@ export const scheduleDoseReminder = async (
     .split(":")
     .map(Number);
 
+  const title = "Medication Reminder";
+  const body = `Time for your dose: ${med.name}${med.dosage ? ` — ${med.dosage}` : ""}`;
+
+  // ── 1. Schedule the on-device local notification ──────────────────────────
+  let localSuccess = false;
   try {
     await LocalNotifications.schedule({
       notifications: [
         {
           id: notificationIdFor(med.id, slotIndex),
-          title: "Medication Reminder",
-          body: `Time for your dose: ${med.name}${med.dosage ? ` — ${med.dosage}` : ""}`,
+          title,
+          body,
           schedule: {
             at: nextTime(hour, minute),
             repeats: true,
@@ -88,11 +107,38 @@ export const scheduleDoseReminder = async (
         },
       ],
     });
-    return true;
+    localSuccess = true;
   } catch (err) {
-    console.warn("[medicationService] Failed to schedule reminder:", err);
-    return false;
+    console.warn("[medicationService] Failed to schedule local reminder:", err);
   }
+
+  // ── 2. Write to Firestore so the Cloud Function sends an FCM push ─────────
+  //    This ensures the reminder arrives even when the app is in the background.
+  try {
+    const uid = getAuth().currentUser?.uid;
+    if (uid) {
+      await addDoc(collection(getFirestore(), "notifications"), {
+        recipientId: uid,
+        title,
+        body,
+        data: {
+          type: "medication",
+          medicationId: med.id,
+          slot: String(slotIndex),
+        },
+        timestamp: serverTimestamp(),
+        read: false,
+        fcmSent: false,
+        // Schedule hint — the Cloud Function sends immediately; the device
+        // local notification handles the repeating alarm at the exact time.
+        scheduledFor: nextTime(hour, minute).toISOString(),
+      });
+    }
+  } catch (err) {
+    console.warn("[medicationService] Failed to write Firestore reminder:", err);
+  }
+
+  return localSuccess;
 };
 
 /** First future Date matching `hour:minute` (used as the repeat anchor time). */

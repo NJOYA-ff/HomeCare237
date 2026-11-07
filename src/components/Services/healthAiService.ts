@@ -65,7 +65,6 @@ export const AI_HEALTH_TOPICS: AiHealthTopic[] = [
 
 export const DEFAULT_AI_TOPIC = "malaria";
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
 const REQUEST_TIMEOUT_MS = Number(import.meta.env.VITE_AI_TIMEOUT_MS) || 20000;
 const CACHE_PREFIX = "hc_ai_tips_";
 
@@ -101,7 +100,8 @@ export const fetchHealthTips = async (
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
-    const response = await fetch(`${API_BASE}/api/ai/health-tips`, {
+    const { getApiUrl } = await import("../../utils/apiBase");
+    const response = await fetch(getApiUrl("/api/ai/health-tips"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ topic, language, count }),

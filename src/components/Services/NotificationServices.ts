@@ -12,18 +12,30 @@ import { App } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import { isPlatform } from "@ionic/react";
 import { getAuth } from "firebase/auth";
-import { doc, setDoc, getFirestore } from "firebase/firestore";
+import { doc, setDoc, getFirestore, addDoc, collection, serverTimestamp } from "firebase/firestore";
 
 /**
  * The channel ID must match:
  *  - strings.xml  → default_notification_channel_id
  *  - AndroidManifest meta-data → firebase_messaging_default_notification_channel_id
  *  - capacitor.config.ts → LocalNotifications.smallIcon
+ *
+ * Icon naming convention
+ * ──────────────────────
+ * SMALL_ICON  → ic_stat_health
+ *   White-on-transparent drawable from the health_status_notification_icons pack.
+ *   Lives in drawable-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/ (NOT mipmap).
+ *   Android uses only the alpha channel and tints it with ICON_COLOR.
+ *   Shown as the small icon in the status bar and notification shade header.
+ *
+ * largeIcon   → ic_launcher_round  (set below in scheduleLocalNotification)
+ *   Full-colour round app logo. Lives in mipmap-* (correct for launcher icons).
+ *   Shown as the large icon in the expanded notification card.
  */
 const CHANNEL_ID   = "homecare237_default";
 const CHANNEL_NAME = "HomeCare237 Notifications";
-const SMALL_ICON   = "ic_notification";   // @mipmap/ic_notification
-const ICON_COLOR   = "#2563EB";           // brand primary
+const SMALL_ICON   = "ic_stat_health";    // @drawable/ic_stat_health  (white, status bar)
+const ICON_COLOR   = "#2563EB";           // brand blue — tinted behind the small icon
 
 export interface NotificationPayload {
   title: string;
@@ -226,7 +238,8 @@ class NotificationService {
             schedule:     { at: new Date(Date.now() + 500) },
             sound:        soundEnabled ? "beep.wav" : undefined,
             // ── Android-specific fields ──────────────────────────────────
-            // smallIcon: the white-on-transparent drawable from mipmap-*
+            // smallIcon: white-on-transparent ic_stat_health from drawable-*
+            //   Android alpha-masks this and tints it with iconColor below.
             smallIcon:    SMALL_ICON,
             // iconColor: accent colour behind the small icon in the shade
             iconColor:    ICON_COLOR,
@@ -255,12 +268,44 @@ class NotificationService {
     body: string,
     data?: Record<string, any>
   ): Promise<void> {
+    // ── 1. Fire the on-device local notification immediately ─────────────────
     await this.scheduleLocalNotification({
       title,
       body,
       data,
       id: Date.now(),
     });
+
+    // ── 2. Write to Firestore so the Cloud Function sends an FCM push ─────────
+    //    This covers all callers that use sendNow / sendLocalNotification directly
+    //    (appointment confirmations, chat messages, etc.) and ensures the
+    //    notification arrives on every device the user is signed in to, even
+    //    when the app is in the background.
+    //
+    //    We only write when we know the recipient UID:
+    //      a) caller passed it in data.recipientId, OR
+    //      b) the currently authenticated user (self-notification)
+    try {
+      const recipientId: string | undefined =
+        (data as any)?.recipientId ?? getAuth().currentUser?.uid;
+
+      if (recipientId) {
+        await addDoc(collection(getFirestore(), "notifications"), {
+          recipientId,
+          title,
+          body,
+          data: data ?? {},
+          timestamp: serverTimestamp(),
+          read: false,
+          fcmSent: false,
+          // Tag the source so analytics / filtering can distinguish origin
+          source: "sendNow",
+        });
+      }
+    } catch (err) {
+      // Non-fatal: local notification already delivered above
+      console.warn("[NotificationService] Failed to write Firestore notification:", err);
+    }
   }
 
   // Get pending notifications

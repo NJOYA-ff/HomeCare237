@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Google Play Store Listing Translations
+  App: HomeCare237 — Telemedicine & Home Care
+  Package: io.homecare237.starter
+
+  Upload this file in the Google Play Console under:
+  Store presence → Store listings → Manage translations → Upload translations
+
+  Google Play will auto-detect the languages (en-US, fr-FR) and extract
+  the title, short description, and full description for each.
+
+  Field limits enforced by Play Console:
+    title            : 30 characters max
+    short_description: 80 characters max
+    full_description : 4 000 characters max
+-->
+
+<store_listing>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       ENGLISH (en-US)
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <listing language="en-US">
+
+    <title>HomeCare237 – Telemedicine</title>
+
+    <short_description>Doctor video calls, appointments &amp; emergency SOS for Cameroon.</short_description>
+
+    <full_description>
+HomeCare237 brings quality healthcare to your smartphone — wherever you are in Cameroon.
+
+── TALK TO A DOCTOR BY VIDEO ──
+Consult a verified practitioner face to face from home, with no travel and no queue. Video and voice consultations are available around the clock.
+
+── BOOK APPOINTMENTS IN SECONDS ──
+Pick a specialty, choose a time slot and confirm your booking — in person or by Mobile Money. Get instant SMS and push-notification reminders.
+
+── YOUR WHOLE MEDICAL RECORD ──
+Vitals, diagnoses and prescriptions in one timeline, private to you and your family. Share a read-only link with any health professional in seconds.
+
+── NEVER MISS A DOSE ──
+Keep every prescription in one list with reminders timed to each treatment. Track refills and set smart alerts for chronic medications.
+
+── EMERGENCY SOS ──
+One tap alerts your emergency contacts and nearby health units when minutes count. Your GPS location is shared automatically so help can reach you faster.
+
+── PAY HOW CAMEROON PAYS ──
+Settle consultations and appointments with MTN MoMo or Orange Money. Every receipt is stored automatically for insurance reimbursement.
+
+── FAMILY ACCOUNTS ──
+Manage the health of your whole family under one login. Add children, parents or dependants and switch profiles in a single tap.
+
+── HEALTH EDUCATION ──
+Read AI-generated health tips reviewed by professionals, tailored to common conditions in Cameroon.
+
+──────────────────────────────
+HomeCare237 is designed for patients and healthcare providers across Cameroon. All medical data is encrypted, stored securely, and processed in accordance with applicable data-protection regulations.
+
+For support: contact us through the app or visit our website.
+    </full_description>
+
+  </listing>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════
+       FRENCH (fr-FR)  —  primary market language for Cameroon
+       ═══════════════════════════════════════════════════════════════════════ -->
+  <listing language="fr-FR">
+
+    <title>HomeCare237 – Télémédecine</title>
+
+    <short_description>Médecin en vidéo, rendez-vous et SOS urgence pour le Cameroun.</short_description>
+
+    <full_description>
+HomeCare237 met des soins de qualité dans votre smartphone — où que vous soyez au Cameroun.
+
+── PARLEZ À UN MÉDECIN EN VIDÉO ──
+Consultez un praticien vérifié en face à face depuis chez vous, sans déplacement ni file d'attente. Les consultations vidéo et vocales sont disponibles à toute heure.
+
+── PRENEZ RENDEZ-VOUS EN QUELQUES SECONDES ──
+Choisissez une spécialité, un créneau et confirmez votre réservation — sur place ou par Mobile Money. Recevez des rappels instantanés par SMS et notification push.
+
+── VOTRE DOSSIER MÉDICAL COMPLET ──
+Signes vitaux, diagnostics et ordonnances réunis dans une chronologie, privée pour vous et votre famille. Partagez un lien en lecture seule avec n'importe quel professionnel de santé en quelques secondes.
+
+── N'OUBLIEZ PLUS UNE PRISE ──
+Centralisez toutes vos ordonnances avec des rappels calés sur chaque traitement. Suivez vos renouvellements et configurez des alertes intelligentes pour les médicaments chroniques.
+
+── SOS URGENCE ──
+Un seul geste alerte vos contacts d'urgence et les unités de santé les plus proches quand chaque minute compte. Votre position GPS est partagée automatiquement pour que les secours arrivent plus vite.
+
+── PAYEZ COMME AU CAMEROUN ──
+Réglez consultations et rendez-vous par MTN MoMo ou Orange Money. Chaque reçu est conservé automatiquement pour le remboursement par votre assurance.
+
+── COMPTES FAMILLE ──
+Gérez la santé de toute votre famille avec un seul identifiant. Ajoutez enfants, parents ou personnes à charge et changez de profil d'un seul geste.
+
+── ÉDUCATION SANTÉ ──
+Lisez des conseils santé générés par IA et validés par des professionnels, adaptés aux pathologies fréquentes au Cameroun.
+
+──────────────────────────────
+HomeCare237 est conçu pour les patients et les professionnels de santé à travers le Cameroun. Toutes les données médicales sont chiffrées, stockées en sécurité et traitées conformément à la réglementation applicable en matière de protection des données.
+
+Assistance : contactez-nous via l'application ou rendez-vous sur notre site web.
+    </full_description>
+
+  </listing>
+
+</store_listing>

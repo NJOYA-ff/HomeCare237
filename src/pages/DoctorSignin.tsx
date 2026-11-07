@@ -268,17 +268,11 @@ const DoctorSignin: React.FC = () => {
                         setIsLoading(true);
                         setLoginError("");
                         try {
-                          // Mirrors the password path below: an admin may reach
-                          // this portal and is routed to the admin dashboard by
-                          // the switch below. primaryRole() is still Doctor, so a
-                          // brand-new Google account created here is a doctor.
                           const user = await authService.loginWithGoogle([
                             UserRole.Doctor,
                             UserRole.Admin,
                           ]);
                           if (user) {
-                            // Strict role routing from the Firebase-loaded
-                            // role — no default branch (see password path).
                             if (user.role === UserRole.Admin) {
                               history.replace("/admin/dashboard");
                             } else if (user.role === UserRole.Doctor) {
@@ -286,9 +280,6 @@ const DoctorSignin: React.FC = () => {
                             }
                           }
                         } catch (err: unknown) {
-                          // Closing the Google popup is a normal user action, not
-                          // a failure — the mapper returns "" for cancellations so
-                          // we stay silent instead of showing raw SDK text.
                           setLoginError(getGoogleSignInErrorMessageT(err, t));
                         } finally {
                           setIsLoading(false);

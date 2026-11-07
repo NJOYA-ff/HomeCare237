@@ -156,17 +156,14 @@ const PatientSignup: React.FC = () => {
   const handleGoogleSignup = async () => {
     setIsGoogleLoading(true);
     try {
-      // Web → popup resolves immediately, returns user → navigate.
-      // Mobile → redirect flow, page navigates away, returns null.
       const user = await authService.loginWithGoogle(UserRole.Patient);
       if (user) {
         history.push("/patient/dashboard");
       }
     } catch (err: unknown) {
-      // Same treatment as the signin pages: a cancelled popup is silent, and
-      // any other failure shows mapped copy instead of the raw SDK string.
       const message = getGoogleSignInErrorMessageT(err, t);
       if (message) showToast(message, "danger");
+    } finally {
       setIsGoogleLoading(false);
     }
   };

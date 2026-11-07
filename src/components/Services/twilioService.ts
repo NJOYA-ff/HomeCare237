@@ -168,11 +168,11 @@ export class TwilioServiceAlternative {
   }
 
   async getCallToken(identity: string): Promise<string> {
-    const apiBase =
-      typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE_URL
-        ? String(import.meta.env.VITE_API_BASE_URL).replace(/\/+$/, "")
-        : "";
-    const response = await fetch(`${apiBase}/api/twilio/token`, {
+    // getApiUrl resolves to the local dev server (/api/twilio/token) when
+    // VITE_API_BASE_URL is set, or to the Firebase Cloud Function
+    // (twilioToken) automatically for production Android/iOS builds.
+    const { getApiUrl } = await import("../../utils/apiBase");
+    const response = await fetch(getApiUrl("/api/twilio/token"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

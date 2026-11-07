@@ -113,16 +113,16 @@ export const VideoChatModal: React.FC<VideoChatModalProps> = ({
   }, []);
 
   const fetchJwtToken = useCallback(async (targetRoom: string): Promise<string> => {
-    const apiBase =
-      (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE_URL
-        ? String(import.meta.env.VITE_API_BASE_URL).replace(/\/+$/, "")
-        : "");
+    // getApiUrl resolves to the local dev server in development and to the
+    // Firebase Cloud Function (twilioToken) in production APK builds where
+    // VITE_API_BASE_URL is not set.
+    const { getApiUrl } = await import("../../utils/apiBase");
 
     const identity = auth.currentUser?.email || auth.currentUser?.uid || `user_${Date.now()}`;
-    const response = await fetch(`${apiBase}/api/twilio/video-token`, {
+    const response = await fetch(getApiUrl("/api/twilio/video-token"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ identity, roomName: targetRoom }),
+      body: JSON.stringify({ identity, roomName: targetRoom, type: "video" }),
     });
 
     if (!response.ok) {
