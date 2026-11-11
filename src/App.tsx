@@ -21,6 +21,7 @@ import {
   saveCredentials,
 } from "./utils/BiometricAuthService";
 import { App as CapApp } from "@capacitor/app";
+import LoadingHelix from "./components/LoadingHelix";
 
 /* Core CSS required for Ionic components to work properly */
 import "@ionic/react/css/core.css";
@@ -830,12 +831,14 @@ const App: React.FC = () => {
         <div
           style={{
             display: "flex",
+            flexDirection: "column",
             justifyContent: "center",
             alignItems: "center",
             height: "100vh",
+            gap: "12px",
           }}
         >
-          <p>Loading...</p>
+          <LoadingHelix size={36} color="var(--ion-color-primary)" />
         </div>
       </IonApp>
     );
